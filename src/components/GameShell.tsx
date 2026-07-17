@@ -91,7 +91,7 @@ export function GameShell(props: GameBoardProps) {
   return (
     <>
       <div
-        className={desktop.force ? "wt wt-desktop" : "wt"}
+        className={`wt${desktop.force ? " wt-desktop" : ""}${isTablet ? " wt-tablet" : ""}`}
         style={desktop.zoom !== undefined ? { zoom: desktop.zoom } : undefined}
       >
         <GlobalHeader

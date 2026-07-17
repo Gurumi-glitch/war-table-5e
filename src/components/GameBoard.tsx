@@ -217,6 +217,13 @@ export function GameBoard({
   const t = useT();
   const [diceFolded, setDiceFolded] = useState(false);
 
+  // The TTS tablet is a reference/roster surface: batch battle, Battle and the
+  // dice board live on the desktop clients only (same gate as Scene/map in
+  // GameShell), so the whole center column is dropped there.
+  const isTablet =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("Tablet");
+
   return (
     <>
         {/* Left: the party column + characters bar + compact log. */}
@@ -260,6 +267,7 @@ export function GameBoard({
         {/* Center: batch window (expandable), the free 戰鬥 Battle panel, then
          * the dice board at the bottom (the first rows get the most use, so
          * the board sits closest to the Battle controls). All three fold. */}
+        {!isTablet && (
         <div className="wt-col" data-dice-folded={diceFolded ? "true" : undefined}>
           <BatchBattlePanel
             batchRun={batchRun}
@@ -301,6 +309,7 @@ export function GameBoard({
             onFold={setDiceFolded}
           />
         </div>
+        )}
 
         {/* Right: the enemy horde column (~20 must scroll comfortably) + spawn. */}
         <div className="wt-col">
