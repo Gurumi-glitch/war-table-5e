@@ -164,12 +164,16 @@ test("client-mode gates hide Scene in Tablet and keep it with desktop override",
   const { unmount } = render(<GameShell {...props()} />);
   expect(screen.queryByRole("button", { name: /場景/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /地圖/ })).not.toBeInTheDocument();
+  expect(screen.queryByText("骰盤")).not.toBeInTheDocument();
+  expect(screen.queryByText("批次戰鬥")).not.toBeInTheDocument();
   unmount();
 
   setSearch("?desktop");
   render(<GameShell {...props()} />);
   expect(screen.getByRole("button", { name: /戰爭桌/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /場景/ })).toBeInTheDocument();
+  expect(screen.getByText("骰盤")).toBeInTheDocument();
+  expect(screen.getByText("批次戰鬥")).toBeInTheDocument();
 });
 
 test("character windows survive workspace switches and repeated opens focus one instance", () => {

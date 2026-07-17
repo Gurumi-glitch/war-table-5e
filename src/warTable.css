@@ -125,6 +125,12 @@
   font-family: 'Noto Sans TC', sans-serif;
 }
 
+/* Tablet drops the center column (batch/Battle/dice, see GameBoard), so the
+ * roster columns share the width instead of leaving a 1fr hole. */
+.wt.wt-tablet {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 /* ---- the three columns + scroll regions ---------------------------------- */
 .wt-col {
   display: flex;
