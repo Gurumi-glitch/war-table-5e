@@ -1,0 +1,11 @@
+# Sheet edits use optimistic updates — do not remove as "unnecessary" cleanup
+
+Every recipe/resource add/update/remove on a combatant sheet goes through `.withOptimisticUpdate` (Backstage.tsx and Frontstage.tsx mutation hooks), backed by `src/lib/optimistic.ts`. That file exists solely to make these edits render instantly instead of waiting for the Convex query round-trip.
+
+**Why this exists — do not remove it as dead weight:** before this, every sheet edit had a real, measured ~1.1s lag between the click and the UI updating, because the edit only appeared once `getCombatants` (and `characters.list`) re-ran server-side and pushed a new result. With up to 7 concurrent editors (DM + players) on one game, that lag was the single biggest "this feels janky" complaint. `optimistic.ts`'s helpers (`optimisticAddRecipe`, `optimisticUpdateRecipe`, `optimisticRemoveRecipe`, and the resource equivalents) patch every subscribed result of both `api.games.getCombatants` and `api.characters.list` on the local client via `getAllQueries`, before the server responds. Convex reconciles automatically on commit (temp id → real row) or reverts on error.
+
+**Why it looks removable and isn't:** the mutation handlers themselves are unchanged and would work fine without this file — a "simplify/YAGNI" pass looking only at the backend mutations, or at diff size, could reasonably conclude the optimistic-update wiring in Backstage.tsx/Frontstage.tsx is unused ceremony around a mutation that already works. It is not unused: removing `.withOptimisticUpdate` reintroduces the exact 1.1s-per-click lag this file was written to eliminate. There is no test that fails if it's removed — the mutations still succeed, just slowly from the user's perspective — so this has to be caught by reading intent, not by CI.
+
+**Known accepted tradeoff:** a temp-id row exists client-side for ~200ms after creation; removing it in that window throws "not found" server-side and reverts. Accepted for v1, not a bug to "fix" by adding guards.
+
+Before touching `src/lib/optimistic.ts` or the `.withOptimisticUpdate` calls in `Backstage.tsx`/`Frontstage.tsx`: any new recipe/resource mutation needs the matching optimistic helper added here, not skipped for simplicity.

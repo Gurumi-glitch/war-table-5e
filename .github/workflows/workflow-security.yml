@@ -1,0 +1,61 @@
+# Workflow security (CI that audits the CI)
+#
+# actionlint: workflow 語法錯誤 + run: 裡的 shell bug
+# zizmor:     workflow 資安漏洞（unpinned、credential 殘留、過寬權限）
+
+name: Workflow security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 預設拒絕；各 job 只拿唯讀
+permissions: {}
+
+concurrency:
+  group: workflow-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      # pin 版本 + checksum 驗證，被掉包的 binary 跑不起來
+      - name: Run actionlint (pinned, checksum-verified)
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          TARBALL="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "${TARBALL}" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${TARBALL}"
+          echo "${ACTIONLINT_SHA256}  ${TARBALL}" | sha256sum -c -
+          tar -xzf "${TARBALL}" actionlint
+          ./actionlint -color
+
+  zizmor:
+    name: zizmor (Actions SAST)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        run: |
+          set -euo pipefail
+          pip install zizmor==1.26.1
+          zizmor --offline --min-severity=low .github/workflows/
+      # --offline: 不打外部網路，稽核純本地（供應鏈潔癖的延伸）

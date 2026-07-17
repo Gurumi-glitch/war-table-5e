@@ -1,0 +1,4 @@
+# Convex codegen always writes LF; pin these files to LF so `npx convex dev`
+# doesn't leave a phantom "modified" api.d.ts on Windows (core.autocrlf=true
+# would otherwise expect CRLF in the working copy).
+convex/_generated/** text eol=lf

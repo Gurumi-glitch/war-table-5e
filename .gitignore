@@ -1,0 +1,64 @@
+# --- Local-only reference / planning docs (not for GitHub) ---
+# `docs/adr/` is the deliberate exception: the decision record ships so a
+# reader can see why the code is shaped this way (ADR-0014's "comprehensible").
+# Everything else under docs/ (grilling, reviews, plans, handoffs, agents) is
+# working material and stays local. Note the `docs/*` form — git cannot
+# re-include a path whose parent directory is itself excluded, so a plain
+# `docs/` + `!docs/adr/` would silently keep the ADRs ignored.
+docs/*
+!docs/adr/
+infos/
+openspec/
+# The friend group's own six cards: real people's aliases and their writing.
+# Generated locally from the (also-ignored) CSV; the public repo ships only
+# convex/demoSeed.ts (SRD open content). See openspec/changes/prep-public-release.
+convex/characterSeed.ts
+CLAUDE.md
+AGENTS.md
+CONTEXT.md
+todo.md
+USER_TODO.md
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Node / Vite / React ---
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+*.tsbuildinfo
+
+# --- Convex ---
+.convex/
+# AI-agent tooling installed by `npx convex ai-files install` / skills — local only
+convex/_generated/ai/
+.agents/
+.claude/
+.codex/
+AGENTS.md
+skills-lock.json
+
+# --- /teach learning workspace (local only, not for GitHub) ---
+/Learning/
+
+# --- Local-only test files (not for GitHub) ---
+src/components/EnemyEditorWindow.test.tsx
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
