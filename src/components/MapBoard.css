@@ -1,0 +1,557 @@
+/* Map system (add-map-system). Self-contained "Ritual Sigil" palette so the
+ * board renders identically whether mounted full-page (outside `.wt`) or inside
+ * the floating map window (inside `.wt`). */
+.mb-root {
+  --mb-void: #0e0a14;
+  --mb-panel: #1c1526;
+  --mb-panel2: #251b32;
+  --mb-edge: #3a2a4a;
+  --mb-ink: #c9bcd6;
+  --mb-dim: #9a8ab0;
+  --mb-bone: #ece4f5;
+  --mb-accent: #b8355c;
+  --mb-accent-hover: #e47796;
+  --mb-accent2: #9c3466;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  color: var(--mb-ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: inherit;
+}
+.mb-root * {
+  box-sizing: border-box;
+}
+.mb-root button,
+.mb-root input,
+.mb-root select {
+  font: inherit;
+}
+
+/* Full-page mount fills the viewport with the void backdrop. */
+.mb-fullpage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--mb-void);
+  padding: 0.55em;
+  overflow: hidden;
+}
+
+.mb-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.3em 0.5em 0.5em;
+  flex: 0 0 auto;
+}
+.mb-topbar-title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--mb-bone);
+}
+
+.mb-main {
+  display: flex;
+  gap: 0.6em;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.mb-boardcol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.mb-side {
+  flex: 0 0 19em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* Stage: the map's flex child that gets whatever space is left after the dice
+ * bar (and any future siblings). It's a container-query box, so the frame can
+ * size itself against BOTH the stage's width and height without stretching. */
+.mb-boardcol-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  /* `safe` centering: center while the frame fits, but fall back to start
+   * alignment once zoom makes it overflow — otherwise a centered overflowing
+   * item clips its own top/left edge out of scroll reach (design D4). */
+  justify-content: safe center;
+  align-items: safe center;
+  container-type: size;
+  /* Was `hidden`; zoom>1 grows the frame past the stage and this scrolls it. */
+  overflow: auto;
+}
+
+/* Aspect-ratio-locked map frame: image + grid overlay share one box, so pieces,
+ * grid, and image all scale together (design Decision #2). Sizing uses a
+ * `min()` of "fill stage width" vs "fill stage height while keeping --mb-ar",
+ * so flexbox can never squish the frame vertically into rectangles — cells
+ * stay exactly square at any viewport. */
+.mb-frame {
+  position: relative;
+  margin: 0 auto;
+  background: #000;
+  border: 1px solid var(--mb-edge);
+  overflow: hidden;
+  /* Fit size (min of "fill width" vs "fill height at --mb-ar") × zoom. At
+   * zoom=1 this equals the old fit; >1 exceeds the stage and scrolls. No
+   * max-width/height caps — they would pin zoom>1 back to the stage. */
+  width: calc(min(100cqw, calc(100cqh * var(--mb-ar, 1))) * var(--mb-zoom, 1));
+  height: auto;
+  aspect-ratio: var(--mb-ar, 1);
+  /* Never let the flex stage shrink an overflowing (zoomed) frame back to fit. */
+  flex: 0 0 auto;
+}
+.mb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* `contain`, never `fill`: scale the image to fit WITHOUT distorting it. The
+   * frame's aspect-ratio is cols/rows (≈ the image's own ratio, since cols/rows
+   * were derived from it), so the fit is near-exact; any residual is a sub-pixel
+   * letterbox, never a stretch. Grid cells stay perfectly square (cols/rows
+   * frame + 1fr tracks), independent of the image's exact ratio. */
+  object-fit: contain;
+  user-select: none;
+}
+.mb-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  touch-action: none;
+}
+/* SVG lines are individually rasterized, so fractional cells at high zoom
+ * cannot make an entire repeating-gradient stripe vanish. The 2px stroke
+ * remains constant on screen while the board itself expands. */
+.mb-grid-lines {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.mb-grid-lines line {
+  stroke: rgba(236, 228, 245, 0.16);
+  stroke-width: 2;
+}
+.mb-cell-piece {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8em;
+  border: 1px dashed var(--mb-edge);
+  color: var(--mb-dim);
+  text-align: center;
+  padding: 1em;
+}
+
+/* Panels (backstage / add-piece / dice / library). */
+.mb-panel {
+  background: var(--mb-panel);
+  border: 1px solid var(--mb-edge);
+  padding: 0.5em 0.6em;
+  flex: 0 0 auto;
+}
+.mb-panel-title {
+  font-weight: 700;
+  color: var(--mb-bone);
+  margin-bottom: 0.4em;
+  font-size: 1em;
+  letter-spacing: 0.04em;
+}
+
+/* Fold/unfold panel header (improve-scene-ux D3). Looks like `.mb-panel-title`
+ * but is a full-width toggle button. Ancestor-scoped (`.mb-root ...`) to beat
+ * the `.wt :where(button)` theme's (0,1,0) — see ADR-0009 specificity note. */
+.mb-root .mb-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  width: 100%;
+  margin-bottom: 0.4em;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  color: var(--mb-bone);
+  font-size: 1em;
+  letter-spacing: 0.04em;
+  clip-path: none;
+}
+.mb-root .mb-panel-toggle:hover {
+  color: var(--mb-accent-hover);
+}
+.mb-panel-caret {
+  color: var(--mb-dim);
+  font-size: 0.85em;
+}
+
+/* Zoom toolbar (improve-scene-ux D4). Sits above the board stage. */
+.mb-zoombar {
+  display: flex;
+  gap: 0.3em;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.mb-zoombar .mb-btn {
+  min-width: 2.6em;
+  text-align: center;
+}
+
+.mb-backstage {
+  position: relative;
+  height: 9em;
+  background: var(--mb-panel2);
+  border: 1px solid var(--mb-edge);
+  touch-action: none;
+  overflow: hidden;
+}
+.mb-bs-piece {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.mb-backstage-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mb-dim);
+  font-size: 0.85em;
+  text-align: center;
+  padding: 0.5em;
+}
+/* Empty-state text INSIDE a flow list (e.g. the map library) — NOT absolutely
+ * positioned. Must never be `.mb-backstage-hint` here: with no positioned
+ * ancestor, `inset:0` would stretch it to the fixed full-page root and turn it
+ * into an invisible click-eating overlay. */
+.mb-list-empty {
+  color: var(--mb-dim);
+  font-size: 0.85em;
+  padding: 0.3em;
+}
+
+/* Piece token. */
+.mb-token {
+  width: 100%;
+  height: 100%;
+  min-width: 26px;
+  min-height: 26px;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.mb-bs-piece .mb-token,
+.mb-ghost .mb-token {
+  width: 38px;
+  height: 38px;
+}
+.mb-token-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mb-token-initial {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  mix-blend-mode: normal;
+}
+.mb-ghost {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.85;
+}
+
+/* Flavor dice. Sized 2x the original (min-width 3em→6em, padding 0.3/0.4→0.6/0.8,
+ * value font 1.1em→2em) so the 共用骰 panel is easy to read at a glance while
+ * standing at the table; the row still wraps cleanly inside the 19em side panel. */
+.mb-dice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+/* Ancestor scope (.mb-root) raises specificity vs .wt :where(button)
+ * (0,2,0) > (0,1,0). .mb-btn also hits a <label> in PieceManager so
+ * we cannot use button.mb-btn — ancestor scope works for all variants. */
+.mb-root .mb-die {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 6em;
+  padding: 0.6em 0.8em;
+  background: var(--mb-panel2);
+  border: 1px solid var(--mb-edge);
+  color: var(--mb-ink);
+  cursor: pointer;
+  clip-path: none;
+}
+.mb-root .mb-die:hover {
+  border-color: var(--mb-accent);
+}
+.mb-die-type {
+  font-size: 1.1em;
+  color: var(--mb-dim);
+}
+.mb-die-val {
+  font-weight: 700;
+  font-size: 2em;
+  color: var(--mb-bone);
+  line-height: 1;
+}
+
+/* Forms / buttons. */
+.mb-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+.mb-source-tabs {
+  display: flex;
+  gap: 0.3em;
+}
+.mb-root .mb-tab {
+  flex: 1;
+  padding: 0.3em;
+  background: var(--mb-panel2);
+  border: 1px solid var(--mb-edge);
+  color: var(--mb-dim);
+  cursor: pointer;
+  clip-path: none;
+}
+.mb-root .mb-tab-on {
+  color: var(--mb-bone);
+  border-color: var(--mb-accent);
+  background: var(--mb-accent2);
+}
+.mb-input {
+  width: 100%;
+  padding: 0.3em 0.4em;
+  background: var(--mb-void);
+  border: 1px solid var(--mb-edge);
+  color: var(--mb-ink);
+}
+.mb-color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--mb-dim);
+}
+.mb-root .mb-btn {
+  padding: 0.3em 0.6em;
+  background: var(--mb-panel2);
+  border: 1px solid var(--mb-edge);
+  color: var(--mb-ink);
+  cursor: pointer;
+  clip-path: none;
+}
+.mb-root .mb-btn:not(:disabled):hover {
+  border-color: var(--mb-accent);
+}
+.mb-file-input {
+  position: relative;
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+}
+.mb-file-input-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+.mb-file-input:has(.mb-file-input-native:focus-visible) {
+  outline: 1px solid var(--mb-accent-hover);
+  outline-offset: 2px;
+}
+.mb-file-name {
+  color: var(--mb-dim);
+  overflow-wrap: anywhere;
+}
+.mb-root .mb-btn-primary {
+  background: var(--mb-accent);
+  border-color: var(--mb-accent);
+  color: #fff;
+  font-weight: 700;
+  clip-path: none;
+}
+.mb-root .mb-btn-danger:hover {
+  border-color: #d24;
+  color: #f79;
+  clip-path: none;
+}
+
+/* Map library list. */
+.mb-maplist {
+  list-style: none;
+  margin: 0.5em 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+}
+
+/* Read-only character glance (used on the full-page 地圖 mount). */
+.mb-charquick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+.mb-charquick-row {
+  background: var(--mb-panel2);
+  border: 1px solid var(--mb-edge);
+  padding: 0.4em 0.5em;
+}
+.mb-charquick-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
+  align-items: baseline;
+}
+.mb-charquick-name {
+  color: var(--mb-bone);
+  font-weight: 700;
+  font-size: 1.05em;
+}
+.mb-charquick-player {
+  color: var(--mb-dim);
+  font-size: 0.82em;
+}
+.mb-charquick-sub {
+  color: var(--mb-ink);
+  font-size: 0.88em;
+  margin-top: 0.15em;
+}
+.mb-charquick-stats {
+  display: flex;
+  gap: 0.7em;
+  margin-top: 0.3em;
+  font-weight: 700;
+  color: var(--mb-bone);
+  font-size: 0.95em;
+}
+.mb-charquick-mods {
+  margin-top: 0.25em;
+  color: var(--mb-dim);
+  font-size: 0.78em;
+  letter-spacing: 0.02em;
+}
+
+/* Character-card picker (full-page 地圖 mount). Each button opens the full
+ * editable CharacterCardWindow as a floating pop-up — identical to the
+ * war-table 角色卡 behavior. In-battle cards get the ⚔ marker to match
+ * CharactersPanel's visual treatment. */
+.mb-charpick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+.mb-root .mb-charpick-btn {
+  width: 100%;
+  text-align: left;
+  padding: 0.4em 0.5em;
+  background: var(--mb-panel2);
+  border: 1px solid var(--mb-edge);
+  color: var(--mb-ink);
+  cursor: pointer;
+  font-size: 0.95em;
+  clip-path: none;
+}
+.mb-root .mb-charpick-btn:hover {
+  border-color: var(--mb-accent);
+}
+.mb-root .mb-charpick-btn-on {
+  border-color: #4e6e4e;
+  background: rgba(78, 110, 78, 0.25);
+  color: #cfe3cf;
+}
+.mb-charpick-sword {
+  color: inherit;
+}
+
+.mb-maprow {
+  border: 1px solid var(--mb-edge);
+  padding: 0.35em 0.45em;
+  background: var(--mb-panel2);
+}
+.mb-maprow-on {
+  border-color: var(--mb-accent);
+}
+.mb-maprow-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
+}
+.mb-maprow-name {
+  color: var(--mb-bone);
+  font-weight: 600;
+}
+.mb-maprow-dim {
+  color: var(--mb-dim);
+  font-size: 0.85em;
+}
+.mb-maprow-actions {
+  display: flex;
+  gap: 0.3em;
+  margin-top: 0.35em;
+  flex-wrap: wrap;
+}
+.mb-regrid {
+  margin-top: 0.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+.mb-step-label {
+  font-size: 0.82em;
+  color: var(--mb-dim);
+}
