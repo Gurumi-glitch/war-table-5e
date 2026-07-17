@@ -1,0 +1,1148 @@
+/* Issue #9 step 5 — the gothic "War Table" shell (prototype variant A, made
+ * real). Everything scopes under `.wt` so the parchment CharacterCardWindow
+ * (rendered OUTSIDE the .wt element, position:fixed) and the plain Home page
+ * are untouched. Font ruling: Cinzel is allowed on PANEL TITLES ONLY — dense
+ * text/numbers/controls use Noto Sans TC with bold weights, per the card's
+ * legibility ruling in docs/plans/ui-design-requirement-character-card.md.
+ * Element-level rules use :where() (zero specificity) so component-local
+ * classes and inline styles always win. */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+.wt {
+  /* "Ritual Sigil" palette — violet-crimson accent on a near-black void,
+   * chamfered "cut-gem" blocks instead of rounded ones. Variable NAMES are
+   * unchanged from the original gothic-brown/gold theme (only the hex
+   * values moved) so every existing usage site below still resolves
+   * correctly without a rename pass — --ember/--blood/--blood2 now hold the
+   * violet/crimson accent family, not literal ember/blood tones. */
+  --void: #0e0a14;
+  --deep: #140f1c;
+  --panel: #1c1526;
+  --panel2: #251b32;
+  --edge: #3a2a4a;
+  --edge2: #4f3a63;
+  --ink: #c9bcd6;
+  --dim: #9a8ab0;
+  --bone: #ece4f5;
+  --blood: #7a1830;
+  --blood2: #b8355c;
+  --ember: #e0688f;
+
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 22em minmax(0, 1fr) 22em;
+  gap: 0.55em;
+  padding: 0.55em;
+  overflow: hidden;
+  background-color: var(--void);
+  /* Layers, back to front: base void color < violet vignette glow < faint
+   * crossed chalk-line texture < a distant Ravenloft-style castle skyline
+   * pinned to the bottom edge. Pure CSS/SVG — no external image request
+   * (this is inline, so it works offline and isn't blocked by any CSP). */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300'%3E%3Cg fill='%2305030b'%3E%3Crect x='0' y='250' width='1200' height='50'/%3E%3Crect x='0' y='215' width='150' height='45'/%3E%3Crect x='15' y='195' width='18' height='20'/%3E%3Crect x='45' y='195' width='18' height='20'/%3E%3Crect x='75' y='195' width='18' height='20'/%3E%3Crect x='105' y='195' width='18' height='20'/%3E%3Crect x='150' y='140' width='65' height='120'/%3E%3Cpolygon points='150,140 182,80 215,140'/%3E%3Crect x='215' y='205' width='95' height='55'/%3E%3Crect x='225' y='188' width='16' height='18'/%3E%3Crect x='255' y='188' width='16' height='18'/%3E%3Crect x='285' y='188' width='16' height='18'/%3E%3Crect x='310' y='80' width='95' height='180'/%3E%3Cpolygon points='310,80 357,15 405,80'/%3E%3Crect x='354' y='8' width='6' height='24'/%3E%3Cpolygon points='360,10 384,18 360,26'/%3E%3Crect x='405' y='198' width='120' height='62'/%3E%3Crect x='418' y='180' width='16' height='18'/%3E%3Crect x='450' y='180' width='16' height='18'/%3E%3Crect x='482' y='180' width='16' height='18'/%3E%3Crect x='525' y='150' width='75' height='110'/%3E%3Cpolygon points='525,150 562,105 600,150'/%3E%3Crect x='600' y='222' width='180' height='38'/%3E%3Crect x='612' y='205' width='16' height='17'/%3E%3Crect x='644' y='205' width='16' height='17'/%3E%3Crect x='676' y='205' width='16' height='17'/%3E%3Crect x='708' y='205' width='16' height='17'/%3E%3Crect x='740' y='205' width='16' height='17'/%3E%3Crect x='780' y='238' width='160' height='22'/%3E%3Crect x='792' y='225' width='14' height='13'/%3E%3Crect x='820' y='225' width='14' height='13'/%3E%3Crect x='848' y='225' width='14' height='13'/%3E%3Crect x='876' y='225' width='14' height='13'/%3E%3Crect x='940' y='245' width='260' height='15'/%3E%3C/g%3E%3C/svg%3E"),
+    repeating-linear-gradient(35deg, rgba(236, 228, 245, 0.03) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(-35deg, rgba(236, 228, 245, 0.025) 0 1px, transparent 1px 34px),
+    radial-gradient(60% 45% at 50% 38%, rgba(156, 52, 102, 0.1), transparent 65%);
+  background-position: bottom center, 0 0, 0 0, 0 0;
+  background-size: 100% 34vh, auto, auto, auto;
+  background-repeat: no-repeat, repeat, repeat, no-repeat;
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  /* 18px = the original 14px × ~1.3 (user-requested global bump). */
+  font-size: 18px;
+}
+/* Issue #15 — `.wt` is `position: fixed`, which creates its own stacking
+ * context; any window rendered as its descendant is trapped below windows
+ * rendered outside it (e.g. CharacterCardWindow) no matter their z-index.
+ * This sibling wrapper keeps the `.wt` theming (CSS custom properties and
+ * `.wt`-scoped selectors still match its descendants) but generates no box
+ * of its own, so its children compete in the same stacking context as
+ * everything else painted at the document root. */
+.wt.wt-float-layer {
+  display: contents;
+}
+.wt *,
+.wt *::before,
+.wt *::after {
+  box-sizing: border-box;
+}
+.wt *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.wt *::-webkit-scrollbar-thumb {
+  background: var(--edge2);
+  border-radius: 4px;
+}
+.wt *::-webkit-scrollbar-track {
+  background: var(--deep);
+}
+
+/* ---- panel chrome -------------------------------------------------------- */
+/* Chamfered "cut-gem" corners (Ritual Sigil signature) instead of rounded
+ * ones — clip-path only, so nothing about layout/sizing changes. */
+.wt-panel {
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border: 1px solid var(--edge);
+  outline: 1px solid #000;
+  box-shadow:
+    0 0 0 1px rgba(156, 52, 102, 0.06),
+    0 6px 18px rgba(0, 0, 0, 0.55),
+    inset 0 0 40px rgba(0, 0, 0, 0.35);
+  border-radius: 0;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  min-height: 0;
+}
+/* Cleaner "head" (no gradient wash, white label) — the panel's own
+ * background already shows through, a bottom border is enough of a
+ * divider. Only the small ❖ mark keeps the accent color. */
+.wt-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0.3em 0.8em;
+  border-bottom: 1px solid var(--edge);
+  color: var(--bone);
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+.wt-panel-title::before {
+  content: '❖';
+  color: var(--blood2);
+  font-size: 0.9em;
+}
+.wt-panel-title > button {
+  margin-left: auto;
+  letter-spacing: normal;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+/* ---- the three columns + scroll regions ---------------------------------- */
+.wt-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.wt-scroll {
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Fill the column's slack but stay content-sized when the layout is
+ * unconstrained (the stacked tablet fallback) — flex-basis auto, not 0, so
+ * panels never collapse to zero height there. */
+.wt-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- top bar: title + turn ribbon ---------------------------------------- */
+.wt-top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.3em 0.7em;
+  min-width: 0;
+}
+.wt-title {
+  margin: 0;
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--bone);
+  text-shadow: 0 0 14px rgba(184, 53, 92, 0.45);
+  white-space: nowrap;
+}
+.wt-workspace-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  flex: none;
+}
+/* Twin of .wt-title for the sibling-nav button beside the title. Same
+ * Cinzel + 700 + tracking + crimson glow so ⚜ 戰爭桌 and ⚜ 場景 read as
+ * a pair; the button keeps its own chrome (border, hover, padding) so it
+ * still looks like a control. Element+class specificity beats the zero-
+ * specificity `.wt :where(button)` base — see warTable-css-specificity-
+ * gotcha memory. */
+button.wt-topnav {
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-shadow: 0 0 14px rgba(184, 53, 92, 0.45);
+  /* Slightly fatter padding so the typographic weight has room to breathe
+   * against the title's own vertical metrics. */
+  padding: 0.25em 0.7em;
+}
+button.wt-topnav-active {
+  border-color: var(--ember);
+  background: rgba(156, 52, 102, 0.18);
+  color: var(--bone);
+  box-shadow: 0 0 10px rgba(156, 52, 102, 0.28);
+}
+.wt-scene {
+  grid-column: 1 / -1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.wt-role {
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ember);
+  border: 1px solid var(--edge2);
+  border-radius: 0;
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0 50%);
+  padding: 0.05em 0.8em;
+  white-space: nowrap;
+}
+.wt-ribbon {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  overflow-x: auto;
+  min-width: 0;
+  padding: 0.15em 0.2em;
+}
+.wt-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  flex: none;
+  padding: 0.12em 0.75em;
+  border: 1px solid var(--edge);
+  border-radius: 0;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 7px 100%, 0 50%);
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 0.8em;
+  white-space: nowrap;
+  color: var(--dim);
+}
+.wt-initiative-pill {
+  flex: 0 1 12em;
+  min-width: 7em;
+  max-width: 12em;
+}
+.wt-pill-name {
+  flex: 1 1 auto;
+  min-width: 2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wt-pill-init {
+  flex: none;
+  color: var(--dim);
+}
+.wt-pill.current {
+  border-color: var(--ember);
+  background: rgba(156, 52, 102, 0.15);
+  box-shadow: 0 0 10px rgba(156, 52, 102, 0.35);
+  color: var(--bone);
+  font-weight: 700;
+}
+.wt-pill.down {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+/* ---- combatant frames ----------------------------------------------------- */
+.wt-frame {
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--fcolor, #888);
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border-radius: 0;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+  padding: 0.4em 0.55em;
+  font-size: 0.92em;
+}
+.wt-frame.current {
+  border-color: var(--ember);
+  border-left-color: var(--fcolor, var(--ember));
+  box-shadow: 0 0 12px rgba(156, 52, 102, 0.35), 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+.wt-frame.down {
+  opacity: 0.5;
+}
+.wt-frame-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-width: 0;
+}
+.wt-frame-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--bone);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wt-frame.current .wt-frame-name {
+  color: var(--ember);
+}
+.wt-frame-kind {
+  flex: none;
+  font-size: 0.72em;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+}
+.wt-hpbar {
+  position: relative;
+  height: 8px;
+  margin: 0.25em 0;
+  background: #0a0712;
+  border: 1px solid #000;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.wt-hpbar > div {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #4a0f1e, var(--blood2));
+  box-shadow: 0 0 8px rgba(184, 53, 92, 0.6);
+}
+.wt-frame-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15em 0.55em;
+  font-size: 0.9em;
+}
+.wt-frame-stats .wt-stat-label {
+  color: var(--dim);
+  font-size: 0.85em;
+}
+.wt-frame-more {
+  margin-top: 0.25em;
+  border-top: 1px dashed rgba(93, 70, 50, 0.4);
+  padding-top: 0.25em;
+  font-size: 0.92em;
+}
+
+/* ---- conditions & modifiers (EffectsCell, issue #5 restyle) --------------- */
+/* Compact chip row under a combatant frame. Curated 5e Conditions and custom
+ * Modifiers share one chip shape, distinguished only by a thin accent edge
+ * (blood = condition, ember = custom) — no rainbow-per-condition coloring. */
+.wt-effects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25em;
+  margin-top: 0.3em;
+}
+.wt-effect-ac {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05em 0.6em;
+  border: 1px solid var(--ember);
+  border-radius: 0;
+  clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 50%, calc(100% - 5px) 100%, 5px 100%, 0 50%);
+  background: rgba(156, 52, 102, 0.14);
+  color: var(--ember);
+  font-size: 0.78em;
+  font-weight: 700;
+}
+.wt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.05em 0.6em 0.05em 0.45em;
+  border: 1px solid var(--edge2);
+  border-left: 3px solid var(--dim);
+  border-radius: 0;
+  /* Left edge stays flat (the accent color-strip needs it) — only the right
+   * end chamfers into a point, reading like a tag/pennant rather than a
+   * pill. */
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--bone);
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+  cursor: default;
+}
+/* Curated 5e Condition vs standalone custom Modifier — edge color only. */
+.wt-chip.condition {
+  border-left-color: var(--blood2);
+}
+.wt-chip.custom {
+  border-left-color: var(--ember);
+}
+.wt-chip-editable {
+  cursor: pointer;
+}
+.wt-chip-editable:hover {
+  border-color: var(--ember);
+  box-shadow: 0 0 6px rgba(156, 52, 102, 0.25);
+}
+/* Toggled-off = "snuffed out": desaturated, dimmed, struck through — reads at
+ * a glance as "not currently contributing" without losing the label. */
+.wt-chip.inactive {
+  filter: grayscale(0.9) brightness(0.6);
+  opacity: 0.6;
+  border-left-color: var(--dim);
+  text-decoration: line-through;
+  text-decoration-color: var(--dim);
+}
+/* button.foo specificity (1,1,0) — beats .wt :where(button) (0,1,0) tie.
+ * clip-path: none keeps the round ghost icon (no chamfer). */
+button.wt-chip-remove {
+  padding: 0 0.15em;
+  border: none;
+  border-radius: 50%;
+  clip-path: none;
+  background: none;
+  color: var(--dim);
+  font-size: 1em;
+  line-height: 1;
+  cursor: pointer;
+}
+button.wt-chip-remove:hover {
+  color: #fff;
+  background: rgba(122, 24, 48, 0.5);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ---- effects "+ add" panel -------------------------------------------------- */
+.wt-effects-add {
+  flex-basis: 100%;
+}
+.wt-effects-add > summary {
+  color: var(--bone);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.1em 0.2em;
+}
+.wt-effects-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  margin-top: 0.2em;
+  padding-top: 0.3em;
+  border-top: 1px dashed rgba(93, 70, 50, 0.4);
+  font-size: 0.85em;
+}
+.wt-effects-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25em 0.5em;
+}
+.wt-effects-presets button {
+  padding: 0.1em 0.5em;
+  font-size: 0.85em;
+}
+/* Per-ability scope checkboxes (issue #32): shown for save rows in any mode and
+   ability-check rows except auto-fail (see `isAbilityScoped` in EffectsCell).
+   Compact inline pills, wrap on narrow — a save bonus/override row is the one
+   case where these sit alongside the value input. */
+.wt-effects-abilities {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15em 0.4em;
+}
+.wt-effects-abilities label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1em;
+  font-size: 0.85em;
+}
+.wt-effects-abilities-hint {
+  opacity: 0.6;
+  font-size: 0.8em;
+}
+
+/* ---- log + ticker ---------------------------------------------------------- */
+.wt-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wt-log li {
+  padding: 0.28em 0.55em;
+  border-bottom: 1px dashed rgba(93, 70, 50, 0.4);
+  font-size: 0.82em;
+  line-height: 1.45;
+}
+.wt-log li strong {
+  color: var(--bone);
+}
+.wt-ticker {
+  grid-column: 1 / -1;
+  padding: 0.3em 0.8em 0.22em;
+  font-size: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dim);
+  /* A translucent scrim (not an opaque panel) so the castle skyline behind
+   * the shell still shows through faintly, clipped to a torn/jagged top
+   * edge (Ritual Sigil signature) instead of a plain straight rule. */
+  background: rgba(14, 10, 20, 0.6);
+  clip-path: polygon(0 6px, 4% 0, 8% 6px, 12% 0, 16% 6px, 20% 0, 24% 6px, 28% 0, 32% 6px, 36% 0, 40% 6px, 44% 0, 48% 6px, 52% 0, 56% 6px, 60% 0, 64% 6px, 68% 0, 72% 6px, 76% 0, 80% 6px, 84% 0, 88% 6px, 92% 0, 96% 6px, 100% 0, 100% 100%, 0 100%);
+}
+.wt-ticker b {
+  color: var(--bone);
+  font-weight: 700;
+}
+
+/* ---- generic element theming (zero specificity — locals always win) ------- */
+.wt :where(h1, h2, h3, h4) {
+  margin: 0.2em 0;
+  font-size: 1em;
+  color: var(--bone);
+}
+.wt :where(p) {
+  margin: 0.3em 0;
+}
+.wt :where(a) {
+  color: var(--ember);
+}
+.wt :where(small, em) {
+  color: var(--dim);
+}
+/* Chamfered corners on the generic button reset too, now that ResourcePip's
+ * precisely-shaped buttons (squares/diamonds/circles) explicitly opt out
+ * with their own `clip-path: none` (same button.foo specificity-bump
+ * pattern as everything else in ResourcePip.css — see its header comment).
+ * Everything else (Kill/Remove/Save/claim/reroll/etc., which had no shape
+ * of their own) picks the chamfer up automatically. */
+.wt :where(button) {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  background: var(--panel2);
+  color: var(--bone);
+  border: 1px solid var(--edge2);
+  border-radius: 0;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
+  padding: 0.15em 0.7em;
+  cursor: pointer;
+}
+.wt :where(button:hover:not(:disabled)) {
+  border-color: var(--ember);
+  box-shadow: 0 0 8px rgba(156, 52, 102, 0.3);
+}
+.wt :where(button:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.wt-claim-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+}
+button.wt-claim-dice {
+  /* Size to the label + padding rather than stretching across the row
+   * (flex-grow 0), but keep flex-shrink 1 so it yields space to the roll
+   * summary when the viewport/zoom tightens. */
+  flex: 0 1 auto;
+  min-height: 2.35em;
+  padding: 0.15em 1.2em;
+  font-size: 1.05em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, var(--blood), var(--ember));
+  border-color: var(--blood2);
+  color: var(--bone);
+}
+.wt-roll-summary {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+.wt :where(input, select, textarea) {
+  background: #150f1c;
+  border: 1px solid var(--edge);
+  color: var(--bone);
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+.wt :where(input:focus, select:focus, textarea:focus) {
+  outline: 1px solid var(--ember);
+}
+.wt :where(button:focus-visible, summary:focus-visible) {
+  outline: 1px solid var(--ember);
+  outline-offset: 1px;
+}
+.wt :where(input[type='checkbox']) {
+  accent-color: var(--blood2);
+}
+.wt :where(input[type='color']) {
+  padding: 0;
+  background: none;
+}
+.wt :where(fieldset) {
+  border: 1px solid var(--edge);
+  border-radius: 3px;
+  margin: 0.3em 0;
+  padding: 0.3em 0.55em;
+}
+.wt :where(legend) {
+  color: var(--bone);
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.12em;
+  padding: 0 0.4em;
+}
+.wt :where(summary) {
+  cursor: pointer;
+  color: var(--ink);
+}
+.wt :where(summary:hover) {
+  color: var(--bone);
+}
+.wt :where(table) {
+  border-collapse: collapse;
+}
+.wt :where(th, td) {
+  border: 1px solid var(--edge);
+  padding: 0.15em 0.4em;
+  text-align: left;
+}
+.wt :where(th) {
+  color: var(--ember);
+  font-weight: 700;
+}
+.wt :where(hr) {
+  border: none;
+  border-top: 1px dashed var(--edge2);
+}
+.wt :where(ol, ul) {
+  padding-left: 1.4em;
+  margin: 0.3em 0;
+}
+
+/* ---- floating shell windows (shared note / DM) ----------------------------- */
+.wt-window {
+  position: fixed;
+  width: min(34em, calc(100vw - 16px));
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border: 1px solid var(--edge2);
+  box-shadow:
+    0 0 0 1px rgba(156, 52, 102, 0.15),
+    0 0 0 5px rgba(156, 52, 102, 0.07),
+    0 14px 40px rgba(0, 0, 0, 0.75);
+  border-radius: 0;
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  color: var(--ink);
+  font-size: 0.95em;
+}
+.wt-window-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.25em 0.7em;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  background: linear-gradient(90deg, #251b32, #4f3a63);
+  color: var(--bone);
+  border-bottom: 1px solid var(--edge2);
+  border-radius: 0;
+}
+.wt-window-head:active {
+  cursor: grabbing;
+}
+.wt-window-title {
+  flex: 1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wt-window-body {
+  padding: 0.6em 0.8em 0.8em;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.wt-window code {
+  color: var(--bone);
+  word-break: break-all;
+  font-size: 0.85em;
+}
+
+.wt-panel-body {
+  padding: 0.35em 0.7em 0.5em;
+}
+
+/* ---- foldable panel titles (戰鬥 / 骰盤 / active batch run) ----------------- */
+.wt-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+.wt-clickable:hover {
+  color: var(--bone);
+}
+.wt-fold-mark {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 0.85em;
+}
+
+/* ---- column-slot classes -------------------------------------------------- */
+.wt-frames {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  padding: 0.45em;
+}
+.wt-dice {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.wt-dice-cols {
+  display: flex;
+  gap: 0.75em;
+  margin-top: 0.2em;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 0.7em 0.5em;
+}
+
+/* ---- hex dice (prototype look, but the value stays a real editable input) -- */
+.wt-dierow {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  margin-bottom: 0.25em;
+}
+.wt-die {
+  position: relative;
+  width: 2.5em;
+  height: 2.8em;
+  flex: none;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: var(--edge2);
+  display: flex;
+  align-items: center;
+}
+/* Inner face inset 2px behind the value → the outer background reads as a rim. */
+.wt-die::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(150deg, #251b32, #140f1c);
+}
+.wt-dierow.claimed .wt-die {
+  background: var(--dcolor);
+  /* box-shadow is clipped by clip-path; drop-shadow follows the hex outline. */
+  filter: drop-shadow(0 0 4px var(--dcolor));
+}
+.wt-die :where(input) {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: center;
+  color: var(--bone);
+  font-weight: 700;
+  font-size: 0.95em;
+  padding: 0;
+}
+.wt-dierow.claimed .wt-die :where(input) {
+  color: #fff;
+}
+.wt-die input::-webkit-outer-spin-button,
+.wt-die input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.wt-die input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.wt-dierow > button {
+  padding: 0.05em 0.4em;
+  font-size: 0.85em;
+}
+.wt-confirm {
+  flex: none;
+  /* Default: dice board expanded, Battle block at base height. */
+  max-height: 46%;
+  padding-bottom: 0.75em;
+  overflow-y: auto;
+}
+/* When the dice board is folded, Battle block expands to 1.4×. */
+[data-dice-folded] .wt-confirm {
+  max-height: 64%;
+}
+.wt-batch {
+  flex: none;
+  max-height: 50%;
+  overflow-y: auto;
+  border-color: var(--blood);
+}
+.wt-batch > details > summary {
+  padding: 0.35em 0.8em;
+  color: var(--bone);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.wt-batch > details > div {
+  padding: 0 0.8em 0.5em;
+}
+.wt-batch-summary {
+  margin: 0.45em 0;
+}
+.wt-batch-active {
+  padding: 0.35em 0.8em 0.5em;
+}
+.wt-add {
+  flex: none;
+}
+.wt-add > details > summary {
+  padding: 0.3em 0.8em;
+  color: var(--bone);
+  letter-spacing: 0.08em;
+}
+.wt-add > details > div {
+  padding: 0.2em 0.8em 0.6em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em 0.6em;
+  align-items: center;
+}
+
+/* ---- enemy database --------------------------------------------------------- */
+.wt-enemydb-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3em;
+}
+.wt-enemydb-list {
+  max-height: 22em;
+  margin-top: 0.3em;
+  overflow-y: auto;
+}
+.wt-enemydb-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35em;
+  align-items: center;
+  margin-bottom: 0.2em;
+}
+.wt-enemydb-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.3em;
+}
+button.wt-enemydb-spawn {
+  flex: none;
+}
+.wt-enemydb-details {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.3em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.wt-enemydb-name {
+  flex: 0 1 auto;
+  min-width: 2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wt-enemydb-name-en,
+.wt-enemydb-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  text-overflow: ellipsis;
+}
+.wt-enemydb-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  white-space: nowrap;
+}
+
+/* ---- entry page ------------------------------------------------------------- */
+/* Home deliberately joins the existing `.wt` tree rather than introducing a
+ * second theme. The modifier replaces the three-column board layout only. */
+.wt.wt-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  padding: clamp(1em, 4vw, 3em);
+  overflow: auto;
+}
+.wt-home-card {
+  width: min(44rem, 100%);
+  padding: 0.8em;
+}
+.wt-home-title {
+  font-size: clamp(1.1em, 3vw, 1.65em);
+  letter-spacing: 0.15em;
+}
+/* Language switch above the title — visible before a game exists, so the DM
+ * reads Create Game (and future onboarding) in their own language. */
+.wt-home-lang {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.4em;
+}
+.wt-home-lede {
+  max-width: 36em;
+  margin: 1.25em 0;
+  color: var(--ink);
+  line-height: 1.7;
+}
+button.wt-home-primary {
+  padding: 0.45em 1.2em;
+  background: linear-gradient(90deg, var(--blood), var(--ember));
+  border-color: var(--blood2);
+  color: var(--bone);
+  font-size: 1em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.wt-home-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65em;
+}
+.wt-home-created {
+  margin: 0;
+  color: var(--bone);
+  font-weight: 700;
+}
+.wt-home-url-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55em;
+  align-items: center;
+  padding: 0.75em;
+  border: 1px solid var(--edge);
+  background: rgba(0, 0, 0, 0.22);
+}
+.wt-home-url-card h2 {
+  margin: 0 0 0.25em;
+  color: var(--bone);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.85em;
+  letter-spacing: 0.06em;
+}
+.wt-home-url {
+  display: block;
+  color: var(--ember);
+  font-size: 0.82em;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+button.wt-home-copy {
+  align-self: center;
+  min-width: 5em;
+  font-weight: 700;
+}
+.wt-home-dm-url {
+  border-color: var(--blood2);
+}
+.wt-home-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 0.6em;
+  border-top: 1px dashed var(--edge2);
+  color: var(--bone);
+  font-size: 0.82em;
+  line-height: 1.55;
+}
+
+/* Public-demo warning (prep-public-release). Ember-edged rather than blood-red:
+ * it warns about a scheduled wipe, not a mistake the reader just made — the
+ * blood palette is reserved for the DM-URL secrecy notice. */
+.wt-home-playground {
+  margin: 0 0 1.25em;
+  padding: 0.75em;
+  border: 1px solid var(--ember);
+  border-left-width: 3px;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--bone);
+  line-height: 1.6;
+}
+.wt-home-playground strong {
+  display: block;
+  margin-bottom: 0.3em;
+  color: var(--ember);
+  letter-spacing: 0.06em;
+}
+.wt-home-playground p {
+  margin: 0;
+  font-size: 0.88em;
+}
+
+/* "What to do next" (design D7). Sits below the fold of the primary action —
+ * present for a first-timer, ignorable for a returning DM. */
+.wt-home-guide {
+  margin-top: 1.5em;
+  padding-top: 0.9em;
+  border-top: 1px dashed var(--edge2);
+}
+.wt-home-guide h2 {
+  margin: 0 0 0.5em;
+  color: var(--bone);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.85em;
+  letter-spacing: 0.06em;
+}
+.wt-home-guide ol {
+  margin: 0;
+  padding-left: 1.4em;
+  color: var(--ink);
+  font-size: 0.86em;
+  line-height: 1.7;
+}
+.wt-home-guide li + li {
+  margin-top: 0.35em;
+}
+
+/* ---- narrow screens (TTS tablet fallback): stack + normal scroll ---------- */
+/* Dark void behind the shell even when it leaves fixed positioning. */
+body:has(.wt) {
+  margin: 0;
+  background: #0e0a14;
+}
+
+/* Stacked one-column layout for narrow viewports (phones, the TTS tablet).
+ * `.wt-desktop` (the `?desktop` URL override, see GameBoard.desktopOverride)
+ * opts out of ALL of it — that client keeps the full grid at any width.
+ * :where() keeps every selector at its original specificity. */
+@media (max-width: 1200px) {
+  /* The landing page is a full-screen entry surface, not the scrollable War
+   * Table fallback. Keep its fixed viewport composition at tablet widths. */
+  .wt.wt-home {
+    position: fixed;
+    height: auto;
+    overflow: auto;
+  }
+  .wt:where(:not(.wt-desktop)) {
+    position: static;
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    overflow: visible;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-top {
+    grid-column: 1;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-ticker {
+    grid-column: 1;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-col {
+    overflow: visible;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-scroll {
+    max-height: 24em;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-dice {
+    overflow: visible;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-dice-cols {
+    max-height: 32em;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-confirm {
+    max-height: none;
+  }
+  :where(.wt:not(.wt-desktop)) .wt-batch {
+    max-height: none;
+  }
+}
+
+/* ?desktop forced mode: the full three-column grid, but with NORMAL PAGE
+ * SCROLL instead of the fixed-viewport shell — on the TTS tablet's short
+ * screen the fixed grid overflows and overflow:hidden eats the bottom with
+ * no way to scroll. Columns align-self:start so a tall center column (an
+ * expanded dice board) never stretches the side columns with it; the page
+ * just grows and scrolls. Inner scroll caps mirror the stacked mode's. */
+.wt.wt-desktop {
+  position: static;
+  height: auto;
+  overflow: visible;
+}
+.wt.wt-desktop .wt-col {
+  overflow: visible;
+  align-self: start;
+}
+.wt.wt-desktop .wt-scroll {
+  max-height: 24em;
+}
+.wt.wt-desktop .wt-dice {
+  overflow: visible;
+}
+.wt.wt-desktop .wt-dice-cols {
+  max-height: 32em;
+}
+.wt.wt-desktop .wt-confirm {
+  max-height: none;
+}
+.wt.wt-desktop .wt-batch {
+  max-height: none;
+}
+
+/* Card-write rejection (design D9). Blood-edged: unlike the demo banner, this
+ * reports something the reader just tried and didn't get. */
+.wt-card-error {
+  margin: 0 0 0.4em;
+  padding: 0.45em 0.6em;
+  border: 1px solid var(--blood2);
+  border-left-width: 3px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--bone);
+  font-size: 0.8em;
+  line-height: 1.55;
+}
+
+/* Licence + source, under everything else on the landing page. Quiet on
+ * purpose: it must be findable, not compete with Create Game. */
+.wt-home-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 1.2em;
+  padding-top: 0.7em;
+  border-top: 1px solid var(--edge);
+  color: var(--dim);
+  font-size: 0.75em;
+  line-height: 1.5;
+}
+.wt-home-foot a {
+  color: var(--ember);
+  text-decoration: underline;
+}

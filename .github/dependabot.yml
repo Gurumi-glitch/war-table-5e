@@ -1,0 +1,38 @@
+# Dependabot keeps dependencies and pinned action versions current.
+#
+# Why this matters for security: every workflow in this repo pins its GitHub
+# Actions to an exact commit (a SHA), which is safe but freezes them in time.
+# Dependabot opens a small, reviewable pull request whenever a newer version
+# exists -- for npm packages, and the
+# pinned Actions themselves -- so staying patched does not require manual work.
+# Updates are grouped so a week's bumps arrive as one PR per ecosystem, not a
+# flood of separate ones.
+
+version: 2
+updates:
+  # Frontend / tooling npm packages (package.json).
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      # Majors are grouped too: lockstep peers (react/react-dom and their
+      # @types) otherwise arrive as separate PRs that each fail `npm ci`
+      # because neither half satisfies the other's peer range (see #53/#54).
+      npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # The pinned action SHAs used across .github/workflows.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]

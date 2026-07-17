@@ -1,0 +1,730 @@
+/* Issue #9 — floating character-card window. Structure per
+ * docs/plans/ui-design-requirement-character-card.md is unchanged: abilities
+ * = left vertical rail, vitals = right vertical rail, saves+skills one
+ * vertical ledger with Resources/Recipes beside it, Noto Sans TC with bold
+ * weights for flavor. Palette re-themed to match warTable.css's "Ritual
+ * Sigil" violet-crimson identity (was parchment/leather) — every color below
+ * moved, no layout/grid/spacing property did.
+ * Text-role accent (`#e0729a`) vs background-role accent (`#9c3466`) are
+ * deliberately two different shades of the same violet-crimson family: the
+ * brighter one is used wherever a color has to double as legible body text
+ * on the dark card (contrast would fail at the medium shade), the medium one
+ * wherever it only needs to read as a border/glow/fill. */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+.ccw-card {
+  position: fixed;
+  width: min(900px, calc(100vw - 16px));
+  background: linear-gradient(170deg, #241a30, #1a1224 55%, #120c1a);
+  color: #d9d0e6;
+  border: 1px solid #4f3a63;
+  box-shadow:
+    0 0 0 1px rgba(156, 52, 102, 0.15),
+    0 0 0 5px rgba(156, 52, 102, 0.07),
+    0 14px 40px rgba(0, 0, 0, 0.75);
+  border-radius: 0;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.88em;
+}
+/* The read-only 職業特殊規則 pop-out (ClassRulesWindow) — a narrow single-column
+ * tab; overrides the full card's 900px width. */
+.ccw-card.ccw-rules {
+  width: min(460px, calc(100vw - 16px));
+}
+
+/* --- scroll caps (leather head + foot) ----------------------------------- */
+.ccw-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.3em 0.7em;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  background: linear-gradient(90deg, #1c1526, #4f3a63);
+  color: #ece4f5;
+  border-bottom: 2px solid #9c3466;
+  border-radius: 0;
+}
+.ccw-head:active {
+  cursor: grabbing;
+}
+.ccw-title {
+  flex: 1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 0.95em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ccw-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  justify-content: flex-end;
+  padding: 0.4em 0.8em;
+  background: linear-gradient(90deg, #1c1526, #4f3a63);
+  border-top: 2px solid #9c3466;
+  border-radius: 0;
+}
+.ccw-dirty {
+  margin-right: auto;
+  color: #e0729a;
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+/* Read-only demo card (design D3). Sits between the body and the foot so it is
+ * the last thing read before reaching for Save — and it points at Export,
+ * which is right there in the same row. */
+.ccw-readonly {
+  margin: 0;
+  padding: 0.5em 0.8em;
+  border-top: 1px solid #9c3466;
+  background: rgba(28, 21, 38, 0.9);
+  color: #ece4f5;
+  font-size: 0.78em;
+  line-height: 1.55;
+}
+.ccw-readonly strong {
+  color: #e0729a;
+  letter-spacing: 0.06em;
+}
+
+/* --- parchment body ------------------------------------------------------- */
+.ccw-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 0.7em 1em 0.9em;
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(156, 52, 102, 0.1), transparent 60%),
+    radial-gradient(120% 55% at 50% 100%, rgba(156, 52, 102, 0.12), transparent 60%);
+}
+.ccw-body::-webkit-scrollbar,
+.ccw-body *::-webkit-scrollbar {
+  width: 7px;
+}
+.ccw-body::-webkit-scrollbar-thumb,
+.ccw-body *::-webkit-scrollbar-thumb {
+  background: #5c4478;
+  border-radius: 4px;
+}
+
+/* Ink-on-paper field treatment: text inputs are underlines, textareas are
+ * faint paper panels, selects keep a light box (they need a visible boundary).
+ * Written with :where() so per-widget classes below can override freely. */
+.ccw-body :where(input:not([type='checkbox'])) {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(156, 52, 102, 0.35);
+  border-radius: 0;
+  color: #d9d0e6;
+  font-family: inherit;
+  font-size: 0.95em;
+  font-weight: 500;
+  padding: 0 0.15em 0.05em;
+  caret-color: #e0729a;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.ccw-body :where(textarea) {
+  background: rgba(236, 228, 245, 0.06);
+  border: 1px solid rgba(156, 52, 102, 0.3);
+  border-radius: 2px;
+  color: #d9d0e6;
+  font-family: inherit;
+  font-size: 0.92em;
+  font-weight: 500;
+  line-height: 1.55;
+  padding: 0.25em 0.45em;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  caret-color: #e0729a;
+}
+.ccw-body :where(select) {
+  background: rgba(236, 228, 245, 0.08);
+  border: 1px solid rgba(156, 52, 102, 0.35);
+  color: #d9d0e6;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 500;
+  border-radius: 2px;
+  max-width: 100%;
+}
+.ccw-body :where(input):focus-visible,
+.ccw-body :where(textarea):focus-visible,
+.ccw-body :where(select):focus-visible {
+  outline: none;
+  border-color: #e0729a;
+  box-shadow: 0 1px 0 #e0729a;
+}
+.ccw-body :where(input[type='checkbox']) {
+  accent-color: #e0729a;
+  margin: 0 0.15em 0 0;
+}
+/* number-input spinner arrows are the loudest "web form" tell — remove them */
+.ccw-body input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.ccw-body input[type='number']::-webkit-outer-spin-button,
+.ccw-body input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Quiet parchment buttons inside the body (add/remove/preset buttons of the
+ * embedded sheet sections + "+ section"); leather .ccw-btn stays for head/foot. */
+.ccw-body :where(button) {
+  background: transparent;
+  border: 1px solid rgba(156, 52, 102, 0.4);
+  color: #8f7fa8;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 500;
+  padding: 0.05em 0.5em;
+}
+.ccw-body :where(button):hover:not(:disabled) {
+  border-color: #e0729a;
+  color: #e0729a;
+  background: rgba(224, 114, 154, 0.08);
+}
+.ccw-body :where(button):disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ccw-body input,
+  .ccw-body textarea,
+  .ccw-body select,
+  .ccw-body button,
+  .ccw-btn {
+    transition: border-color 0.15s, box-shadow 0.15s, color 0.15s, background 0.15s;
+  }
+}
+
+.ccw-input {
+  width: 100%;
+}
+
+/* --- section heads: fleuron + fading rule --------------------------------- */
+.ccw-body h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  margin: 1em 0 0.45em;
+  border: none;
+  font-size: 0.8em;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #ece4f5;
+}
+.ccw-body h4::before {
+  content: '❖';
+  font-size: 0.9em;
+}
+.ccw-body h4::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(156, 52, 102, 0.5), rgba(156, 52, 102, 0));
+}
+
+/* --- masthead (identity) --------------------------------------------------- */
+.ccw-masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr);
+  gap: 0.3em 1.4em;
+  align-items: start;
+  padding: 0.2em 0 0.65em;
+  border-bottom: 3px double rgba(156, 52, 102, 0.5);
+  margin-bottom: 0.7em;
+}
+.ccw-names {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  padding-top: 0.35em;
+}
+.ccw-body .ccw-name-zh {
+  font-size: 1.45em;
+  font-weight: 900;
+  width: 100%;
+  border-bottom-color: transparent;
+}
+.ccw-body .ccw-name-en {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: #8f7fa8;
+  width: 100%;
+  border-bottom-color: transparent;
+  letter-spacing: 0.04em;
+}
+.ccw-body .ccw-name-zh:hover,
+.ccw-body .ccw-name-en:hover {
+  border-bottom-color: rgba(156, 52, 102, 0.4);
+}
+.ccw-idgrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35em 1em;
+}
+.ccw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12em;
+  min-width: 0;
+}
+.ccw-field-label {
+  font-size: 0.68em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #8f7fa8;
+  white-space: nowrap;
+}
+.ccw-field.span3 {
+  grid-column: span 3;
+}
+.ccw-field :where(textarea) {
+  font-size: 0.88em;
+  line-height: 1.4;
+}
+
+/* --- main grid: ability rail | saves+skills ledger | sheet | vitals rail ---- */
+.ccw-main {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr) minmax(0, 1.5fr) 8em;
+  gap: 0.4em 1.1em;
+  align-items: start;
+}
+.ccw-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+}
+
+/* stat blocks (abilities left, vitals right) — small, bold, no big plaques */
+.ccw-plaque,
+.ccw-ab-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05em;
+  padding: 0.25em 0.25em 0.2em;
+  border: 1px solid #4f3a63;
+  border-radius: 3px;
+  background: rgba(236, 228, 245, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(236, 228, 245, 0.08);
+  min-width: 0;
+}
+.ccw-plaque-label {
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #8f7fa8;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ccw-plaque-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05em;
+  width: 100%;
+  font-weight: 900;
+  font-size: 1.05em;
+  color: #d9d0e6;
+}
+.ccw-body .ccw-plaque-value input {
+  font-weight: 900;
+  font-size: 1em;
+  text-align: center;
+  border-bottom-color: transparent;
+  width: 2.3em;
+  padding: 0;
+}
+.ccw-body .ccw-plaque-value input.wide {
+  width: 100%;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+.ccw-body .ccw-plaque-value select {
+  border: none;
+  background: transparent;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-align: center;
+  color: #d9d0e6;
+}
+.ccw-plaque:hover input,
+.ccw-ab-block:hover input {
+  border-bottom-color: rgba(156, 52, 102, 0.4);
+}
+.ccw-plaque-plus {
+  font-size: 0.75em;
+  font-weight: 700;
+  color: #8f7fa8;
+}
+.ccw-plaque-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  width: 100%;
+  font-size: 0.66em;
+  color: #8f7fa8;
+}
+.ccw-body .ccw-plaque-cap input {
+  font-size: 1em;
+  text-align: center;
+  width: 100%;
+  color: #8f7fa8;
+  border-bottom-color: rgba(156, 52, 102, 0.25);
+}
+.ccw-eff {
+  color: #e0729a;
+  font-weight: 700;
+}
+.ccw-body .ccw-ab-key {
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #8f7fa8;
+  text-align: center;
+  border-bottom-color: transparent;
+  width: 100%;
+}
+.ccw-ab-nums {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  width: 100%;
+}
+.ccw-body .ccw-ab-score {
+  font-weight: 900;
+  font-size: 1.05em;
+  text-align: center;
+  border-bottom-color: transparent;
+  width: 1.9em;
+  color: #d9d0e6;
+  padding: 0;
+}
+.ccw-body .ccw-ab-mod {
+  font-size: 0.85em;
+  font-weight: 700;
+  color: #ece4f5;
+  text-align: center;
+  border-bottom-color: transparent;
+  width: 1.9em;
+  padding: 0;
+}
+
+/* --- saves + skills: one vertical ledger ------------------------------------ */
+.ccw-profcol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22em;
+}
+.ccw-prof-head {
+  font-size: 0.7em;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #ece4f5;
+  border-bottom: 1px solid rgba(156, 52, 102, 0.35);
+  padding-bottom: 0.2em;
+  margin-bottom: 0.15em;
+}
+.ccw-profcol .ccw-prof-head:not(:first-child) {
+  margin-top: 0.7em;
+}
+.ccw-prof-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.9em;
+}
+.ccw-prof-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  cursor: default;
+  white-space: nowrap;
+  color: #d9d0e6;
+  font-weight: 500;
+}
+.ccw-leader {
+  flex: 1;
+  min-width: 0.8em;
+  border-bottom: 1px dotted rgba(156, 52, 102, 0.4);
+  align-self: flex-end;
+  margin-bottom: 0.45em;
+}
+.ccw-body .ccw-prof-total {
+  flex: none;
+  width: 2.6em;
+  text-align: center;
+  font-weight: 700;
+}
+.ccw-body .ccw-prof-toggle {
+  flex: none;
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  border: 1px solid #5c4478;
+  background: rgba(236, 228, 245, 0.06);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.75em;
+  color: #8f7fa8;
+  line-height: 1;
+}
+.ccw-body .ccw-prof-toggle.prof-proficient {
+  background: #9c3466;
+  color: #f5e6ee;
+  border-color: #b8355c;
+}
+.ccw-body .ccw-prof-toggle.prof-expertise {
+  background: #5c1a3a;
+  color: #ece4f5;
+  border-color: #8a2a54;
+}
+
+/* --- embedded sheet sections (Resources / Recipes / Damage mods) ------------ */
+/* They live beside the saves/skills ledger; legends are bold section rules. */
+.ccw-sheetcol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ccw-body fieldset {
+  border: none;
+  border-top: 1px solid rgba(156, 52, 102, 0.35);
+  margin: 0.7em 0 0.3em;
+  padding: 0.3em 0 0.1em;
+  min-width: 0;
+}
+.ccw-sheetcol fieldset:first-child {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
+}
+.ccw-body legend {
+  font-size: 0.7em;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #ece4f5;
+  padding: 0 0.6em 0 0;
+}
+.ccw-body legend::before {
+  content: '❖ ';
+  font-size: 0.9em;
+}
+
+/* --- misc labeled row (attack note / gold) ----------------------------------- */
+.ccw-misc {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.3em 1.2em;
+  margin: 0.2em 0 0.5em;
+}
+
+/* --- note blocks (工具熟練 + 法術/特性 refs) --------------------------------- */
+.ccw-refs {
+  column-count: 2;
+  column-gap: 1.2em;
+  margin: 0.2em 0;
+}
+.ccw-ref {
+  break-inside: avoid;
+  margin: 0 0 0.55em;
+  border: 1px solid rgba(156, 52, 102, 0.3);
+  background: rgba(236, 228, 245, 0.04);
+  border-radius: 2px;
+  padding: 0.3em 0.5em 0.4em;
+}
+.ccw-ref-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+/* Ghost the per-note remove buttons until pointed at — 14 loud boxes otherwise. */
+.ccw-body .ccw-ref-head button {
+  border-color: transparent;
+  padding: 0 0.3em;
+}
+.ccw-body .ccw-ref-head button:hover {
+  border-color: rgba(224, 114, 154, 0.4);
+}
+.ccw-body .ccw-ref-title {
+  flex: 1;
+  font-weight: 700;
+  color: #ece4f5;
+  border-bottom-color: transparent;
+}
+.ccw-body .ccw-ref-title:hover {
+  border-bottom-color: rgba(156, 52, 102, 0.4);
+}
+.ccw-block-title {
+  font-weight: 700;
+  color: #ece4f5;
+  font-size: 0.95em;
+}
+.ccw-body .ccw-ref-body {
+  border: none;
+  background: transparent;
+  padding: 0.15em 0 0;
+  font-size: 0.88em;
+  line-height: 1.5;
+  margin-top: 0.15em;
+}
+.ccw-body .ccw-story {
+  min-height: 5.5em;
+}
+
+/* --- 職業特殊規則: same note-block look as 法術/特性, but ONE big single-column
+   row per entry (no title, no 2-column masonry) ------------------------------ */
+.ccw-class-rules {
+  margin: 0.2em 0;
+}
+.ccw-class-rule {
+  margin: 0 0 0.55em;
+  border: 1px solid rgba(156, 52, 102, 0.3);
+  background: rgba(236, 228, 245, 0.04);
+  border-radius: 2px;
+  padding: 0.3em 0.5em 0.4em;
+}
+.ccw-class-rule .ccw-ref-head {
+  justify-content: flex-end;
+}
+.ccw-class-rule .ccw-ref-body {
+  min-height: 4em;
+}
+
+/* --- Markdown preview toggle + rendered view (法術/特性 refs, 職業特殊規則) -- */
+.ccw-md-toggle {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: #8f7fa8;
+  background: transparent;
+  border: 1px solid rgba(156, 52, 102, 0.3);
+  border-radius: 2px;
+  padding: 0.05em 0.5em;
+  cursor: pointer;
+  margin-left: auto;
+}
+.ccw-md-toggle:hover {
+  border-color: rgba(224, 114, 154, 0.5);
+  color: #e0729a;
+}
+.ccw-md {
+  font-size: 0.88em;
+  line-height: 1.5;
+  padding: 0.15em 0.1em 0;
+}
+.ccw-md > *:first-child {
+  margin-top: 0;
+}
+.ccw-md > *:last-child {
+  margin-bottom: 0;
+}
+.ccw-md h1,
+.ccw-md h2,
+.ccw-md h3 {
+  color: #ece4f5;
+  font-weight: 700;
+  margin: 0.4em 0 0.2em;
+}
+.ccw-md h1 {
+  font-size: 1.15em;
+}
+.ccw-md h2 {
+  font-size: 1.05em;
+}
+.ccw-md h3 {
+  font-size: 1em;
+}
+.ccw-md p {
+  margin: 0.3em 0;
+}
+.ccw-md ul,
+.ccw-md ol {
+  margin: 0.3em 0;
+  padding-left: 1.3em;
+}
+.ccw-md li {
+  margin: 0.1em 0;
+}
+.ccw-md strong {
+  color: #ece4f5;
+}
+.ccw-md code {
+  font-family: monospace;
+  background: rgba(156, 52, 102, 0.15);
+  border-radius: 2px;
+  padding: 0 0.2em;
+}
+.ccw-md blockquote {
+  margin: 0.3em 0;
+  padding-left: 0.6em;
+  border-left: 2px solid rgba(156, 52, 102, 0.3);
+  color: #8f7fa8;
+}
+.ccw-md table {
+  border-collapse: collapse;
+  margin: 0.3em 0;
+  font-size: 0.95em;
+}
+.ccw-md th,
+.ccw-md td {
+  border: 1px solid rgba(156, 52, 102, 0.3);
+  padding: 0.15em 0.5em;
+}
+.ccw-md th {
+  background: rgba(156, 52, 102, 0.1);
+}
+
+/* --- buttons (head + foot) --------------------------------------------------- */
+.ccw-btn {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 700;
+  background: #251b32;
+  color: #ece4f5;
+  border: 1px solid #4f3a63;
+  padding: 0.25em 0.8em;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  border-radius: 0;
+  clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
+  font-size: 0.85em;
+}
+.ccw-btn:hover:not(:disabled) {
+  border-color: #e0729a;
+  box-shadow: 0 0 8px rgba(156, 52, 102, 0.3);
+}
+.ccw-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ccw-btn.blood {
+  color: #f3cdd2;
+  border-color: #a32638;
+  background: linear-gradient(160deg, #571620, #33101a);
+}
+.ccw-btn.blood:hover:not(:disabled) {
+  border-color: #c22a3a;
+  box-shadow: 0 0 10px rgba(184, 53, 92, 0.4);
+}
+
+/* Breathe room between a row's last text/input and its × remove button
+ * (resource, recipe, ref-section removes) so they don't sit flush. */
+.ccw-body button[aria-label^='remove'] {
+  margin-left: 0.5em;
+}

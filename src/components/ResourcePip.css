@@ -1,0 +1,298 @@
+/* Resource pips (docs/DESIGN.md). Scoped classes so this drops into the War
+ * Table shell (src/warTable.css's --panel/--edge/--bone/--ember tokens,
+ * available via CSS custom property inheritance since ResourceTile always
+ * renders inside GameBoard's `.wt` root) with sane fallbacks if rendered
+ * elsewhere (e.g. tests). Pip size is board-density-driven, not a fixed
+ * touch-target minimum — see DESIGN.md's revised "Touch sizing".
+ *
+ * IMPORTANT: every single-class selector below that targets a <button> is
+ * written as `button.foo`, not `.foo`. warTable.css's reset is
+ * `.wt :where(button)` — :where() zeroes its OWN specificity but the `.wt`
+ * ancestor still contributes one class, giving that selector specificity
+ * (0,1,0), which TIES a plain `.foo` button rule. Ties break on source
+ * order, and Vite's dev-server CSS injection order and its production
+ * Rollup bundle order are NOT guaranteed to match — this bit us once
+ * already (button chrome/padding leaking through in prod, pips squashed
+ * thin, only in the deployed build). `button.foo` has specificity (0,1,1),
+ * which always wins regardless of bundle order. Keep this pattern for any
+ * new button rule added here.
+ *
+ * The reset also chamfers every button's corners with `clip-path` (Ritual
+ * Sigil's "cut-gem" look). Every precisely-shaped button here (square pip,
+ * rotated-diamond armed pip, circular color swatch) sets its own
+ * `clip-path: none` for the same reason it sets its own border-radius —
+ * `button.foo`'s specificity wins the property either way, so the override
+ * is real, not cosmetic. */
+
+/* Pip + tile dimensions are the 2026-07-08 1.2× bump (user request: the
+ * whole resource block, icon included, reads too small at the table). */
+button.rpip {
+  width: 29px;
+  height: 29px;
+  min-width: 29px;
+  min-height: 29px;
+  padding: 4px;
+  border-radius: 4px;
+  clip-path: none;
+  border: 2px solid var(--edge2, #4f3a63);
+  background: var(--panel2, #251b32);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+button.rpip:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+button.rpip:disabled {
+  cursor: default;
+}
+
+.rpip__square {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+}
+
+/* Modifier classes need the same button.foo specificity bump as the base
+ * .rpip rule above — otherwise, now that the base rule is (0,1,1), these
+ * (0,1,0) modifiers could never win the properties they're meant to
+ * override (e.g. border-color), regardless of source order. */
+button.rpip--available {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+}
+
+button.rpip--armed {
+  border-color: var(--bone, #ece4f5);
+  transform: rotate(45deg);
+}
+
+button.rpip--armed:hover {
+  transform: rotate(45deg) scale(1.08);
+}
+
+.rpip--armed .rpip__square,
+.rpip--armed svg {
+  transform: rotate(-45deg);
+}
+
+button.rpip--spent {
+  border-color: var(--edge, #3a2a4a);
+  opacity: 0.5;
+  color: var(--edge2, #4f3a63);
+}
+
+.rpip--spent .rpip__square {
+  background: transparent !important;
+  border: 2px solid var(--edge2, #4f3a63);
+}
+
+/* ---- tile ---- */
+
+.rtile {
+  position: relative;
+  width: fit-content;
+  min-width: 5.4em;
+  border: 2px solid var(--edge, #3a2a4a);
+  background: var(--panel, #1c1526);
+  border-radius: 6px;
+  padding: 0.6em 0.5em 0.5em;
+  text-align: center;
+}
+
+button.rtile__fold {
+  position: absolute;
+  top: 0.2em;
+  left: 0.3em;
+  background: none;
+  border: none;
+  clip-path: none;
+  color: var(--dim, #7a6a90);
+  cursor: pointer;
+  font-size: 0.78em;
+  padding: 0;
+  line-height: 1;
+}
+
+button.rtile__fold:hover {
+  color: var(--ember, #9c3466);
+}
+
+button.rtile__gear {
+  position: absolute;
+  top: 0.2em;
+  right: 0.3em;
+  background: none;
+  border: none;
+  clip-path: none;
+  color: var(--dim, #7a6a90);
+  cursor: pointer;
+  font-size: 0.84em;
+  padding: 0;
+  line-height: 1;
+}
+
+button.rtile__gear:hover {
+  color: var(--ember, #9c3466);
+}
+
+.rtile__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.45em;
+  margin-bottom: 0.15em;
+}
+
+.rtile__icon-square {
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.rtile__label {
+  font-weight: 700;
+  color: var(--bone, #ece4f5);
+  font-size: 0.86em;
+  margin-bottom: 0.3em;
+}
+
+.rtile__pips {
+  display: grid;
+  gap: 0.25em;
+  justify-content: center;
+}
+
+/* ---- icon/color popover ---- */
+
+/* It's a floating popup, so it can afford real estate: sized so the icon
+ * glyphs are comfortably legible (2026-07-08 user request). */
+.rtile-popover {
+  position: fixed;
+  z-index: 50;
+  background: var(--panel2, #251b32);
+  border: 2px solid var(--ember, #9c3466);
+  border-radius: 6px;
+  padding: 0.8em;
+  width: 20em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+.rtile-popover__hint {
+  font-size: 0.75em;
+  color: var(--dim, #7a6a90);
+  margin: 0 0 0.4em;
+}
+
+/* Shared icon grid (~40+ icons) — scrolls internally so the popover/panel
+ * around it doesn't grow unbounded; color swatches + reset stay outside it. */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 0.3em;
+  margin-bottom: 0.5em;
+  max-height: 14em;
+  overflow-y: auto;
+}
+
+.icon-grid button {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  clip-path: none;
+  border: 1px solid var(--edge2, #4f3a63);
+  background: var(--panel, #1c1526);
+  color: var(--bone, #ece4f5);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-grid button[data-active="true"] {
+  border-color: var(--ember, #9c3466);
+}
+
+.icon-grid__square {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--bone, #ece4f5);
+  display: inline-block;
+}
+
+.rtile-popover__colors {
+  display: flex;
+  gap: 0.3em;
+  margin-bottom: 0.5em;
+}
+
+.rtile-popover__colors button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  clip-path: none;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.rtile-popover__colors button[data-active="true"] {
+  border-color: #fff;
+}
+
+button.rtile-popover__reset {
+  width: 100%;
+  font-size: 0.8em;
+  background: none;
+  border: 1px solid var(--edge2, #4f3a63);
+  color: var(--ink, #c9bcd6);
+  border-radius: 0;
+  /* No precise shape to protect here (unlike the pips/swatches above) — let
+   * it pick up the same chamfer as ordinary buttons. */
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
+  cursor: pointer;
+  padding: 0.2em;
+}
+
+/* ---- character-sheet icon-picker button (Step 5 entry point) ---- */
+
+button.ricon-btn {
+  width: 1.8em;
+  height: 1.8em;
+  padding: 2px;
+  border-radius: 0;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
+  border: 1px solid #4f3a63;
+  background: #1c1526;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.ricon-btn__square {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* Portaled to <body> and anchored via inline left/top from the button's
+ * rect — position: fixed so the sheet window's overflow can't clip it. */
+.ricon-popover {
+  position: fixed;
+  z-index: 50;
+  background: #251b32;
+  border: 2px solid #9c3466;
+  border-radius: 6px;
+  padding: 0.5em;
+  /* Shares .icon-grid with the board popover — same width so the larger
+   * icon cells lay out identically in both pickers. */
+  width: 20em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}

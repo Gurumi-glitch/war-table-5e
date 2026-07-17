@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/play/:token", "destination": "/" },
+    { "source": "/play/:token/:rest*", "destination": "/" },
+    { "source": "/dm/:token/:dmToken", "destination": "/" },
+    { "source": "/dm/:token/:dmToken/:rest*", "destination": "/" }
+  ]
+}

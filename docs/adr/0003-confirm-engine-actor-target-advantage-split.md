@@ -1,0 +1,17 @@
+# Actor and target advantage/disadvantage combine, never replace
+
+The Confirm engine tracks advantage/disadvantage for an attack roll as two independent components — the actor's own condition-driven state (`advantageSignalsFor(actorSpecs, "attack")`) and each target's own state (`advantageSignalsFor(targetSpecs, "attackAgainst")` for attacks, or `"save"` for DC recipes). A manual override on one side (`actorAdvOverride`, or a target's own `advOverride`) replaces only that side's component; it never replaces the combined net. The UI reflects this: the actor's toggle and each target row's toggle each show only their own component, never the combined result.
+
+**Cancellation happens once, at the end, over pooled raw signals** (amended 2026-07-13, see the incident below). Each side contributes *unresolved* `{hasAdv, hasDis}` signals; `combineAdvSignals` pools every source and applies 5e cancellation a single time to produce the net (`convex/combatLog.ts:509-514`, mirrored in `ConfirmPanel.tsx`). `combineAdv` (which cancels each side first, then merges the already-resolved `Advantage` values) still exists in `convex/modifiers.ts` but is **not** on the resolution path — do not reintroduce it there.
+
+Same split applies to DC (saving-throw) recipes, plus a per-target `saveMode` (`"damage"` vs `"hitOrMiss"`) for what a successful save means — damage-engine and toggle logic stay independent of it either way.
+
+The earlier design used one shared `advOverride` flag that replaced the whole combined net. This broke as soon as both sides had a real condition: setting a target's manual toggle would silently erase the actor's own condition-driven advantage (e.g. an actor Poisoned into disadvantage, wiped out because only the target's toggle was touched). Two playtest iterations ("Case 1" and "Case 1 Extend" in `docs/BattleCaseReference/Case.md`) surfaced this before the split model was adopted.
+
+## Incident — cancel-per-side loses information (#31, PR #55, 2026-07-13)
+
+The split model shipped with per-side cancellation: each side resolved to an `Advantage` first, then `combineAdv` merged the two results. That silently drops information. Two sources of advantage on the actor and one disadvantage on the target resolved to `advantage` + `disadvantage` → the actor's side cancelled *within itself* to nothing, and the net came out **advantage** where 5e RAW says neutral: any advantage plus any disadvantage cancels, regardless of how many of each or which side they came from. Advantage does not stack, so "2 adv" is not "more advantage" to spend against the target's disadvantage — but per-side resolution made it behave that way.
+
+The fix is structural, not a special case: keep signals raw until every source is present, then cancel once (`advantageSignalsFor` → `combineAdvSignals`). This is the **second** time this ADR's failure mode reached the table — the first was the shared-override erase above. Both have the same root: resolving a value before all its inputs are known. That is the thing to watch for when extending this area, not the specific flag or function that carried it.
+
+Consequence: any new adv/disadv-affecting feature must decide which side (`attack` vs `attackAgainst`/`save`) it belongs to and add a spec with that `stat`, rather than reaching for a single override — see `docs/agents/combat-resolution-architecture.md` for the full wiring (including the field-by-field payload-mapping trap in `Backstage.tsx`/`Frontstage.tsx` that has separately bitten this area twice).
