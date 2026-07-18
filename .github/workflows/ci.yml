@@ -52,7 +52,10 @@ jobs:
     steps:
       # `|| true`: removing a label the PR never had returns 404 — harmless, and
       # we don't want this cleanup step to redden an otherwise-green PR.
-      - run: gh pr edit "$PR" --remove-label needs-work || true
+      # add-label is a separate call so a 404 on remove can't skip it.
+      - run: |
+          gh pr edit "$PR" --remove-label needs-work || true
+          gh pr edit "$PR" --add-label waiting-for-review || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
