@@ -39,10 +39,12 @@ jobs:
     permissions:
       pull-requests: write   # 預設的 contents:read 不夠,貼 label 要這個
     steps:
-      - run: gh pr edit "$PR" --add-label needs-work
+      # --repo: this job has no checkout, so gh can't infer the repo from git.
+      - run: gh pr edit "$PR" --repo "$REPO" --add-label needs-work
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
   label-on-success:
     needs: test
     if: success() && github.event_name == 'pull_request'
@@ -54,8 +56,9 @@ jobs:
       # we don't want this cleanup step to redden an otherwise-green PR.
       # add-label is a separate call so a 404 on remove can't skip it.
       - run: |
-          gh pr edit "$PR" --remove-label needs-work || true
-          gh pr edit "$PR" --add-label waiting-for-review || true
+          gh pr edit "$PR" --repo "$REPO" --remove-label needs-work || true
+          gh pr edit "$PR" --repo "$REPO" --add-label waiting-for-review || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
