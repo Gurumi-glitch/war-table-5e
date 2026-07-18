@@ -18,7 +18,12 @@ export const en: Messages = {
   },
 
   home: {
-    lede: "Frontstage is the players' shared view; Backstage is where the DM keeps secrets and runs the battle.",
+    eyebrow: "A realtime fifth-edition combat workspace",
+    title: "Keep the rules close. Keep the ruling at the table.",
+    lede:
+      "War Table 5e keeps characters, enemies, dice, conditions, and combat results in one realtime state for the DM and players. The toolkit organizes and calculates; your table always decides.",
+    noLogin: "No accounts. Possessing a link joins the same shared battle table.",
+    linkModel: "Links are permissions: treat the Player URL as a collaborative entrance and the DM URL as a secret credential.",
     createGame: "Create Game",
     creating: "Creating game…",
     created: "Game created. Share the Player URL with your players; keep the DM URL to yourself.",
@@ -27,15 +32,98 @@ export const en: Messages = {
     copy: "Copy",
     copied: "Copied",
     copyFailed: "Copy failed",
+    copyPlayerAria: "Copy Player URL",
+    copyDmAria: "Copy DM URL",
     secrecyLabel: "Keep it secret: ",
     secrecyWarning: "the DM URL is the only credential — leaking it hands over DM control.",
-    guideTitle: "What to do next",
-    guideStep1:
-      "Create a game, send the Player URL to your players, and keep the DM URL to yourself — it is the only key.",
-    guideStep2:
-      "In the Characters strip, hit “➕ New card” to build a character, or “⬆ Import” to bring in a .dndcard.json file.",
-    guideStep3:
-      "Open a card and hit “⚔ Join battle”, then batch-roll the dice board, claim your dice, and Confirm to resolve.",
+    journeyTitle: "From an empty table to the first Confirm",
+    journey: [
+      {
+        label: "01",
+        title: "Create and share",
+        body: "Create a Game, share the Player URL with the table, and keep the DM URL private.",
+      },
+      {
+        label: "02",
+        title: "Prepare combatants",
+        body: "Load or import cards, choose Join battle, and let the DM spawn enemies from the DB.",
+      },
+      {
+        label: "03",
+        title: "Roll and Claim",
+        body: "Batch-roll the shared Dice Board and Claim the dice in the acting combatant's color.",
+      },
+      {
+        label: "04",
+        title: "Preview and Confirm",
+        body: "Choose a recipe or manual result, adjust targets and overrides, then commit the preview.",
+      },
+    ],
+    rolesTitle: "One Game, two views",
+    playerRoleTitle: "Frontstage · Player URL",
+    playerRoleBody:
+      "The collaborative table for characters, dice, conditions, notes, and Confirm. Enemy secrets are withheld by the backend.",
+    playerTrust: "The Player URL grants shared controls; it is not a read-only spectator link.",
+    dmRoleTitle: "Backstage · Secret DM URL",
+    dmRoleBody:
+      "The DM sees full enemy data and manages DM notes, the Enemy DB, spawning, and Scene maps. This secret URL is the only DM credential.",
+    loopTitle: "Dice → Claim → Confirm",
+    loopLede: "Everything stays a shared draft until Confirm; HP, resources, and effects have not changed yet.",
+    combatLoop: [
+      {
+        label: "DICE",
+        title: "Roll together",
+        body: "Reroll the board, one die type, or one die—and manually enter any value.",
+      },
+      {
+        label: "CLAIM",
+        title: "Claim by color",
+        body: "Dice belong to a combatant color, not to an account or a particular device.",
+      },
+      {
+        label: "CONFIRM",
+        title: "Review, then commit",
+        body: "Attacks, saves, damage, resources, and effects resolve at one confirmation point.",
+      },
+    ],
+    featuresTitle: "One table for the whole encounter",
+    features: [
+      {
+        title: "Combat Table",
+        body: "Initiative, HP/AC, temporary HP, conditions, notes, turns, and action reminders.",
+      },
+      {
+        title: "Character Cards",
+        body: "Full editable sheets, resources, recipes, Markdown reference, and import/export.",
+      },
+      {
+        title: "Enemy DB",
+        body: "SRD, original, and custom templates; every spawn becomes an independent instance.",
+      },
+      {
+        title: "Rules-aware Confirm",
+        body: "Attacks, saves, automatic actions, crits, damage types, healing, and resources.",
+      },
+      {
+        title: "Scene",
+        body: "Shared image maps, grids, pieces, and flavor dice; position is visual reference only.",
+      },
+    ],
+    manualTitle: "Automation never overrules the table",
+    manualBody:
+      "Edit dice and base values, override modifiers and DCs, force hits, failures, or damage, and apply effects after a warning. Rules support is a convenience layer, never a gatekeeper.",
+    realtimeTitle: "Designed for one shared physical table",
+    realtimeBody:
+      "Every open link receives realtime updates, including pending Battle drafts. A TTS tablet can open the Player URL as a lightweight tracker with no plugin required.",
+    limitsTitle: "Combat state, not a pretend full VTT",
+    limitsBody:
+      "Scene position never drives range, movement, line of sight, or combat math, and Tablet mode removes Dice, Confirm, and Map. Data retention is controlled by the deployment owner.",
+    fieldProcedure: "FIELD PROCEDURE",
+    accessModel: "ACCESS MODEL",
+    resolutionPipeline: "RESOLUTION PIPELINE",
+    toolkitIndex: "TOOLKIT INDEX",
+    tableAuthority: "TABLE AUTHORITY",
+    // Demo copy must only render behind the PLAYGROUND_MODE gate.
     playgroundTitle: "This is the public demo",
     playgroundBanner:
       "Demo data is wiped periodically. To keep a campaign going, open a character card and hit “Export” to save it as a file — you can import it back into any deployment later.",

@@ -26,7 +26,12 @@ export const zhTW = {
   },
 
   home: {
-    lede: "Frontstage 讓玩家共同查看與操作；Backstage 讓 DM 保管秘密並統籌戰局。",
+    eyebrow: "即時共享的第五版戰鬥工作台",
+    title: "把規則留在手邊，把裁決留在桌上。",
+    lede:
+      "War Table 5e 讓 DM 與玩家在同一個即時狀態中管理角色、敵人、骰子、條件與戰鬥結果。系統負責整理與計算；最後決定永遠屬於你們的桌。",
+    noLogin: "不需帳號。持有連結，就能加入同一張戰鬥桌。",
+    linkModel: "連結即權限：請把 Player URL 當共同操作入口，把 DM URL 當秘密憑證。",
     createGame: "建立遊戲",
     creating: "建立遊戲中…",
     created: "遊戲已建立。分享 Player URL 給玩家，僅自己保留 DM URL。",
@@ -35,18 +40,98 @@ export const zhTW = {
     copy: "複製",
     copied: "已複製",
     copyFailed: "複製失敗",
+    copyPlayerAria: "複製 Player URL",
+    copyDmAria: "複製 DM URL",
     secrecyLabel: "保密：",
     secrecyWarning: "DM URL 是唯一憑證；洩漏等同交出 DM 權限。",
-    // 導覽：建立遊戲之後該做什麼（prep-public-release）。第一次來的人拿到兩個
-    // URL 之後最容易卡在這裡——沒有帳號系統，所以沒有任何地方會提示下一步。
-    guideTitle: "接下來做什麼",
-    guideStep1:
-      "建立遊戲，把 Player URL 給玩家，DM URL 只留給自己（那把是唯一的鑰匙）。",
-    guideStep2:
-      "在「角色卡」列按「➕ 新增角卡」建卡，或按「⬆ 匯入」把 .dndcard.json 角卡檔帶進來。",
-    guideStep3:
-      "在角卡視窗按「⚔ 加入戰鬥」讓角色上場，用骰子板批次擲骰、認領骰子，再按 Confirm 結算。",
-    // Demo 站橫幅（PLAYGROUND_MODE 開啟時才出現）。
+    journeyTitle: "從空桌到第一個 Confirm",
+    journey: [
+      {
+        label: "01",
+        title: "建立與分享",
+        body: "建立 Game，把 Player URL 傳給同桌玩家；DM URL 只留給 DM。",
+      },
+      {
+        label: "02",
+        title: "準備參戰者",
+        body: "載入或匯入角色卡、按 Join battle；DM 從 Enemy DB spawn 敵人。",
+      },
+      {
+        label: "03",
+        title: "擲骰與 Claim",
+        body: "批次擲共享 Dice Board，依行動者顏色 Claim 需要的骰子。",
+      },
+      {
+        label: "04",
+        title: "預覽與 Confirm",
+        body: "選 recipe 或手動結果，調整目標、修正與傷害；確認預覽後才提交。",
+      },
+    ],
+    rolesTitle: "一個 Game，兩種視野",
+    playerRoleTitle: "Frontstage · Player URL",
+    playerRoleBody:
+      "玩家共同操作的戰鬥桌：角色、骰子、條件、notes 與 Confirm 都會即時同步；敵方秘密由後端扣留。",
+    playerTrust: "Player URL 是共同寫入權，不是唯讀觀戰連結。",
+    dmRoleTitle: "Backstage · Secret DM URL",
+    dmRoleBody:
+      "DM 可查看完整敵方資料、管理 DM notes、Enemy DB、spawn 與 Scene map。這條秘密網址就是唯一 DM 憑證。",
+    loopTitle: "Dice → Claim → Confirm",
+    loopLede: "Confirm 前都只是共享 draft；HP、資源與效果尚未改變。",
+    combatLoop: [
+      {
+        label: "DICE",
+        title: "一起擲",
+        body: "整盤、單一骰種或單顆重擲，也可直接輸入骰值。",
+      },
+      {
+        label: "CLAIM",
+        title: "依顏色領取",
+        body: "骰子屬於戰鬥者顏色，不綁定登入帳號或裝置。",
+      },
+      {
+        label: "CONFIRM",
+        title: "看過再提交",
+        body: "攻擊、豁免、傷害、資源與效果在單一確認點結算。",
+      },
+    ],
+    featuresTitle: "一張桌，涵蓋整場遭遇",
+    features: [
+      {
+        title: "Combat Table",
+        body: "先攻、HP／AC、臨時 HP、條件、notes、回合與行動經濟提醒。",
+      },
+      {
+        title: "Character Cards",
+        body: "完整可編輯角色卡、resources、recipes、Markdown 參考與匯入／匯出。",
+      },
+      {
+        title: "Enemy DB",
+        body: "SRD、原創與自訂模板；每次 spawn 都是可獨立修改的遭遇實例。",
+      },
+      {
+        title: "Rules-aware Confirm",
+        body: "支援攻擊、豁免、自動動作、爆擊、傷害類型、治療與資源。",
+      },
+      {
+        title: "Scene",
+        body: "共享圖片地圖、格線、pieces 與氣氛骰；位置只供視覺參考。",
+      },
+    ],
+    manualTitle: "自動化永遠不能否決桌上的裁決",
+    manualBody:
+      "直接改骰值與基礎數字、覆寫修正與 DC、強制命中／失敗／傷害，或在警告後仍套用效果。規則支援是便利層，不是守門人。",
+    realtimeTitle: "為同一張實體桌設計",
+    realtimeBody:
+      "所有開啟連結的裝置都收到即時更新，包含尚未 Confirm 的 Battle draft。TTS tablet 可開 Player URL 作輕量 tracker，不需要 plugin。",
+    limitsTitle: "專注戰鬥狀態，不假裝是完整 VTT",
+    limitsBody:
+      "Scene 不會把距離、移動、視線或位置送進戰鬥計算；Tablet 模式也會移除 Dice、Confirm 與 Map。資料保存策略由部署者控制。",
+    fieldProcedure: "FIELD PROCEDURE",
+    accessModel: "ACCESS MODEL",
+    resolutionPipeline: "RESOLUTION PIPELINE",
+    toolkitIndex: "TOOLKIT INDEX",
+    tableAuthority: "TABLE AUTHORITY",
+    // Demo 站資訊只能出現在 PLAYGROUND_MODE gate 內。
     playgroundTitle: "這是公開試玩站",
     playgroundBanner:
       "demo 資料會定期清空。想繼續戰役，記得在角卡視窗按「匯出」把角色存成檔案——之後在任何部署匯入回來都可以。",

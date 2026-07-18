@@ -1152,3 +1152,454 @@ body:has(.wt) {
   color: var(--ember);
   text-decoration: underline;
 }
+
+/* ---- Campaign Ledger landing page ---------------------------------------- */
+.wt.wt-home-ledger {
+  position: static;
+  display: block;
+  min-height: 100vh;
+  padding: 0;
+  overflow: visible;
+  font-size: clamp(16px, 1.3vw, 18px);
+}
+.wt-home-ledger h1,
+.wt-home-ledger h2,
+.wt-home-ledger h3,
+.wt-home-ledger p {
+  margin-top: 0;
+}
+.wt-home-ledger h1,
+.wt-home-ledger h2,
+.wt-home-ledger h3 {
+  color: var(--bone);
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.wt-home-ledger-layout {
+  display: grid;
+  grid-template-columns: minmax(16em, 20em) minmax(0, 1fr);
+  width: min(90rem, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+}
+.wt-home-ledger-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1.2em;
+  border-right: 1px solid var(--edge2);
+  background: rgba(14, 10, 20, 0.9);
+  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
+}
+.wt-home-ledger-rail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+  margin-bottom: 2.4em;
+}
+.wt-home-ledger-mark {
+  color: var(--bone);
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+button.wt-home-ledger-language {
+  min-height: 2.6em;
+  padding: 0.45em 0.8em;
+  white-space: nowrap;
+}
+.wt-home-ledger-eyebrow,
+.wt-home-ledger-kicker {
+  color: var(--ember);
+  font-size: 0.72em;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.wt-home-ledger-rail h1 {
+  margin: 0.2em 0 0.6em;
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
+  font-size: 1.75em;
+  letter-spacing: 0.08em;
+}
+.wt-home-ledger-rail > p:not(.wt-home-ledger-eyebrow) {
+  color: var(--ink);
+  font-size: 0.78em;
+  line-height: 1.65;
+}
+button.wt-home-ledger-create {
+  align-self: flex-start;
+  min-height: 3.25em;
+  margin-top: 0.8em;
+  padding: 0.7em 1.6em;
+  background: linear-gradient(90deg, var(--blood), var(--ember));
+  border-color: var(--blood2);
+  color: var(--bone);
+  font-size: 1em;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+.wt-home-ledger-ready {
+  margin: 0.8em 0 0;
+  padding: 0.7em 0.8em;
+  border-left: 3px solid var(--ember);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--bone);
+  font-size: 0.76em;
+  font-weight: 700;
+  line-height: 1.55;
+}
+.wt-home-ledger-playground {
+  margin: 1.2em 0 0;
+  padding: 0.8em;
+  border: 1px solid var(--ember);
+  border-left-width: 3px;
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--bone);
+  line-height: 1.55;
+}
+.wt-home-ledger-playground strong {
+  display: block;
+  margin-bottom: 0.25em;
+  color: var(--ember);
+}
+.wt-home-ledger-playground p {
+  margin-bottom: 0;
+  font-size: 0.74em;
+}
+.wt-home-ledger-rail nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid var(--edge);
+}
+.wt-home-ledger-rail nav a {
+  padding: 0.55em 0;
+  color: var(--dim);
+  font-size: 0.7em;
+  line-height: 1.4;
+  text-decoration: none;
+}
+.wt-home-ledger-rail nav a:hover,
+.wt-home-ledger-rail nav a:focus-visible {
+  color: var(--bone);
+}
+.wt-home-ledger-rail footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-top: auto;
+  padding-top: 1.2em;
+  color: var(--dim);
+  font-size: 0.64em;
+  line-height: 1.5;
+}
+.wt-home-ledger-rail footer a {
+  color: var(--ember);
+  text-decoration: underline;
+}
+.wt-home-ledger-content {
+  min-width: 0;
+  padding: clamp(1.4em, 4vw, 4em) clamp(1.2em, 5vw, 5em) 5em;
+}
+.wt-home-ledger-hero {
+  max-width: 58em;
+  margin-bottom: 4em;
+  padding-bottom: 2em;
+  border-bottom: 1px solid var(--edge2);
+}
+.wt-home-ledger-hero > span {
+  color: var(--ember);
+  font-size: 0.68em;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+.wt-home-ledger-hero h2 {
+  margin: 0.35em 0;
+  font-size: clamp(2em, 5vw, 4.4em);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+.wt-home-ledger-hero p {
+  color: var(--ink);
+  font-size: 1em;
+  line-height: 1.85;
+}
+.wt-home-ledger-hero strong {
+  display: block;
+  margin-top: 1.5em;
+  padding-left: 0.8em;
+  border-left: 3px solid var(--blood2);
+  color: var(--bone);
+  font-size: 0.8em;
+  line-height: 1.6;
+}
+.wt-home-ledger-section {
+  display: grid;
+  grid-template-columns: 3.5em minmax(0, 1fr);
+  gap: 1.5em;
+  padding: 2.2em 0;
+  border-bottom: 1px solid var(--edge);
+  scroll-margin-top: 1em;
+}
+.wt-home-ledger-section-number {
+  color: var(--blood2);
+  font-size: 1.5em;
+  font-weight: 900;
+  line-height: 1;
+}
+.wt-home-ledger-section h2 {
+  margin-bottom: 0.75em;
+  font-size: 1.35em;
+}
+.wt-home-ledger-links {
+  border-bottom-color: var(--blood2);
+}
+.wt-home-ledger-credentials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8em;
+}
+.wt-home-ledger-credentials > section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7em;
+  align-items: center;
+  min-width: 0;
+  padding: 1em;
+  border: 1px solid var(--edge2);
+  background: rgba(0, 0, 0, 0.28);
+}
+.wt-home-ledger-credentials h3 {
+  margin-bottom: 0.35em;
+  font-size: 0.86em;
+}
+.wt-home-ledger-credentials > section.wt-home-ledger-dm-url {
+  border-color: var(--blood2);
+  box-shadow: inset 0 0 32px rgba(122, 24, 48, 0.14);
+}
+.wt-home-ledger-url {
+  display: block;
+  color: var(--ember);
+  font-size: 0.72em;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+button.wt-home-ledger-copy {
+  min-width: 5.5em;
+  min-height: 2.7em;
+  padding: 0.45em 0.7em;
+  font-size: 0.76em;
+  font-weight: 800;
+}
+.wt-home-ledger-dm-url > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 0.6em;
+  border-top: 1px dashed var(--edge2);
+  color: var(--bone);
+  font-size: 0.72em;
+  line-height: 1.55;
+}
+.wt-home-ledger-dm-url > p strong {
+  margin-right: 0.35em;
+  color: var(--ember);
+}
+.wt-home-ledger-procedure {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wt-home-ledger-procedure li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.7em;
+  padding: 1em;
+  border: 1px solid var(--edge);
+  background: rgba(0, 0, 0, 0.18);
+}
+.wt-home-ledger-procedure li > span {
+  color: var(--ember);
+  font-size: 0.7em;
+  font-weight: 900;
+}
+.wt-home-ledger-procedure h3 {
+  margin-bottom: 0.35em;
+  font-size: 0.86em;
+}
+.wt-home-ledger-procedure p {
+  margin-bottom: 0;
+  color: var(--dim);
+  font-size: 0.71em;
+  line-height: 1.6;
+}
+.wt-home-ledger-roles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8em;
+}
+.wt-home-ledger-roles article {
+  min-width: 0;
+  padding: 1.1em;
+  border: 1px solid var(--edge2);
+  background: rgba(7, 4, 12, 0.48);
+}
+.wt-home-ledger-roles article > span {
+  color: var(--ember);
+  font-size: 0.68em;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+.wt-home-ledger-roles h3 {
+  margin: 0.55em 0;
+  font-size: 1em;
+}
+.wt-home-ledger-roles p,
+.wt-home-ledger-roles strong {
+  color: var(--ink);
+  font-size: 0.78em;
+  line-height: 1.65;
+}
+.wt-home-ledger-roles strong {
+  display: block;
+  color: var(--bone);
+}
+.wt-home-ledger-roles article.wt-home-ledger-role-dm {
+  border-color: var(--blood2);
+  box-shadow: inset 0 0 30px rgba(122, 24, 48, 0.16);
+}
+.wt-home-ledger-section > div > p:not(.wt-home-ledger-kicker) {
+  color: var(--dim);
+  font-size: 0.73em;
+  line-height: 1.65;
+}
+.wt-home-ledger-loop {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8em;
+  margin-top: 1em;
+}
+.wt-home-ledger-loop article {
+  padding: 1em;
+  border-left: 2px solid var(--edge2);
+  background: rgba(0, 0, 0, 0.16);
+}
+.wt-home-ledger-loop b {
+  color: var(--ember);
+  font-size: 0.66em;
+  letter-spacing: 0.12em;
+}
+.wt-home-ledger-loop h3 {
+  margin: 0.45em 0;
+  font-size: 0.86em;
+}
+.wt-home-ledger-loop p {
+  margin-bottom: 0;
+  color: var(--dim);
+  font-size: 0.73em;
+  line-height: 1.65;
+}
+.wt-home-ledger-index {
+  margin: 0;
+}
+.wt-home-ledger-index > div {
+  display: grid;
+  grid-template-columns: minmax(9em, 0.34fr) minmax(0, 1fr);
+  gap: 1em;
+  padding: 0.8em 0;
+  border-top: 1px solid var(--edge);
+}
+.wt-home-ledger-index dt {
+  color: var(--bone);
+  font-size: 0.78em;
+  font-weight: 800;
+}
+.wt-home-ledger-index dd {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.73em;
+  line-height: 1.6;
+}
+.wt-home-ledger-authority {
+  border-bottom-color: var(--blood2);
+}
+.wt-home-ledger-section.wt-home-ledger-authority > div:last-child > p {
+  max-width: 58em;
+  color: var(--ink);
+  font-size: 0.78em;
+  line-height: 1.7;
+}
+.wt-home-ledger-authority > div:last-child > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1em;
+  margin-top: 1.2em;
+}
+.wt-home-ledger-authority article {
+  padding: 1em;
+  border: 1px solid var(--edge);
+}
+.wt-home-ledger-authority h3 {
+  margin-bottom: 0.35em;
+  font-size: 0.84em;
+}
+.wt-home-ledger-authority article p {
+  margin-bottom: 0;
+  color: var(--dim);
+  font-size: 0.7em;
+  line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+  .wt-home-ledger-layout {
+    grid-template-columns: 1fr;
+  }
+  .wt-home-ledger-rail {
+    position: static;
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--edge2);
+  }
+  .wt-home-ledger-rail nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wt-home-ledger-rail footer {
+    margin-top: 1.5em;
+  }
+}
+
+@media (max-width: 680px) {
+  .wt-home-ledger-content {
+    padding-right: 0.8em;
+    padding-left: 0.8em;
+  }
+  .wt-home-ledger-credentials,
+  .wt-home-ledger-procedure,
+  .wt-home-ledger-roles,
+  .wt-home-ledger-loop,
+  .wt-home-ledger-authority > div:last-child > div {
+    grid-template-columns: 1fr;
+  }
+  .wt-home-ledger-section {
+    grid-template-columns: 2.3em minmax(0, 1fr);
+    gap: 0.7em;
+  }
+  .wt-home-ledger-index > div {
+    grid-template-columns: 1fr;
+    gap: 0.3em;
+  }
+  .wt-home-ledger-rail nav {
+    grid-template-columns: 1fr;
+  }
+}
