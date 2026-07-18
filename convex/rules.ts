@@ -356,6 +356,15 @@ export type HpWithTempResult = {
   hp: number;
   tempHp: number;
   breakdown: string;
+  /**
+   * SRD § Instant Death: when damage reduces you to 0 and the remaining damage
+   * (after temp absorption + bringing HP to 0) meets or exceeds your hit point
+   * maximum, you die. This is a NON-BLOCKING flag — the DM decides whether to
+   * apply death (forceOutcome kill) or just leave the combatant downed
+   * (ADR-0002: manual override always wins; ADR-0008: non-blocking warning
+   * pattern, like cantAct). Never auto-kills, never touches death saves (v2).
+   */
+  instantDeath: boolean;
 };
 
 /**
@@ -384,11 +393,19 @@ export function applyHpWithTemp(args: {
     const tempHp = args.tempHp - absorbed;
     const remaining = dmg - absorbed;
     const hp = Math.max(0, args.hp - remaining);
+    // SRD § Instant Death: overflow = damage left after HP hits 0. If that
+    // equals or exceeds maxHp, the target should die (DM decides; non-blocking).
+    const overflow = Math.max(0, remaining - args.hp);
+    const instantDeath = overflow >= args.maxHp;
     const tempNote = args.tempHp > 0 ? `${args.tempHp}temp → ${tempHp}temp, ` : "";
+    const deathNote = instantDeath
+      ? ` ⚠ 即死:剩餘傷害 ≥ maxHp(${args.maxHp})`
+      : "";
     return {
       hp,
       tempHp,
-      breakdown: `${tempNote}${args.hp} −${remaining} → ${hp}`,
+      breakdown: `${tempNote}${args.hp} −${remaining} → ${hp}${deathNote}`,
+      instantDeath,
     };
   }
   // Healing: cap at maxHp, leave temp untouched.
@@ -398,6 +415,7 @@ export function applyHpWithTemp(args: {
     hp,
     tempHp: args.tempHp,
     breakdown: `${args.hp} +${args.delta} → ${hp}${hp < uncapped ? " (capped)" : ""}`,
+    instantDeath: false,
   };
 }
 

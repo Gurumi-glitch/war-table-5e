@@ -264,6 +264,10 @@ export const confirm = mutation({
     // Structured twin of rollSummary (dual-write; see schema.ts `event`).
     let event: LogEvent | undefined;
     const applied: LogEffect[] = [];
+    // Non-blocking instant-death warnings (SRD § Instant Death). Collected
+    // from applyHp calls and surfaced in the log summary; the DM decides
+    // whether to actually kill (forceOutcome) — never auto-killed.
+    const deathWarnings: string[] = [];
     // Dice to release once the resolution commits (acting's claims + any save d20).
     const diceToRelease: any[] = [];
 
@@ -416,7 +420,7 @@ export const confirm = mutation({
         // 臨時生命值 absorbs damage first (PHB p.198); hp + tempHp resolve
         // together in one authority (applyHpWithTemp) so the clamp and the
         // buffer can't drift apart.
-        const { hp, tempHp } = applyHpWithTemp({
+        const { hp, tempHp, instantDeath } = applyHpWithTemp({
           hp: carrier.hp,
           maxHp: carrier.maxHp,
           tempHp: carrier.tempHp ?? 0,
@@ -424,6 +428,11 @@ export const confirm = mutation({
         });
         await ctx.db.patch(carrier._id, { hp, tempHp });
         applied.push({ combatantId: doc._id, name: doc.name, hpDelta });
+        if (instantDeath) {
+          deathWarnings.push(
+            `⚠ 即死:${doc.name} 剩餘傷害 ≥ maxHp(${carrier.maxHp})`,
+          );
+        }
       };
 
       // Darts (Magic Missile-style) is ORTHOGONAL to hitType — it decides where
@@ -1073,6 +1082,12 @@ export const confirm = mutation({
         .filter((d, i, arr) => arr.findIndex((x) => x._id === d._id) === i)
         .map((d: any) => ctx.db.patch(d._id, { claimedBy: undefined })),
     );
+
+    // Surface instant-death warnings in the log summary (non-blocking; the DM
+    // decides whether to apply death — never auto-killed).
+    if (deathWarnings.length > 0) {
+      rollSummary += ` · ${deathWarnings.join(", ")}`;
+    }
 
     // Append the log entry (append-only).
     await ctx.db.insert("combatLog", {

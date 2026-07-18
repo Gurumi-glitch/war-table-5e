@@ -279,6 +279,32 @@ test("applyHpWithTemp: temp HP is not capped by maxHp (can exceed it)", () => {
   expect(full.tempHp).toBe(7);
 });
 
+test("applyHpWithTemp: instant-death flag when overflow ≥ maxHp (SRD § Instant Death)", () => {
+  // 6/12 hp, no temp, take 18 → HP floors at 0, overflow 12 = maxHp 12 → die.
+  const die = applyHpWithTemp({ hp: 6, maxHp: 12, tempHp: 0, delta: -18 });
+  expect(die.hp).toBe(0);
+  expect(die.instantDeath).toBe(true);
+  expect(die.breakdown).toContain("即死");
+  expect(die.breakdown).toContain("maxHp(12)");
+
+  // 6/12, take 17 → overflow 11 < 12 → survive (no warning).
+  const survive = applyHpWithTemp({ hp: 6, maxHp: 12, tempHp: 0, delta: -17 });
+  expect(survive.hp).toBe(0);
+  expect(survive.instantDeath).toBe(false);
+  expect(survive.breakdown).not.toContain("即死");
+
+  // 6/12 + 5 temp, take 18 → temp absorbs 5, 13 hits HP, overflow 7 < 12 → survive.
+  const tempAbsorb = applyHpWithTemp({ hp: 6, maxHp: 12, tempHp: 5, delta: -18 });
+  expect(tempAbsorb.hp).toBe(0);
+  expect(tempAbsorb.tempHp).toBe(0);
+  expect(tempAbsorb.instantDeath).toBe(false);
+  expect(tempAbsorb.breakdown).not.toContain("即死");
+
+  // Healing never triggers instant death.
+  const heal = applyHpWithTemp({ hp: 0, maxHp: 12, tempHp: 0, delta: 5 });
+  expect(heal.instantDeath).toBe(false);
+});
+
 test("grantTempHp: does not stack — take the larger pool (PHB p.198)", () => {
   expect(grantTempHp(10, 12)).toBe(12); // new > old → take new
   expect(grantTempHp(10, 8)).toBe(10); // old > new → keep old
