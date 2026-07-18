@@ -115,6 +115,7 @@ test("update persists the structured saves/skills/spell fields", async () => {
       spellcastingAbility: "魅力",
       spellAttack: 4,
       spellDc: 12,
+      passivePerception: 10,
       saves: [{ key: "魅力", prof: true, total: 4 }],
       skills: [{ key: "說服", ability: "魅力", prof: "proficient", total: 4 }],
     },

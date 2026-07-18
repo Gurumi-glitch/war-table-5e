@@ -135,6 +135,7 @@ export function blankCardFields(t: Messages): Record<string, unknown> {
     spellcastingAbility: "",
     spellAttack: 0,
     spellDc: 0,
+    passivePerception: 10,
     attackText: "",
     saves: defaultSaves(mods, pb),
     skills: defaultSkills(mods, pb),

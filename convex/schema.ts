@@ -187,6 +187,10 @@ export default defineSchema({
     // Auto-calculated spell numbers (dndCalc); stored + editable like mods.
     spellAttack: v.optional(v.number()),
     spellDc: v.optional(v.number()),
+    // Passive perception = 10 + Perception total (SRD § Passive Checks); stored
+    // + editable like the spell numbers. Optional so existing cards validate;
+    // readers default to 10 and the card window recomputes from skills on open.
+    passivePerception: v.optional(v.number()),
     attackText: v.string(),
     // Structured saves/skills (dndCalc auto-calc): one row per save (6) /
     // skill (18) with a proficiency flag/state + computed total. Optional —

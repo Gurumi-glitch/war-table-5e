@@ -105,6 +105,7 @@ export const DEMO_SEED: readonly SeedCharacter[] = [
       spellcastingAbility: "",
       spellAttack: 0,
       spellDc: 0,
+      passivePerception: 13, // 10 + WIS 1 + 察覺 proficient 2
       attackText: "長劍 +5（1d8+3 揮砍）· 重弩 +3（1d10+1 穿刺）",
       saves: saves(fighterAbilities, 2, ["力量", "體質"]),
       skills: skills(fighterAbilities, 2, [
@@ -205,6 +206,7 @@ export const DEMO_SEED: readonly SeedCharacter[] = [
       spellcastingAbility: "智力",
       spellAttack: 5,
       spellDc: 13,
+      passivePerception: 11, // 10 + WIS 1 (察覺 not proficient)
       attackText: "法術攻擊 +5 · 法術 DC 13 · 木杖 +0（1d6−1 鈍擊）",
       saves: saves(wizardAbilities, 2, ["智力", "感知"]),
       skills: skills(wizardAbilities, 2, [
@@ -338,6 +340,7 @@ export const DEMO_SEED: readonly SeedCharacter[] = [
       spellcastingAbility: "感知",
       spellAttack: 5,
       spellDc: 13,
+      passivePerception: 13, // 10 + WIS 3 (察覺 not proficient)
       attackText: "戰鎚 +3（1d8+1 鈍擊）· 法術攻擊 +5 · 法術 DC 13",
       saves: saves(clericAbilities, 2, ["感知", "魅力"]),
       skills: skills(clericAbilities, 2, [
@@ -455,6 +458,7 @@ export const DEMO_SEED: readonly SeedCharacter[] = [
       spellcastingAbility: "",
       spellAttack: 0,
       spellDc: 0,
+      passivePerception: 14, // 10 + WIS 2 + 察覺 proficient 2
       attackText: "短劍 +5（1d6+3 穿刺，靈巧）· 短弓 +5（1d6+3 穿刺）",
       saves: saves(rogueAbilities, 2, ["敏捷", "智力"]),
       skills: skills(rogueAbilities, 2, [

@@ -144,6 +144,7 @@ function fullCardFields() {
     spellcastingAbility: "魅力",
     spellAttack: 4,
     spellDc: 12,
+    passivePerception: 10,
     // 攻擊 · 熟練 · 財產 — the section the card shows under one header but
     // stores as three separate fields.
     attackText: "武器命中 +5 ・ 法術命中 +4",

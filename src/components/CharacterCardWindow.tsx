@@ -26,6 +26,8 @@ import {
   modFor,
   modByKey,
   nextSkillProf,
+  passivePerceptionFn,
+  perceptionTotalIn,
   pbForLevel,
   recalcCard,
   saveTotal,
@@ -114,6 +116,7 @@ const SCALAR_FIELDS = [
   "spellcastingAbility",
   "spellAttack",
   "spellDc",
+  "passivePerception",
   "attackText",
   "toolsText",
   "goldText",
@@ -131,6 +134,7 @@ const NUMBER_FIELDS = new Set<ScalarField>([
   "pb",
   "spellAttack",
   "spellDc",
+  "passivePerception",
 ]);
 
 type Draft = {
@@ -153,17 +157,25 @@ function snapshot(c: CharacterView): Draft {
   const pb = c.pb ?? 0;
   // Be defensive against deploy skew: the backend may briefly serve an older
   // card shape without the structured saves/skills/spell fields (undefined).
-  // Default them from the dndCalc templates so the card never crashes.
+  // Default them from the dndCalc templates so the card never crashes. A
+  // partial list (a seed storing only proficient rows) is overlaid on the
+  // full template instead of replacing it, so the seed's proficiency survives.
   const savesSrc = c.saves ?? [];
   const saves =
     savesSrc.length === 6
       ? savesSrc.map((s) => ({ ...s }))
-      : defaultSaves(mods, pb);
+      : overlayRows(defaultSaves(mods, pb), savesSrc);
   const skillsSrc = c.skills ?? [];
   const skills =
     skillsSrc.length === SKILLS.length
       ? skillsSrc.map((s) => ({ ...s }))
-      : defaultSkills(mods, pb);
+      : overlayRows(defaultSkills(mods, pb), skillsSrc);
+  // A migrated card may lack passivePerception; derive it from the (possibly
+  // defaulted) Perception row so the plaque shows the right number before the
+  // first Save persists it.
+  const passiveDefault = passivePerceptionFn(
+    perceptionTotalIn(skills, mods["感知"] ?? 0),
+  );
   return {
     scalars: {
       player: c.player ?? "",
@@ -184,6 +196,7 @@ function snapshot(c: CharacterView): Draft {
       spellcastingAbility: c.spellcastingAbility ?? "",
       spellAttack: String(c.spellAttack ?? 0),
       spellDc: String(c.spellDc ?? 0),
+      passivePerception: String(c.passivePerception ?? passiveDefault),
       attackText: c.attackText ?? "",
       toolsText: c.toolsText ?? "",
       goldText: c.goldText ?? "",
@@ -201,6 +214,26 @@ function snapshot(c: CharacterView): Draft {
 function sameArr<T>(a: T[], b: T[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((x, i) => JSON.stringify(x) === JSON.stringify(b[i]));
+}
+
+/** Passive perception string from a skill list + abilities (10 + Perception total). */
+function passiveFrom(skills: SkillRow[], abilities: AbilityView[]): string {
+  return String(
+    passivePerceptionFn(perceptionTotalIn(skills, modByKey(abilities)["感知"] ?? 0)),
+  );
+}
+
+/**
+ * Overlay a partial seed/migrated row list onto the full default template.
+ * Seeds store only the proficient rows (saves/skills); the card fills the rest
+ * from the dndCalc defaults. Replacing the whole list with defaults (the old
+ * behavior) silently dropped the seed's proficiency — so a demo fighter's
+ * 察覺 showed non-proficient and 重算 downgraded its passive perception.
+ * Overlay keeps every default row, swapping in any row the seed provides.
+ */
+function overlayRows<T extends { key: string }>(base: T[], over: T[]): T[] {
+  const byKey = new Map(over.map((r) => [r.key, r]));
+  return base.map((r) => (byKey.has(r.key) ? { ...byKey.get(r.key)! } : r));
 }
 
 export function CharacterCardWindow({
@@ -290,6 +323,7 @@ export function CharacterCardWindow({
     c.spellcastingAbility,
     c.spellAttack,
     c.spellDc,
+    c.passivePerception,
     c.attackText,
     c.toolsText,
     c.goldText,
@@ -333,6 +367,10 @@ export function CharacterCardWindow({
       scalars.spellAttack = String(spellAttackFn(mod, pb));
       scalars.spellDc = String(spellDcFn(mod, pb));
     }
+    // Passive perception tracks the Perception (察覺) skill, which is governed
+    // by 感知 — so a WIS-mod change re-derives it. A manual override sticks
+    // until WIS/perception/prof changes again (same ethos as spellAttack).
+    if (key === "感知") scalars.passivePerception = passiveFrom(skills, d.abilities);
     return { saves, skills, scalars };
   };
 
@@ -390,6 +428,9 @@ export function CharacterCardWindow({
       scalars.spellAttack = String(spellAttackFn(sm, pb));
       scalars.spellDc = String(spellDcFn(sm, pb));
     }
+    // PB feeds the Perception total (proficient/expertise bonus), so passive
+    // perception follows the PB cascade too.
+    scalars.passivePerception = passiveFrom(skills, d.abilities);
     return { ...d, scalars, saves, skills };
   };
 
@@ -423,10 +464,13 @@ export function CharacterCardWindow({
       const prof = nextSkillProf(s.prof);
       const mod = modByKey(d.abilities)[s.ability] ?? 0;
       const total = skillTotal(mod, Number(d.scalars.pb) || 0, prof);
-      return {
-        ...d,
-        skills: d.skills.map((x, idx) => (idx === i ? { ...x, prof, total } : x)),
-      };
+      const skills = d.skills.map((x, idx) => (idx === i ? { ...x, prof, total } : x));
+      // Cycling Perception proficiency changes its total → re-derive passive.
+      const scalars =
+        s.key === "察覺"
+          ? { ...d.scalars, passivePerception: passiveFrom(skills, d.abilities) }
+          : d.scalars;
+      return { ...d, skills, scalars };
     });
 
   /** Manual override of a single save/skill total (no recalc). */
@@ -436,10 +480,15 @@ export function CharacterCardWindow({
       saves: d.saves.map((x, idx) => (idx === i ? { ...x, total } : x)),
     }));
   const setSkillTotal = (i: number, total: number) =>
-    setDraft((d) => ({
-      ...d,
-      skills: d.skills.map((x, idx) => (idx === i ? { ...x, total } : x)),
-    }));
+    setDraft((d) => {
+      const skills = d.skills.map((x, idx) => (idx === i ? { ...x, total } : x));
+      // A manual Perception total override is a perception change → passive follows.
+      const scalars =
+        d.skills[i].key === "察覺"
+          ? { ...d.scalars, passivePerception: passiveFrom(skills, d.abilities) }
+          : d.scalars;
+      return { ...d, skills, scalars };
+    });
 
   const setSpellcastingAbility = (a: string) =>
     setDraft((d) => {
@@ -470,6 +519,7 @@ export function CharacterCardWindow({
         spellcastingAbility: d.scalars.spellcastingAbility,
         spellAttack: Number(d.scalars.spellAttack) || 0,
         spellDc: Number(d.scalars.spellDc) || 0,
+        passivePerception: Number(d.scalars.passivePerception) || 0,
       });
       return {
         ...d,
@@ -482,6 +532,7 @@ export function CharacterCardWindow({
           initBonus: String(card.initBonus),
           spellAttack: String(card.spellAttack),
           spellDc: String(card.spellDc),
+          passivePerception: String(card.passivePerception),
         },
       };
     });
@@ -783,6 +834,14 @@ export function CharacterCardWindow({
                   value={draft.scalars.spellDc}
                   onChange={(e) => setScalar("spellDc", e.target.value)}
                   aria-label="spell dc"
+                />
+              </Plaque>
+              <Plaque label={t.card.passivePerception}>
+                <input
+                  value={draft.scalars.passivePerception}
+                  onChange={(e) => setScalar("passivePerception", e.target.value)}
+                  aria-label="passive perception"
+                  title={t.card.passiveAutoTitle}
                 />
               </Plaque>
             </div>

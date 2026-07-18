@@ -41,6 +41,7 @@ function card(overrides: Partial<CharacterView> = {}): CharacterView {
     spellcastingAbility: "魅力",
     spellAttack: 5,
     spellDc: 13,
+    passivePerception: 13,
     attackText: "命中 +5",
     saves: [{ key: "力量", prof: true, total: 5 }],
     skills: [{ key: "運動", ability: "力量", prof: "proficient", total: 5 }],

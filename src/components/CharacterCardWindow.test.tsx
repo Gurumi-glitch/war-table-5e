@@ -55,6 +55,7 @@ const character: CharacterView = {
   spellcastingAbility: "",
   spellAttack: 0,
   spellDc: 0,
+  passivePerception: 10,
   attackText: "命中 +5",
   saves: [],
   skills: [],
@@ -391,6 +392,39 @@ test("重算 recomputes a manually-overridden total back to the formula", () => 
   // Recalc resets it: STR mod 3, not proficient → 3.
   fireEvent.click(screen.getByLabelText("recalc"));
   expect((screen.getByLabelText("save 0 total") as HTMLInputElement).value).toBe("3");
+});
+
+test("a partial seed skill list is overlaid on the template, not replaced (察覺 keeps proficiency)", () => {
+  // Seeds store only proficient skill rows; the card must overlay them on the
+  // 18-row template instead of replacing it. Otherwise 察覺 shows non-proficient
+  // and passive perception downgrades on recalc. (WIS 16 → +3, PB 2.)
+  const seedChar: CharacterView = {
+    ...character,
+    passivePerception: 15, // 10 + WIS 3 + PB 2 (察覺 proficient)
+    skills: [{ key: "察覺", ability: "感知", prof: "proficient", total: 5 }],
+  };
+  render(<CharacterCardWindow {...baseProps({ character: seedChar })} />);
+  // 察覺 (skill 12) keeps its overlaid proficient total (5), not the
+  // non-proficient default (WIS mod 3).
+  expect((screen.getByLabelText("skill 12 total") as HTMLInputElement).value).toBe("5");
+  expect((screen.getByLabelText("passive perception") as HTMLInputElement).value).toBe("15");
+  // Recalc re-derives from the now-correct overlaid skills → no downgrade.
+  fireEvent.click(screen.getByLabelText("recalc"));
+  expect((screen.getByLabelText("passive perception") as HTMLInputElement).value).toBe("15");
+});
+
+test("a card without a stored passivePerception auto-derives on open (no manual recalc)", () => {
+  // Existing cards pre-date the field; the plaque must show the derived value
+  // on open, not 10. WIS 16 (+3), 察覺 proficient (total 5) → passive 15.
+  // (If toCharacterView defaulted absent → 10, the snapshot's `?? passiveDefault`
+  // would never fire and this would show 10 until a manual 重算.)
+  const char: CharacterView = {
+    ...character,
+    passivePerception: undefined,
+    skills: [{ key: "察覺", ability: "感知", prof: "proficient", total: 5 }],
+  };
+  render(<CharacterCardWindow {...baseProps({ character: char })} />);
+  expect((screen.getByLabelText("passive perception") as HTMLInputElement).value).toBe("15");
 });
 
 /**

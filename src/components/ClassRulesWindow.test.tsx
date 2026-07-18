@@ -32,6 +32,7 @@ const character: CharacterView = {
   spellcastingAbility: "",
   spellAttack: 0,
   spellDc: 0,
+  passivePerception: 10,
   attackText: "",
   saves: [],
   skills: [],

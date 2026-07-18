@@ -107,11 +107,36 @@ export function spellDcFn(spellMod: number, pb: number): number {
   return 8 + spellMod + pb;
 }
 
+/**
+ * Passive perception = 10 + Perception skill total (SRD § Passive Checks). The
+ * Perception total already folds in the WIS mod + proficiency/expertise bonus,
+ * so this is a single addition. adv/disadv ±5 is a manual note (this system's
+ * adv is combat-scoped, not passive-perception-scoped) — left out per (B) 修正 4.
+ */
+export function passivePerceptionFn(perceptionTotal: number): number {
+  return 10 + perceptionTotal;
+}
+
 /** Map of ability key → derived mod, for a set of ability rows. */
 export function modByKey(abilities: AbilityRow[]): Record<string, number> {
   const m: Record<string, number> = {};
   for (const a of abilities) m[a.key] = modFor(a.score);
   return m;
+}
+
+/** The Perception skill's zh key (governs passive perception). */
+export const PERCEPTION_KEY = "察覺";
+
+/**
+ * Perception skill total from a skill list, falling back to the WIS mod when
+ * the row is absent (defensive — the default template always includes 察覺).
+ * Used to derive passive perception in `recalcCard` and the card window.
+ */
+export function perceptionTotalIn(
+  skills: ReadonlyArray<SkillRow>,
+  wisMod: number,
+): number {
+  return skills.find((s) => s.key === PERCEPTION_KEY)?.total ?? wisMod;
 }
 
 /** Build the default 6-save template (all non-proficient), totals from mods+pb. */
@@ -155,6 +180,7 @@ export type CalcCard = {
   spellcastingAbility: string; // "" = none, else a zh ability key
   spellAttack: number;
   spellDc: number;
+  passivePerception: number;
 };
 
 /** Recompute every derived value from inputs. Does not mutate the argument. */
@@ -174,6 +200,9 @@ export function recalcCard(card: CalcCard): CalcCard {
     ? mods[card.spellcastingAbility] ?? 0
     : 0;
   const has = card.spellcastingAbility !== "";
+  const passivePerception = passivePerceptionFn(
+    perceptionTotalIn(skills, mods["感知"] ?? 0),
+  );
   return {
     ...card,
     abilities: card.abilities.map((a) => ({ ...a, mod: modFor(a.score) })),
@@ -183,5 +212,6 @@ export function recalcCard(card: CalcCard): CalcCard {
     skills,
     spellAttack: has ? spellAttackFn(spellMod, pb) : 0,
     spellDc: has ? spellDcFn(spellMod, pb) : 0,
+    passivePerception,
   };
 }

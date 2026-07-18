@@ -412,6 +412,8 @@ export const en: Messages = {
     noneOption: "None",
     spellAttack: "Spell attack",
     spellDc: "Spell DC",
+    passivePerception: "Passive Perception",
+    passiveAutoTitle: "auto = 10 + Perception total, overridable",
     attacksProfsWealth: "Attacks · Proficiencies · Wealth",
     attackNotes: "Attack notes",
     money: "Money",
