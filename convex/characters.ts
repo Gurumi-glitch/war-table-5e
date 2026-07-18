@@ -81,7 +81,12 @@ export type CharacterView = {
   spellcastingAbility: string; // "" = none
   spellAttack: number;
   spellDc: number;
-  passivePerception: number;
+  /** Optional so cards predating the field (or a migrated card) arrive as
+   *  `undefined` — the card window then auto-derives it from the Perception
+   *  skill total. Defaulting to 10 here would mask that derivation (10 is
+   *  non-nullish, so the snapshot's `?? passiveDefault` would never fire and
+   *  every existing card would show 10 until a manual 重算). */
+  passivePerception?: number;
   attackText: string;
   saves: SaveView[];
   skills: SkillView[];
@@ -242,7 +247,9 @@ export function toCharacterView(
     spellcastingAbility: c.spellcastingAbility ?? "",
     spellAttack: c.spellAttack ?? 0,
     spellDc: c.spellDc ?? 0,
-    passivePerception: c.passivePerception ?? 10,
+    // Pass through undefined when absent (see CharacterView.passivePerception) —
+    // the card window derives from skills. Do NOT default to 10 here.
+    passivePerception: c.passivePerception,
     attackText: c.attackText,
     // Migrated / manual cards may lack structured saves/skills — default to
     // empty; the card window builds them from the dndCalc templates on open.

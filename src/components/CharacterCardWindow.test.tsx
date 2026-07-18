@@ -413,6 +413,20 @@ test("a partial seed skill list is overlaid on the template, not replaced (察�
   expect((screen.getByLabelText("passive perception") as HTMLInputElement).value).toBe("15");
 });
 
+test("a card without a stored passivePerception auto-derives on open (no manual recalc)", () => {
+  // Existing cards pre-date the field; the plaque must show the derived value
+  // on open, not 10. WIS 16 (+3), 察覺 proficient (total 5) → passive 15.
+  // (If toCharacterView defaulted absent → 10, the snapshot's `?? passiveDefault`
+  // would never fire and this would show 10 until a manual 重算.)
+  const char: CharacterView = {
+    ...character,
+    passivePerception: undefined,
+    skills: [{ key: "察覺", ability: "感知", prof: "proficient", total: 5 }],
+  };
+  render(<CharacterCardWindow {...baseProps({ character: char })} />);
+  expect((screen.getByLabelText("passive perception") as HTMLInputElement).value).toBe("15");
+});
+
 /**
  * Export / read-only demo cards (prep-public-release, design D3/D4).
  */
