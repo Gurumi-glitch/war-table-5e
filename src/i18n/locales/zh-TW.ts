@@ -28,6 +28,13 @@ export const zhTW = {
   home: {
     eyebrow: "即時共享的第五版戰鬥工作台",
     title: "把規則留在手邊，把裁決留在桌上。",
+    titleLine1: "把規則留在手邊，",
+    titleLine2: "把裁決留在桌上。",
+    navFlow: "流程",
+    navRoles: "角色",
+    navFeatures: "功能",
+    navAuthority: "裁決權",
+    accordionHint: "點擊展開每項功能",
     lede:
       "War Table 5e 讓 DM 與玩家在同一個即時狀態中管理角色、敵人、骰子、條件與戰鬥結果。系統負責整理與計算；最後決定永遠屬於你們的桌。",
     noLogin: "不需帳號。持有連結，就能加入同一張戰鬥桌。",

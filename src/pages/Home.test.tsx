@@ -42,38 +42,47 @@ test("introduces the toolkit and its manual-first combat workflow", () => {
 
   expect(screen.getByRole("heading", { name: "把規則留在手邊，把裁決留在桌上。" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "從空桌到第一個 Confirm" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Dice → Claim → Confirm" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "一個 Game，兩種視野" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "自動化永遠不能否決桌上的裁決" })).toBeInTheDocument();
-  expect(screen.getAllByRole("listitem")).toHaveLength(4);
+  expect(screen.getByText("DICE · 一起擲")).toBeInTheDocument();
+  // 4 journey steps + 3 dice→claim→confirm chips.
+  expect(screen.getAllByRole("listitem")).toHaveLength(7);
 });
 
 test("creates a game with copyable Player and secret DM URLs", async () => {
-  renderHome({ locale: true });
+  vi.useFakeTimers();
+  try {
+    renderHome({ locale: true });
 
-  await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "建立遊戲" }));
-  });
-  expect(createGame).toHaveBeenCalledWith({});
+    // The ritual runs at least 1.2s even once the mutation has resolved.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200);
+    });
+    expect(createGame).toHaveBeenCalledWith({});
 
-  const playerUrl = `${window.location.origin}/play/player`;
-  const dmUrl = `${window.location.origin}/dm/player/secret`;
-  const playerCopy = await screen.findByRole("button", { name: "複製 Player URL" });
-  const dmCopy = screen.getByRole("button", { name: "複製 DM URL" });
-  expect(screen.getByRole("link", { name: playerUrl })).toHaveAttribute("href", playerUrl);
-  expect(screen.getByRole("link", { name: dmUrl })).toHaveAttribute("href", dmUrl);
-  expect(screen.getByText("DM URL 是唯一憑證", { exact: false })).toBeInTheDocument();
+    const playerUrl = `${window.location.origin}/play/player`;
+    const dmUrl = `${window.location.origin}/dm/player/secret`;
+    const playerCopy = screen.getByRole("button", { name: "複製 Player URL" });
+    const dmCopy = screen.getByRole("button", { name: "複製 DM URL" });
+    expect(screen.getByRole("link", { name: playerUrl })).toHaveAttribute("href", playerUrl);
+    expect(screen.getByRole("link", { name: dmUrl })).toHaveAttribute("href", dmUrl);
+    expect(screen.getByText("DM URL 是唯一憑證", { exact: false })).toBeInTheDocument();
 
-  await act(async () => {
-    fireEvent.click(playerCopy);
-  });
-  expect(writeText).toHaveBeenCalledWith(playerUrl);
-  expect(playerCopy).toHaveTextContent("已複製");
+    await act(async () => {
+      fireEvent.click(playerCopy);
+    });
+    expect(writeText).toHaveBeenCalledWith(playerUrl);
+    expect(playerCopy).toHaveTextContent("已複製");
 
-  await act(async () => {
-    fireEvent.click(dmCopy);
-  });
-  expect(writeText).toHaveBeenLastCalledWith(dmUrl);
-  expect(dmCopy).toHaveTextContent("已複製");
+    await act(async () => {
+      fireEvent.click(dmCopy);
+    });
+    expect(writeText).toHaveBeenLastCalledWith(dmUrl);
+    expect(dmCopy).toHaveTextContent("已複製");
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("offers the language switch before a game exists", () => {
@@ -113,4 +122,19 @@ test("offers source and licence information", () => {
   expect(link).toHaveAttribute("href", expect.stringContaining("github.com"));
   expect(link).toHaveAttribute("rel", expect.stringContaining("noreferrer"));
   expect(screen.getByText(/AGPL-3\.0/)).toBeInTheDocument();
+});
+
+test("the features accordion opens one row at a time, starting with the first", () => {
+  renderHome({ locale: true });
+  const combatTableRow = screen.getByRole("button", { name: "Combat Table" });
+  const enemyDbRow = screen.getByRole("button", { name: "Enemy DB" });
+  expect(combatTableRow).toHaveAttribute("aria-expanded", "true");
+  expect(enemyDbRow).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.click(enemyDbRow);
+  expect(enemyDbRow).toHaveAttribute("aria-expanded", "true");
+  expect(combatTableRow).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.click(enemyDbRow);
+  expect(enemyDbRow).toHaveAttribute("aria-expanded", "false");
 });

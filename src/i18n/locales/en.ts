@@ -20,6 +20,13 @@ export const en: Messages = {
   home: {
     eyebrow: "A realtime fifth-edition combat workspace",
     title: "Keep the rules close. Keep the ruling at the table.",
+    titleLine1: "Keep the rules close. ",
+    titleLine2: "Keep the ruling at the table.",
+    navFlow: "Flow",
+    navRoles: "Roles",
+    navFeatures: "Features",
+    navAuthority: "Authority",
+    accordionHint: "Click a row to expand",
     lede:
       "War Table 5e keeps characters, enemies, dice, conditions, and combat results in one realtime state for the DM and players. The toolkit organizes and calculates; your table always decides.",
     noLogin: "No accounts. Possessing a link joins the same shared battle table.",

@@ -1153,453 +1153,678 @@ body:has(.wt) {
   text-decoration: underline;
 }
 
-/* ---- Campaign Ledger landing page ---------------------------------------- */
-.wt.wt-home-ledger {
+/* ---- Summoning Altar landing page (docs/handoffs/design_handoff_home_altar) */
+@keyframes wtSpin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes wtSpinR { from { transform: rotate(0); } to { transform: rotate(-360deg); } }
+@keyframes wtFlare { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes wtRise { 0% { opacity: 0; transform: translateY(34px) scale(0.94); } 100% { opacity: 1; transform: none; } }
+@keyframes wtPulse { 0%, 100% { box-shadow: 0 0 30px rgba(184, 53, 92, 0.25); } 50% { box-shadow: 0 0 60px rgba(224, 104, 143, 0.5); } }
+@keyframes wtGlow { 0%, 100% { text-shadow: 0 0 12px rgba(184, 53, 92, 0.4); } 50% { text-shadow: 0 0 26px rgba(224, 104, 143, 0.8); } }
+@keyframes wtBreath { 0%, 100% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
+
+.wt.wt-home-altar {
   position: static;
   display: block;
   min-height: 100vh;
   padding: 0;
   overflow: visible;
-  font-size: clamp(16px, 1.3vw, 18px);
+  font-size: clamp(16px, 1.25vw, 18px);
+  background-color: var(--void);
+  background-image:
+    repeating-linear-gradient(35deg, rgba(236, 228, 245, 0.025) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(-35deg, rgba(236, 228, 245, 0.02) 0 1px, transparent 1px 34px),
+    radial-gradient(70% 55% at 50% 30%, rgba(156, 52, 102, 0.14), transparent 65%);
 }
-.wt-home-ledger h1,
-.wt-home-ledger h2,
-.wt-home-ledger h3,
-.wt-home-ledger p {
-  margin-top: 0;
+.wt-home-altar h1,
+.wt-home-altar h2,
+.wt-home-altar h3,
+.wt-home-altar p {
+  margin: 0;
 }
-.wt-home-ledger h1,
-.wt-home-ledger h2,
-.wt-home-ledger h3 {
+.wt-home-altar h1,
+.wt-home-altar h2,
+.wt-home-altar h3 {
   color: var(--bone);
   font-family: 'Noto Sans TC', sans-serif;
 }
-.wt-home-ledger-layout {
-  display: grid;
-  grid-template-columns: minmax(16em, 20em) minmax(0, 1fr);
-  width: min(90rem, 100%);
-  min-height: 100vh;
-  margin: 0 auto;
+.wt-home-altar a {
+  color: var(--ember);
 }
-.wt-home-ledger-rail {
-  position: sticky;
+.wt-home-altar a:hover {
+  color: var(--bone);
+}
+
+/* -- fixed top bar -- */
+.wt-altar-bar {
+  position: fixed;
   top: 0;
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 1.2em;
-  border-right: 1px solid var(--edge2);
-  background: rgba(14, 10, 20, 0.9);
-  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
-}
-.wt-home-ledger-rail-top {
+  left: 0;
+  right: 0;
+  z-index: 60;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6em;
-  margin-bottom: 2.4em;
+  gap: 1.4em;
+  padding: 0.7em clamp(1em, 4vw, 2.6em);
+  background: rgba(10, 7, 16, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--edge);
 }
-.wt-home-ledger-mark {
+.wt-altar-bar-mark {
   color: var(--bone);
   font-family: 'Cinzel', 'Noto Sans TC', serif;
-  font-size: 0.82em;
+  font-size: 0.8em;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
+  animation: wtGlow 5s ease-in-out infinite;
 }
-button.wt-home-ledger-language {
-  min-height: 2.6em;
-  padding: 0.45em 0.8em;
+.wt-altar-bar-nav {
+  display: flex;
+  gap: 1.1em;
+  margin-left: auto;
+}
+.wt-altar-bar-nav a {
+  color: var(--dim);
+  font-size: 0.68em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.wt-altar-bar-nav a:hover,
+.wt-altar-bar-nav a:focus-visible {
+  color: var(--bone);
+}
+button.wt-altar-bar-lang {
+  min-height: 2.3em;
+  padding: 0.3em 0.9em;
+  font-size: 0.7em;
+  font-weight: 700;
   white-space: nowrap;
 }
-.wt-home-ledger-eyebrow,
-.wt-home-ledger-kicker {
+button.wt-altar-bar-lang:hover {
+  box-shadow: 0 0 8px rgba(156, 52, 102, 0.35);
+}
+button.wt-altar-bar-lang:active {
+  transform: scale(0.94);
+}
+
+/* -- hero -- */
+.wt-altar-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 5.5em 1.2em 3em;
+  box-sizing: border-box;
+  text-align: center;
+}
+.wt-altar-eyebrow {
   color: var(--ember);
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
   font-size: 0.72em;
-  font-weight: 900;
-  letter-spacing: 0.15em;
+  font-weight: 700;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
 }
-.wt-home-ledger-rail h1 {
-  margin: 0.2em 0 0.6em;
-  font-family: 'Cinzel', 'Noto Sans TC', serif;
-  font-size: 1.75em;
-  letter-spacing: 0.08em;
+.wt-altar-title {
+  margin: 0.3em 0 0.4em;
+  font-size: clamp(1.7em, 4.4vw, 3.6em);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 900;
 }
-.wt-home-ledger-rail > p:not(.wt-home-ledger-eyebrow) {
+.wt-altar-title span {
+  display: inline-block;
+  white-space: nowrap;
+}
+.wt-altar-lede {
+  margin: 0 0 2.2em;
+  max-width: 34em;
   color: var(--ink);
-  font-size: 0.78em;
-  line-height: 1.65;
+  font-size: 0.92em;
+  line-height: 1.9;
+  text-wrap: balance;
 }
-button.wt-home-ledger-create {
-  align-self: flex-start;
-  min-height: 3.25em;
-  margin-top: 0.8em;
-  padding: 0.7em 1.6em;
-  background: linear-gradient(90deg, var(--blood), var(--ember));
-  border-color: var(--blood2);
+.wt-altar-lede span {
+  color: var(--dim);
+  font-size: 0.9em;
+}
+
+.wt-altar-circle {
+  position: relative;
+  width: min(23em, 86vw);
+  height: min(23em, 86vw);
+  flex: none;
+}
+.wt-altar-ring-outer {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--blood2);
+  border-radius: 50%;
+  animation: wtSpin 30s linear infinite, wtPulse 4s ease-in-out infinite;
+}
+.wt-altar-ring-ticks {
+  position: absolute;
+  inset: 3.5%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(224, 104, 143, 0.55) 0deg 1.5deg, transparent 1.5deg 7.5deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 93%, #000 94%);
+  mask: radial-gradient(closest-side, transparent 93%, #000 94%);
+  animation: wtSpinR 70s linear infinite;
+}
+.wt-altar-ring-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(224, 104, 143, 0.14), transparent 75deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 52%, #000 54% 96%, transparent 98%);
+  mask: radial-gradient(closest-side, transparent 52%, #000 54% 96%, transparent 98%);
+  animation: wtSpin 9s linear infinite;
+}
+.wt-altar-ring-plain {
+  position: absolute;
+  inset: 8%;
+  border: 1px solid var(--edge2);
+  border-radius: 50%;
+  animation: wtSpinR 22s linear infinite;
+}
+.wt-altar-ring-star {
+  position: absolute;
+  inset: 24%;
+  animation: wtSpinR 90s linear infinite;
+}
+.wt-altar-star-a,
+.wt-altar-star-b {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(184, 53, 92, 0.45);
+}
+.wt-altar-star-b {
+  transform: rotate(45deg);
+}
+.wt-altar-ring-glow {
+  position: absolute;
+  inset: 31%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 53, 92, 0.3), transparent 70%);
+  animation: wtBreath 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.wt-altar-ring-runes {
+  position: absolute;
+  inset: 8%;
+  animation: wtSpin 46s linear infinite;
+}
+.wt-altar-ring-runes span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: var(--blood2);
+  font-size: 0.9em;
+}
+.wt-altar-ring-inner-dashed {
+  position: absolute;
+  inset: 20%;
+  border: 1px dashed var(--ember);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: wtSpin 14s linear infinite;
+}
+.wt-altar-fast .wt-altar-ring-outer { animation-duration: 6.6s, 4s; }
+.wt-altar-fast .wt-altar-ring-ticks { animation-duration: 15.4s; }
+.wt-altar-fast .wt-altar-ring-sweep { animation-duration: 1.98s; }
+.wt-altar-fast .wt-altar-ring-plain { animation-duration: 4.84s; }
+.wt-altar-fast .wt-altar-ring-star { animation-duration: 19.8s; }
+.wt-altar-fast .wt-altar-ring-runes { animation-duration: 10.12s; }
+.wt-altar-fast .wt-altar-ring-inner-dashed { animation-duration: 3.08s; }
+
+.wt-altar-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.wt-altar-flaring {
+  animation: wtFlare 0.9s ease-in-out 1;
+}
+.wt-altar-center-glyph {
+  color: var(--ember);
+  font-family: 'Cinzel', serif;
+  font-size: 3em;
+  animation: wtGlow 2.4s ease-in-out infinite;
+}
+button.wt-altar-cta {
+  min-height: 3.4em;
+  padding: 0.85em 2.2em;
+  background: linear-gradient(160deg, rgba(43, 21, 36, 0.92), rgba(23, 16, 33, 0.92));
+  border: 1px solid var(--blood2);
   color: var(--bone);
   font-size: 1em;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  box-shadow: inset 0 0 22px rgba(122, 24, 48, 0.35), 0 0 18px rgba(184, 53, 92, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
-.wt-home-ledger-ready {
-  margin: 0.8em 0 0;
-  padding: 0.7em 0.8em;
-  border-left: 3px solid var(--ember);
-  background: rgba(0, 0, 0, 0.24);
-  color: var(--bone);
-  font-size: 0.76em;
-  font-weight: 700;
-  line-height: 1.55;
+button.wt-altar-cta:hover:not(:disabled) {
+  border-color: var(--ember);
+  background: linear-gradient(160deg, rgba(122, 24, 48, 0.55), rgba(23, 16, 33, 0.95));
+  box-shadow: inset 0 0 26px rgba(184, 53, 92, 0.4), 0 0 30px rgba(224, 104, 143, 0.35);
+  transform: translateY(-2px);
 }
-.wt-home-ledger-playground {
-  margin: 1.2em 0 0;
+button.wt-altar-cta:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+.wt-altar-cta-glyph {
+  color: var(--ember);
+  margin-right: 0.5em;
+}
+
+.wt-altar-linkmodel {
+  display: block;
+  margin-top: 1.8em;
+  max-width: 34em;
+  color: var(--dim);
+  font-size: 0.74em;
+  line-height: 1.7;
+  font-weight: 400;
+}
+.wt-altar-playground {
+  display: block;
+  margin: 1em auto 0;
+  max-width: 34em;
   padding: 0.8em;
   border: 1px solid var(--ember);
   border-left-width: 3px;
   background: rgba(0, 0, 0, 0.26);
   color: var(--bone);
   line-height: 1.55;
+  text-align: left;
 }
-.wt-home-ledger-playground strong {
+.wt-altar-playground strong {
   display: block;
   margin-bottom: 0.25em;
   color: var(--ember);
 }
-.wt-home-ledger-playground p {
-  margin-bottom: 0;
+.wt-altar-playground p {
+  margin-top: 0.25em;
   font-size: 0.74em;
 }
-.wt-home-ledger-rail nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2em;
-  margin-top: 2em;
-  padding-top: 1em;
-  border-top: 1px solid var(--edge);
+
+/* -- post-creation URL cards -- */
+.wt-altar-result {
+  width: min(58em, 94vw);
+  margin-top: 1.6em;
 }
-.wt-home-ledger-rail nav a {
-  padding: 0.55em 0;
-  color: var(--dim);
-  font-size: 0.7em;
-  line-height: 1.4;
-  text-decoration: none;
-}
-.wt-home-ledger-rail nav a:hover,
-.wt-home-ledger-rail nav a:focus-visible {
-  color: var(--bone);
-}
-.wt-home-ledger-rail footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em;
-  margin-top: auto;
-  padding-top: 1.2em;
-  color: var(--dim);
-  font-size: 0.64em;
-  line-height: 1.5;
-}
-.wt-home-ledger-rail footer a {
-  color: var(--ember);
-  text-decoration: underline;
-}
-.wt-home-ledger-content {
-  min-width: 0;
-  padding: clamp(1.4em, 4vw, 4em) clamp(1.2em, 5vw, 5em) 5em;
-}
-.wt-home-ledger-hero {
-  max-width: 58em;
-  margin-bottom: 4em;
-  padding-bottom: 2em;
-  border-bottom: 1px solid var(--edge2);
-}
-.wt-home-ledger-hero > span {
-  color: var(--ember);
-  font-size: 0.68em;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-}
-.wt-home-ledger-hero h2 {
-  margin: 0.35em 0;
-  font-size: clamp(2em, 5vw, 4.4em);
-  line-height: 1.06;
-  letter-spacing: -0.035em;
-}
-.wt-home-ledger-hero p {
-  color: var(--ink);
-  font-size: 1em;
-  line-height: 1.85;
-}
-.wt-home-ledger-hero strong {
-  display: block;
-  margin-top: 1.5em;
-  padding-left: 0.8em;
-  border-left: 3px solid var(--blood2);
+.wt-altar-result-status {
+  margin: 0 0 0.9em;
   color: var(--bone);
   font-size: 0.8em;
-  line-height: 1.6;
+  font-weight: 700;
+  animation: wtRise 0.5s ease-out both;
 }
-.wt-home-ledger-section {
-  display: grid;
-  grid-template-columns: 3.5em minmax(0, 1fr);
-  gap: 1.5em;
-  padding: 2.2em 0;
-  border-bottom: 1px solid var(--edge);
-  scroll-margin-top: 1em;
-}
-.wt-home-ledger-section-number {
-  color: var(--blood2);
-  font-size: 1.5em;
-  font-weight: 900;
-  line-height: 1;
-}
-.wt-home-ledger-section h2 {
-  margin-bottom: 0.75em;
-  font-size: 1.35em;
-}
-.wt-home-ledger-links {
-  border-bottom-color: var(--blood2);
-}
-.wt-home-ledger-credentials {
+.wt-altar-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8em;
+  gap: 0.9em;
+  text-align: left;
 }
-.wt-home-ledger-credentials > section {
+.wt-altar-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.7em;
   align-items: center;
-  min-width: 0;
-  padding: 1em;
+  padding: 1.1em;
   border: 1px solid var(--edge2);
-  background: rgba(0, 0, 0, 0.28);
+  background: linear-gradient(160deg, var(--panel2), #171021);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  animation: wtRise 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.15) 0.15s both;
 }
-.wt-home-ledger-credentials h3 {
-  margin-bottom: 0.35em;
+.wt-altar-card-dm {
+  border-color: var(--blood2);
+  background: linear-gradient(160deg, #2b1524, #171021);
+  box-shadow: inset 0 0 32px rgba(122, 24, 48, 0.22);
+  animation-delay: 0.35s;
+}
+.wt-altar-card h3 {
+  margin: 0 0 0.35em;
   font-size: 0.86em;
 }
-.wt-home-ledger-credentials > section.wt-home-ledger-dm-url {
-  border-color: var(--blood2);
-  box-shadow: inset 0 0 32px rgba(122, 24, 48, 0.14);
-}
-.wt-home-ledger-url {
+.wt-altar-card a {
   display: block;
-  color: var(--ember);
-  font-size: 0.72em;
+  font-size: 0.7em;
   line-height: 1.45;
-  overflow-wrap: break-word;
   overflow-wrap: anywhere;
 }
-button.wt-home-ledger-copy {
+button.wt-altar-card-copy {
   min-width: 5.5em;
   min-height: 2.7em;
   padding: 0.45em 0.7em;
-  font-size: 0.76em;
+  font-size: 0.74em;
   font-weight: 800;
 }
-.wt-home-ledger-dm-url > p {
+button.wt-altar-card-copy:active {
+  transform: scale(0.93);
+}
+.wt-altar-card-secrecy {
   grid-column: 1 / -1;
   margin: 0;
   padding-top: 0.6em;
   border-top: 1px dashed var(--edge2);
   color: var(--bone);
-  font-size: 0.72em;
+  font-size: 0.7em;
   line-height: 1.55;
 }
-.wt-home-ledger-dm-url > p strong {
+.wt-altar-card-secrecy strong {
   margin-right: 0.35em;
   color: var(--ember);
 }
-.wt-home-ledger-procedure {
+
+/* -- sections I-IV -- */
+.wt-altar-section {
+  position: relative;
+  max-width: 66em;
+  margin: 0 auto;
+  padding: 3.4em clamp(1.2em, 4vw, 2.6em);
+  scroll-margin-top: 3.4em;
+}
+#b-flow.wt-altar-section {
+  padding-top: 4.5em;
+}
+.wt-altar-numeral {
+  position: absolute;
+  top: 0.2em;
+  right: 0;
+  color: rgba(184, 53, 92, 0.12);
+  font-family: 'Cinzel', serif;
+  font-size: 8em;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+.wt-altar-kicker {
+  color: var(--ember);
+  font-family: 'Cinzel', serif;
+  font-size: 0.68em;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+}
+.wt-altar-section h2 {
+  margin: 0.25em 0 1.4em;
+  font-size: 1.6em;
+  font-weight: 900;
+}
+.wt-altar-note {
+  margin: 1.4em 0 0;
+  color: var(--dim);
+  font-size: 0.76em;
+  line-height: 1.7;
+}
+
+.wt-altar-journey {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8em;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9em;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.wt-home-ledger-procedure li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.7em;
-  padding: 1em;
+.wt-altar-journey li {
+  position: relative;
+  padding: 1.2em 1em 1.1em;
   border: 1px solid var(--edge);
-  background: rgba(0, 0, 0, 0.18);
+  background: linear-gradient(160deg, #1f1729, #151020);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
-.wt-home-ledger-procedure li > span {
+.wt-altar-journey li:hover {
+  transform: translateY(-4px);
+  border-color: var(--blood2);
+}
+.wt-altar-journey li > span {
   color: var(--ember);
-  font-size: 0.7em;
-  font-weight: 900;
+  font-family: 'Cinzel', serif;
+  font-size: 1.1em;
+  font-weight: 700;
 }
-.wt-home-ledger-procedure h3 {
-  margin-bottom: 0.35em;
-  font-size: 0.86em;
+.wt-altar-journey h3 {
+  margin: 0.5em 0 0.4em;
+  font-size: 0.9em;
 }
-.wt-home-ledger-procedure p {
-  margin-bottom: 0;
+.wt-altar-journey p {
   color: var(--dim);
-  font-size: 0.71em;
-  line-height: 1.6;
+  font-size: 0.72em;
+  line-height: 1.65;
 }
-.wt-home-ledger-roles {
+.wt-altar-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin: 0.8em 0 0;
+  padding: 0;
+  flex-wrap: wrap;
+  list-style: none;
+}
+.wt-altar-chips span {
+  display: inline-block;
+  padding: 0.45em 1em;
+  border: 1px solid var(--edge2);
+  color: var(--bone);
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+  transition: border-color 0.2s ease, color 0.2s ease;
+  cursor: default;
+}
+.wt-altar-chips span:hover {
+  border-color: var(--ember);
+  color: var(--ember);
+}
+
+.wt-altar-roles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8em;
-}
-.wt-home-ledger-roles article {
-  min-width: 0;
-  padding: 1.1em;
-  border: 1px solid var(--edge2);
-  background: rgba(7, 4, 12, 0.48);
-}
-.wt-home-ledger-roles article > span {
-  color: var(--ember);
-  font-size: 0.68em;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-}
-.wt-home-ledger-roles h3 {
-  margin: 0.55em 0;
-  font-size: 1em;
-}
-.wt-home-ledger-roles p,
-.wt-home-ledger-roles strong {
-  color: var(--ink);
-  font-size: 0.78em;
-  line-height: 1.65;
-}
-.wt-home-ledger-roles strong {
-  display: block;
-  color: var(--bone);
-}
-.wt-home-ledger-roles article.wt-home-ledger-role-dm {
-  border-color: var(--blood2);
-  box-shadow: inset 0 0 30px rgba(122, 24, 48, 0.16);
-}
-.wt-home-ledger-section > div > p:not(.wt-home-ledger-kicker) {
-  color: var(--dim);
-  font-size: 0.73em;
-  line-height: 1.65;
-}
-.wt-home-ledger-loop {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8em;
-  margin-top: 1em;
-}
-.wt-home-ledger-loop article {
-  padding: 1em;
-  border-left: 2px solid var(--edge2);
-  background: rgba(0, 0, 0, 0.16);
-}
-.wt-home-ledger-loop b {
-  color: var(--ember);
-  font-size: 0.66em;
-  letter-spacing: 0.12em;
-}
-.wt-home-ledger-loop h3 {
-  margin: 0.45em 0;
-  font-size: 0.86em;
-}
-.wt-home-ledger-loop p {
-  margin-bottom: 0;
-  color: var(--dim);
-  font-size: 0.73em;
-  line-height: 1.65;
-}
-.wt-home-ledger-index {
-  margin: 0;
-}
-.wt-home-ledger-index > div {
-  display: grid;
-  grid-template-columns: minmax(9em, 0.34fr) minmax(0, 1fr);
   gap: 1em;
-  padding: 0.8em 0;
-  border-top: 1px solid var(--edge);
 }
-.wt-home-ledger-index dt {
-  color: var(--bone);
-  font-size: 0.78em;
-  font-weight: 800;
+.wt-altar-roles article {
+  padding: 1.4em;
+  border: 1px solid var(--edge2);
+  background: rgba(7, 4, 12, 0.5);
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.wt-home-ledger-index dd {
-  margin: 0;
-  color: var(--dim);
-  font-size: 0.73em;
-  line-height: 1.6;
+.wt-altar-roles article:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
 }
-.wt-home-ledger-authority {
-  border-bottom-color: var(--blood2);
+.wt-altar-roles article > span {
+  color: var(--ember);
+  font-family: 'Cinzel', serif;
+  font-size: 0.74em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
 }
-.wt-home-ledger-section.wt-home-ledger-authority > div:last-child > p {
-  max-width: 58em;
+.wt-altar-roles h3 {
+  margin: 0.6em 0;
+  font-size: 1.05em;
+}
+.wt-altar-roles p,
+.wt-altar-roles strong {
   color: var(--ink);
   font-size: 0.78em;
   line-height: 1.7;
 }
-.wt-home-ledger-authority > div:last-child > div {
+.wt-altar-roles strong {
+  display: block;
+  margin-top: 0.7em;
+  color: var(--bone);
+}
+.wt-altar-roles article.wt-altar-role-dm {
+  border-color: var(--blood2);
+  background: rgba(26, 8, 17, 0.6);
+  box-shadow: inset 0 0 34px rgba(122, 24, 48, 0.22);
+}
+.wt-altar-roles article.wt-altar-role-dm:hover {
+  box-shadow: 0 12px 30px rgba(122, 24, 48, 0.45), inset 0 0 34px rgba(122, 24, 48, 0.22);
+}
+
+.wt-altar-accordion-hint {
+  margin: 0 0 1.2em;
+  color: var(--dim);
+  font-size: 0.72em;
+}
+.wt-altar-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+.wt-altar-accordion-row {
+  border: 1px solid var(--edge);
+  background: rgba(7, 4, 12, 0.4);
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+.wt-altar-accordion-row:hover {
+  border-color: var(--blood2);
+}
+.wt-altar-accordion-row.is-open {
+  border-color: var(--blood2);
+  background: rgba(122, 24, 48, 0.1);
+}
+button.wt-altar-accordion-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  width: 100%;
+  padding: 0.9em 1.1em;
+  background: none;
+  border: 0;
+  clip-path: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wt-altar-accordion-chevron {
+  color: var(--ember);
+  font-size: 0.8em;
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+.wt-altar-accordion-row.is-open .wt-altar-accordion-chevron {
+  transform: rotate(90deg);
+}
+.wt-altar-accordion-trigger b {
+  color: var(--bone);
+  font-size: 0.84em;
+  letter-spacing: 0.03em;
+}
+.wt-altar-accordion-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+  padding: 0 1.1em;
+}
+.wt-altar-accordion-row.is-open .wt-altar-accordion-body {
+  grid-template-rows: 1fr;
+  padding-bottom: 0.9em;
+}
+.wt-altar-accordion-body p {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 0.74em;
+  line-height: 1.7;
+  padding-left: 1.9em;
+}
+
+.wt-altar-manual-body {
+  max-width: 44em;
+  color: var(--ink);
+  font-size: 0.8em;
+  line-height: 1.8;
+  border-left: 3px solid var(--blood2);
+  padding: 0.6em 0 0.6em 1em;
+  background: rgba(122, 24, 48, 0.08);
+}
+.wt-altar-authority-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1em;
-  margin-top: 1.2em;
+  margin-top: 1.4em;
 }
-.wt-home-ledger-authority article {
-  padding: 1em;
+.wt-altar-authority-grid article {
+  padding: 1.1em;
   border: 1px solid var(--edge);
+  transition: border-color 0.2s ease;
 }
-.wt-home-ledger-authority h3 {
-  margin-bottom: 0.35em;
-  font-size: 0.84em;
+.wt-altar-authority-grid article:hover {
+  border-color: var(--edge2);
 }
-.wt-home-ledger-authority article p {
-  margin-bottom: 0;
+.wt-altar-authority-grid h3 {
+  margin-bottom: 0.4em;
+  font-size: 0.86em;
+}
+.wt-altar-authority-grid p {
   color: var(--dim);
-  font-size: 0.7em;
-  line-height: 1.6;
+  font-size: 0.72em;
+  line-height: 1.65;
+}
+.wt-altar-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8em;
+  margin-top: 3em;
+  padding-top: 1.2em;
+  border-top: 1px solid var(--edge);
+  color: var(--dim);
+  font-size: 0.66em;
+  line-height: 1.5;
+}
+.wt-altar-footer a {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wt-home-altar .wt-altar-circle *,
+  .wt-home-altar .wt-altar-bar-mark,
+  .wt-home-altar .wt-altar-center-glyph {
+    animation: none !important;
+  }
+  .wt-home-altar .wt-altar-result-status,
+  .wt-home-altar .wt-altar-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 @media (max-width: 980px) {
-  .wt-home-ledger-layout {
+  .wt-altar-cards,
+  .wt-altar-journey,
+  .wt-altar-roles,
+  .wt-altar-authority-grid {
     grid-template-columns: 1fr;
   }
-  .wt-home-ledger-rail {
-    position: static;
-    min-height: 0;
-    border-right: 0;
-    border-bottom: 1px solid var(--edge2);
+  /* Mark + 4 nav links + language switch no longer fit one fixed row at
+   * tablet widths — let the nav tuck into a single scrollable row instead
+   * of wrapping and pushing the bar taller. */
+  .wt-altar-bar-nav {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
   }
-  .wt-home-ledger-rail nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .wt-home-ledger-rail footer {
-    margin-top: 1.5em;
+  .wt-altar-bar-nav a {
+    flex: none;
   }
 }
 
 @media (max-width: 680px) {
-  .wt-home-ledger-content {
-    padding-right: 0.8em;
-    padding-left: 0.8em;
-  }
-  .wt-home-ledger-credentials,
-  .wt-home-ledger-procedure,
-  .wt-home-ledger-roles,
-  .wt-home-ledger-loop,
-  .wt-home-ledger-authority > div:last-child > div {
-    grid-template-columns: 1fr;
-  }
-  .wt-home-ledger-section {
-    grid-template-columns: 2.3em minmax(0, 1fr);
+  .wt-altar-bar-nav {
     gap: 0.7em;
   }
-  .wt-home-ledger-index > div {
-    grid-template-columns: 1fr;
-    gap: 0.3em;
-  }
-  .wt-home-ledger-rail nav {
-    grid-template-columns: 1fr;
+  .wt-altar-bar-nav a {
+    font-size: 0.62em;
   }
 }
