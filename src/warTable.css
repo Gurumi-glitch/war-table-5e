@@ -1169,7 +1169,7 @@ body:has(.wt) {
   padding: 0;
   overflow: visible;
   font-size: clamp(16px, 1.25vw, 18px);
-  background-color: var(--void);
+  background-color: #0a0710; /* prototype's final void, deeper than --void */
   /* `.wt`'s base background-position/size/repeat are 4 comma-separated
    * values tuned for ITS 4 background-image layers (incl. the castle
    * skyline this page doesn't use). Left unset here, those 4 values would
@@ -1544,6 +1544,10 @@ button.wt-altar-card-copy:active {
 }
 #b-flow.wt-altar-section {
   padding-top: 4.5em;
+  padding-bottom: 4.5em;
+}
+#b-authority.wt-altar-section {
+  padding-bottom: 4.5em;
 }
 .wt-altar-numeral {
   position: absolute;
@@ -1567,6 +1571,13 @@ button.wt-altar-card-copy:active {
   margin: 0.25em 0 1.4em;
   font-size: 1.6em;
   font-weight: 900;
+}
+#b-features h2 {
+  margin-bottom: 0.4em;
+}
+#b-authority h2 {
+  margin-bottom: 0.8em;
+  max-width: 20em;
 }
 .wt-altar-note {
   margin: 1.4em 0 0;
@@ -1627,6 +1638,7 @@ button.wt-altar-card-copy:active {
   font-size: 0.72em;
   font-weight: 800;
   letter-spacing: 0.12em;
+  font-family: 'Cinzel', 'Noto Sans TC', serif;
   clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
   transition: border-color 0.2s ease, color 0.2s ease;
   cursor: default;
