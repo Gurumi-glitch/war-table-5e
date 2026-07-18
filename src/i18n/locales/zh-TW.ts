@@ -419,6 +419,8 @@ export const zhTW = {
     noneOption: "無",
     spellAttack: "法術攻擊",
     spellDc: "法術 DC",
+    passivePerception: "被動感知",
+    passiveAutoTitle: "自動＝10+察覺總值,可覆寫",
     attacksProfsWealth: "攻擊 · 熟練 · 財產",
     attackNotes: "攻擊備註",
     money: "金錢",

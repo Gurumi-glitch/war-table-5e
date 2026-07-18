@@ -58,6 +58,7 @@ const character: CharacterView = {
   spellcastingAbility: "",
   spellAttack: 0,
   spellDc: 0,
+  passivePerception: 10,
   attackText: "命中 +5",
   saves: [],
   skills: [],

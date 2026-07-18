@@ -113,6 +113,7 @@ test("recalcCard: changing a score ripples to mods, saves, skills, spell, initia
     spellcastingAbility: "魅力",
     spellAttack: 0,
     spellDc: 0,
+    passivePerception: 0,
   };
   // Bump CHA to 18 (mod +4) and mark CHA save + Persuasion proficient.
   base.abilities[5].score = 18;
@@ -140,4 +141,54 @@ test("recalcCard: changing a score ripples to mods, saves, skills, spell, initia
 
   // Without level (legacy callers), pb passes through unchanged.
   expect(recalcCard(base).pb).toBe(2);
+});
+
+test("passivePerception = 10 + Perception total (SRD § Passive Checks)", () => {
+  // WIS 15 (+2), Perception proficient (PB +2) → 10 + 2 + 2 = 14 (SRD example).
+  const wis15 = [
+    { key: "力量", score: 10, mod: 0 },
+    { key: "敏捷", score: 10, mod: 0 },
+    { key: "體質", score: 10, mod: 0 },
+    { key: "智力", score: 10, mod: 0 },
+    { key: "感知", score: 15, mod: 0 },
+    { key: "魅力", score: 10, mod: 0 },
+  ];
+  const mods = modByKey(wis15);
+  const skills = defaultSkills(mods, 2).map((s) =>
+    s.key === "察覺" ? { ...s, prof: "proficient" as const, total: skillTotal(mods["感知"] ?? 0, 2, "proficient") } : s,
+  );
+  const proficient = recalcCard({
+    abilities: wis15,
+    pb: 2,
+    initBonus: 0,
+    saves: defaultSaves(mods, 2),
+    skills,
+    spellcastingAbility: "",
+    spellAttack: 0,
+    spellDc: 0,
+    passivePerception: 0,
+  });
+  expect(proficient.passivePerception).toBe(14); // 10 + WIS 2 + PB 2
+
+  // Expertise doubles the PB contribution: 10 + 2 + 2×2 = 16.
+  const expertise = recalcCard({
+    ...proficient,
+    skills: skills.map((s) =>
+      s.key === "察覺" ? { ...s, prof: "expertise" as const, total: skillTotal(mods["感知"] ?? 0, 2, "expertise") } : s,
+    ),
+  });
+  expect(expertise.passivePerception).toBe(16);
+
+  // Not proficient: 10 + WIS 2 = 12.
+  const none = recalcCard({
+    ...proficient,
+    skills: defaultSkills(mods, 2),
+  });
+  expect(none.passivePerception).toBe(12);
+
+  // A manual passivePerception override survives recalc only if the inputs it
+  // derives from are unchanged — recalcCard is the full reset, so it always
+  // re-derives. (The granular card-window handlers preserve overrides; that's
+  // covered by the component tests.) Here we assert the formula root.
+  expect(recalcCard({ ...proficient, passivePerception: 99 }).passivePerception).toBe(14);
 });
