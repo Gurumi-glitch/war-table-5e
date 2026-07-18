@@ -1170,20 +1170,29 @@ body:has(.wt) {
   overflow: visible;
   font-size: clamp(16px, 1.25vw, 18px);
   background-color: var(--void);
+  /* `.wt`'s base background-position/size/repeat are 4 comma-separated
+   * values tuned for ITS 4 background-image layers (incl. the castle
+   * skyline this page doesn't use). Left unset here, those 4 values would
+   * cycle across our 3 layers mismatched — e.g. the hatch layers would
+   * inherit the castle layer's `background-size: 100% 34vh` and
+   * `no-repeat`, collapsing the grid to a sliver instead of tiling the
+   * whole page. Every background-* property must be re-declared together. */
   background-image:
     repeating-linear-gradient(35deg, rgba(236, 228, 245, 0.025) 0 1px, transparent 1px 34px),
     repeating-linear-gradient(-35deg, rgba(236, 228, 245, 0.02) 0 1px, transparent 1px 34px),
     radial-gradient(70% 55% at 50% 30%, rgba(156, 52, 102, 0.14), transparent 65%);
+  background-position: 0 0, 0 0, center;
+  background-size: auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat;
 }
-.wt-home-altar h1,
-.wt-home-altar h2,
-.wt-home-altar h3,
-.wt-home-altar p {
+/* Zero specificity (:where) so every .wt-altar-* component below can set
+ * its own margin without a specificity fight — a plain `.wt-home-altar p`
+ * reset here previously beat single-class rules like `.wt-altar-lede`,
+ * silently discarding their margin. */
+.wt-home-altar :where(h1, h2, h3, p) {
   margin: 0;
 }
-.wt-home-altar h1,
-.wt-home-altar h2,
-.wt-home-altar h3 {
+.wt-home-altar :where(h1, h2, h3) {
   color: var(--bone);
   font-family: 'Noto Sans TC', sans-serif;
 }
