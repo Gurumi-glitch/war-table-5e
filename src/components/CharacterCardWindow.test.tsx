@@ -200,6 +200,41 @@ test("soft warning marks an overridden derived value on engine-backed cards only
   expect(screen.getByLabelText("save 1 total")).not.toHaveClass("ccw-diverged");
 });
 
+test("proficiencies: structured blocks when present, toolsText fallback otherwise", () => {
+  // Legacy card — single toolsText string, no structured blocks.
+  const { unmount } = render(
+    <CharacterCardWindow {...baseProps({ character: { ...character, toolsText: "護甲：輕甲" } })} />,
+  );
+  expect(screen.getByLabelText("tools")).toBeInTheDocument();
+  expect(screen.queryByLabelText("prof armorProfs")).toBeNull();
+  unmount();
+
+  // Structured card — per-category blocks; the legacy textarea is gone.
+  render(
+    <CharacterCardWindow
+      {...baseProps({ character: { ...character, armorProfs: ["輕甲", "盾牌"], weaponProfs: ["簡易武器"] } })}
+    />,
+  );
+  expect((screen.getByLabelText("prof armorProfs") as HTMLInputElement).value).toBe("輕甲、盾牌");
+  expect(screen.getByLabelText("prof weaponProfs")).toBeInTheDocument();
+  expect(screen.queryByLabelText("tools")).toBeNull();
+});
+
+test("editing a structured proficiency saves it in the dirty patch", () => {
+  const onUpdateCharacter = vi.fn();
+  render(
+    <CharacterCardWindow
+      {...baseProps({ onUpdateCharacter, character: { ...character, armorProfs: ["輕甲"] } })}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("prof armorProfs"), { target: { value: "輕甲、中甲" } });
+  fireEvent.click(screen.getByLabelText(`save ${character.nameZh}`));
+  expect(onUpdateCharacter).toHaveBeenCalledWith(
+    character._id,
+    expect.objectContaining({ armorProfs: ["輕甲", "中甲"] }),
+  );
+});
+
 test("picking armor writes AC via SRD rules (heavy = base, no DEX)", () => {
   render(<CharacterCardWindow {...baseProps()} />);
   // Chain mail (heavy, base 16) ignores DEX regardless of the card's DEX mod.

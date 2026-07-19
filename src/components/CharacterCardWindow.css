@@ -797,3 +797,10 @@
   border-bottom-color: #d9a441;
   box-shadow: 0 1px 0 rgba(217, 164, 65, 0.5);
 }
+
+/* Structured proficiency blocks on the 熟練 page (character-sheet-pages). */
+.ccw-profblocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}

@@ -146,7 +146,15 @@ type Draft = {
   skills: SkillRow[];
   refs: RefSection[];
   classRules: string[];
+  armorProfs: string[];
+  weaponProfs: string[];
+  toolProfs: string[];
+  languageProfs: string[];
 };
+
+/** The four structured proficiency categories, in display order. */
+const PROF_CATS = ["armorProfs", "weaponProfs", "toolProfs", "languageProfs"] as const;
+type ProfCat = (typeof PROF_CATS)[number];
 
 /**
  * Build the draft from a (possibly migrated) character view. Structured
@@ -209,6 +217,10 @@ function snapshot(c: CharacterView): Draft {
     skills,
     refs: (c.refs ?? []).map((r) => ({ ...r })),
     classRules: [...(c.classRules ?? [])],
+    armorProfs: [...(c.armorProfs ?? [])],
+    weaponProfs: [...(c.weaponProfs ?? [])],
+    toolProfs: [...(c.toolProfs ?? [])],
+    languageProfs: [...(c.languageProfs ?? [])],
   };
 }
 
@@ -308,12 +320,18 @@ export function CharacterCardWindow({
       const skills = adopt(prev.skills, base.skills, next.skills);
       const refs = adopt(prev.refs, base.refs, next.refs);
       const classRules = adopt(prev.classRules, base.classRules, next.classRules);
+      const profs = Object.fromEntries(
+        PROF_CATS.map((cat) => [cat, adopt(prev[cat], base[cat], next[cat])]),
+      ) as Record<ProfCat, string[]>;
       if (abilities !== prev.abilities) changed = true;
       if (saves !== prev.saves) changed = true;
       if (skills !== prev.skills) changed = true;
       if (refs !== prev.refs) changed = true;
       if (classRules !== prev.classRules) changed = true;
-      return changed ? { scalars, abilities, saves, skills, refs, classRules } : prev;
+      for (const cat of PROF_CATS) if (profs[cat] !== prev[cat]) changed = true;
+      return changed
+        ? { scalars, abilities, saves, skills, refs, classRules, ...profs }
+        : prev;
     });
     baseRef.current = next;
   }, [
@@ -345,6 +363,10 @@ export function CharacterCardWindow({
     c.skills,
     c.refs,
     c.classRules,
+    c.armorProfs,
+    c.weaponProfs,
+    c.toolProfs,
+    c.languageProfs,
   ]);
 
   const base = baseRef.current;
@@ -356,13 +378,15 @@ export function CharacterCardWindow({
   const dirtySkills = !sameArr(draft.skills, base.skills);
   const dirtyRefs = !sameArr(draft.refs, base.refs);
   const dirtyClassRules = !sameArr(draft.classRules, base.classRules);
+  const dirtyProfs = PROF_CATS.filter((cat) => !sameArr(draft[cat], base[cat]));
   const isDirty =
     dirtyScalars.length > 0 ||
     dirtyAbilities ||
     dirtySaves ||
     dirtySkills ||
     dirtyRefs ||
-    dirtyClassRules;
+    dirtyClassRules ||
+    dirtyProfs.length > 0;
 
   /** Recompute the saves/skills/spell/init that depend on one ability's mod. */
   const recomputeDependents = (d: Draft, key: string, mod: number): Partial<Draft> => {
@@ -394,6 +418,13 @@ export function CharacterCardWindow({
 
   const setScalar = (f: ScalarField, v: string) =>
     setDraft((d) => ({ ...d, scalars: { ...d.scalars, [f]: v } }));
+
+  /** Edit one structured proficiency category from a 、/comma-separated string. */
+  const setProf = (cat: ProfCat, raw: string) =>
+    setDraft((d) => ({
+      ...d,
+      [cat]: raw.split(/[、,]/).map((s) => s.trim()).filter(Boolean),
+    }));
 
   // Soft "diverged from the engine" warning (character-sheet-pages). Only for
   // engine-backed cards (built by the wizard → have structured `classes`): a
@@ -637,6 +668,7 @@ export function CharacterCardWindow({
     if (dirtySkills) patch.skills = draft.skills;
     if (dirtyRefs) patch.refs = draft.refs;
     if (dirtyClassRules) patch.classRules = draft.classRules;
+    for (const cat of dirtyProfs) (patch as Record<string, unknown>)[cat] = draft[cat];
     onUpdateCharacter(c._id, patch);
   };
 
@@ -929,19 +961,45 @@ export function CharacterCardWindow({
           </div>
           </div>
 
-          {/* Page 1 — 熟練: proficiency block (structured blocks land in 5b). */}
+          {/* Page 1 — 熟練: structured per-category blocks, or the legacy
+              single toolsText string as a fallback for cards without them. */}
           <div className="ccw-page" hidden={page !== 1}>
-          <div className="ccw-ref">
-            <div className="ccw-ref-head">
-              <span className="ccw-block-title">{t.card.toolProfs}</span>
+          {PROF_CATS.some((cat) => draft[cat].length > 0) || draft.scalars.toolsText.trim() === "" ? (
+            <div className="ccw-profblocks">
+              {(
+                [
+                  ["armorProfs", t.builder.armor],
+                  ["weaponProfs", t.builder.weapons],
+                  ["toolProfs", t.builder.tools],
+                  ["languageProfs", t.builder.languages],
+                ] as const
+              ).map(([cat, label]) => (
+                <div className="ccw-ref" key={cat}>
+                  <div className="ccw-ref-head">
+                    <span className="ccw-block-title">{label}</span>
+                  </div>
+                  <input
+                    className="ccw-input"
+                    value={draft[cat].join("、")}
+                    onChange={(e) => setProf(cat, e.target.value)}
+                    aria-label={`prof ${cat}`}
+                  />
+                </div>
+              ))}
             </div>
-            <textarea
-              className="ccw-ref-body"
-              value={draft.scalars.toolsText}
-              onChange={(e) => setScalar("toolsText", e.target.value)}
-              aria-label="tools"
-            />
-          </div>
+          ) : (
+            <div className="ccw-ref">
+              <div className="ccw-ref-head">
+                <span className="ccw-block-title">{t.card.toolProfs}</span>
+              </div>
+              <textarea
+                className="ccw-ref-body"
+                value={draft.scalars.toolsText}
+                onChange={(e) => setScalar("toolsText", e.target.value)}
+                aria-label="tools"
+              />
+            </div>
+          )}
           <div className="ccw-ac-armor">
             <label>
               {t.builder.armorForAc}
