@@ -1,6 +1,15 @@
-import { expect, test, vi } from "vitest";
+import { expect, test, vi, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { CharacterBuilder, type BuilderPayload } from "./CharacterBuilder";
+import { LocaleProvider } from "../i18n";
+
+afterEach(() => {
+  try {
+    localStorage.removeItem("dnd-locale");
+  } catch {
+    /* jsdom always has localStorage; guard is belt-and-braces */
+  }
+});
 
 /**
  * The guided builder (character-builder). The point of the wizard is that an
@@ -76,6 +85,19 @@ test("custom/homebrew race derives nothing and is recorded verbatim", () => {
   // No warning UI exists in the builder for filling homebrew — assert the flow
   // completed and produced a card (the absence of a gate IS the contract).
   expect(onCreate).toHaveBeenCalledTimes(1);
+});
+
+test("the builder shows English names under the English locale (原文 on switch)", () => {
+  localStorage.setItem("dnd-locale", "en");
+  render(
+    <LocaleProvider>
+      <CharacterBuilder onCreate={vi.fn((_p: BuilderPayload) => Promise.resolve())} onCancel={vi.fn()} />
+    </LocaleProvider>,
+  );
+  // Race dropdown lists the English name, not only 高等精靈.
+  expect(screen.getByRole("option", { name: /High Elf/ })).toBeInTheDocument();
+  // Step chrome is English too.
+  expect(screen.getByLabelText("builder next")).toHaveTextContent(/Next/);
 });
 
 test("multiclass is recorded as rows (paladin 1 / cleric 0 inactive)", () => {

@@ -502,6 +502,20 @@ export const zhTW = {
     nextStep: "下一步",
     finish: "完成建立",
     creating: "建立中…",
+    // Names/connectives that end up on the produced card. Localised so a card
+    // built in English mode reads English; ability KEYS stay canonical (力量…)
+    // and are localised only at display via abilityLabel.
+    content: {
+      ftSuffix: "呎",
+      inactive: "，未啟用",
+      l1Tag: "（1級）",
+      raceTitle: "種族",
+      slotLabel: "L1 法術位",
+      statusNormal: "正常",
+      asiChoose: "自選",
+      sizes: { 小型: "小型", 中型: "中型" },
+      profPrefix: { armor: "護甲", weapon: "武器", tool: "工具", language: "語言" },
+    },
   },
 
   /**

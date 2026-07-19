@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useT } from "../i18n";
+import { abilityLabel, skillLabel } from "../i18n/terms";
 import type { CharacterFields, ClassEntry } from "../../convex/characters";
 import {
   ABILITY_KEYS,
@@ -56,6 +57,9 @@ const emptyScores = (): Record<AbilityKey, number> =>
 
 export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) {
   const t = useT();
+  const cc = t.builder.content;
+  /** Locale-aware display name (zh in Chinese mode, en in English mode). */
+  const dn = (zh: string, en: string) => t.terms.displayName(zh, en);
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -135,13 +139,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
 
   const pointBudget = POINT_BUY_BUDGET - pointBuyTotal(ABILITY_KEYS.map((k) => baseScores[k]));
 
-  const raceLabel = race ? `${race.nameZh}（${race.size}）` : customRace;
+  const raceLabel = race ? `${dn(race.nameZh, race.nameEn)}（${cc.sizes[race.size]}）` : customRace;
   const classesText = classes
     .map((c) => {
       const sc = SRD_CLASSES.find((x) => x.id === c.classId);
-      const name = sc?.nameZh ?? c.classNameZh ?? c.classId;
+      const name = sc ? dn(sc.nameZh, sc.nameEn) : c.classNameZh ?? c.classId;
       const sub = c.subclassNameZh ? `：${c.subclassNameZh}` : "";
-      return `${name}${sub} (${c.level}${c.active ? "" : "，未啟用"})`;
+      return `${name}${sub} (${c.level}${c.active ? "" : cc.inactive})`;
     })
     .join("\n");
 
@@ -159,20 +163,20 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     const spellAbility = primaryClass?.spellAbility ?? "";
 
     const refs: { title: string; body: string }[] = [];
-    if (race && race.traits.length) refs.push({ title: `種族：${race.nameZh}`, body: race.traits.join("\n") });
+    if (race && race.traits.length) refs.push({ title: `${cc.raceTitle}：${dn(race.nameZh, race.nameEn)}`, body: race.traits.join("\n") });
     for (const c of classes) {
       const sc = SRD_CLASSES.find((x) => x.id === c.classId);
       const sub = sc?.subclasses[0];
       if (sub?.l1 && sub.l1FeatureText && c.subclassId === sub.id) {
-        refs.push({ title: `${sc!.nameZh}：${sub.nameZh}`, body: sub.l1FeatureText });
+        refs.push({ title: `${dn(sc!.nameZh, sc!.nameEn)}：${dn(sub.nameZh, sub.nameEn)}`, body: sub.l1FeatureText });
       }
     }
 
     const toolsText = [
-      armorProfs.length ? `護甲：${armorProfs.join("、")}` : "",
-      weaponProfs.length ? `武器：${weaponProfs.join("、")}` : "",
-      toolProfs.length ? `工具：${toolProfs.join("、")}` : "",
-      languageProfs.length ? `語言：${languageProfs.join("、")}` : "",
+      armorProfs.length ? `${cc.profPrefix.armor}：${armorProfs.join("、")}` : "",
+      weaponProfs.length ? `${cc.profPrefix.weapon}：${weaponProfs.join("、")}` : "",
+      toolProfs.length ? `${cc.profPrefix.tool}：${toolProfs.join("、")}` : "",
+      languageProfs.length ? `${cc.profPrefix.language}：${languageProfs.join("、")}` : "",
     ]
       .filter(Boolean)
       .join("；");
@@ -186,13 +190,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
       classes,
       level: 1,
       alignment: "",
-      statusText: "正常",
+      statusText: cc.statusNormal,
       hp,
       maxHp: hp,
       tempHp: 0,
       ac: ac.ac,
       acFormula: ac.acFormula,
-      speedText: race ? `${race.speedFt}呎` : "30呎",
+      speedText: race ? `${race.speedFt}${cc.ftSuffix}` : `30${cc.ftSuffix}`,
       initBonus: modOf("敏捷"),
       pb,
       abilities: finalAbilities,
@@ -239,7 +243,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
 
     const resources: BuilderResource[] = [];
     const slots = spellSlotsL1For(primaryClass?.caster ?? "none");
-    if (slots > 0) resources.push({ label: "L1 法術位", current: slots, max: slots });
+    if (slots > 0) resources.push({ label: cc.slotLabel, current: slots, max: slots });
 
     return { fields, resources };
   };
@@ -279,7 +283,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                 <select aria-label="race select" value={raceId} onChange={(e) => setRaceId(e.target.value)}>
                   {SRD_RACES.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.nameZh}（{r.size}, {r.speedFt}呎）
+                      {dn(r.nameZh, r.nameEn)}（{cc.sizes[r.size]}, {r.speedFt}{cc.ftSuffix}）
                     </option>
                   ))}
                   <option value="">{t.builder.custom}</option>
@@ -291,7 +295,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                   <input aria-label="race custom" value={customRace} onChange={(e) => setCustomRace(e.target.value)} />
                 </label>
               )}
-              {race && <p className="wt-builder-hint">ASI：{Object.entries(race.asi).map(([k, v]) => `${k}+${v}`).join("、")}{race.asiChoice ? `、自選 ${race.asiChoice.count}×+${race.asiChoice.amount}` : ""}</p>}
+              {race && <p className="wt-builder-hint">ASI：{Object.entries(race.asi).map(([k, v]) => `${abilityLabel(t, k)}+${v}`).join("、")}{race.asiChoice ? `、${cc.asiChoose} ${race.asiChoice.count}×+${race.asiChoice.amount}` : ""}</p>}
             </fieldset>
           )}
 
@@ -311,7 +315,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                       }}
                     >
                       {SRD_CLASSES.map((x) => (
-                        <option key={x.id} value={x.id}>{x.nameZh}</option>
+                        <option key={x.id} value={x.id}>{dn(x.nameZh, x.nameEn)}</option>
                       ))}
                       <option value="">{t.builder.custom}</option>
                     </select>
@@ -326,7 +330,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                       >
                         <option value="">{sc.subclassLabel}…</option>
                         {sc.subclasses.map((s) => (
-                          <option key={s.id} value={s.id}>{s.nameZh}{s.l1 ? "（1級）" : ""}</option>
+                          <option key={s.id} value={s.id}>{dn(s.nameZh, s.nameEn)}{s.l1 ? cc.l1Tag : ""}</option>
                         ))}
                       </select>
                     ) : (
@@ -376,7 +380,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
               <div className="wt-builder-abilities">
                 {ABILITY_KEYS.map((k) => (
                   <label key={k}>
-                    {k}
+                    {abilityLabel(t, k)}
                     <input
                       aria-label={`ability ${k}`}
                       type="number"
@@ -398,7 +402,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                 {t.builder.background}
                 <select aria-label="background select" value={bgId} onChange={(e) => { setBgId(e.target.value); setProfsSeeded(false); }}>
                   {SRD_BACKGROUNDS.map((b) => (
-                    <option key={b.id} value={b.id}>{b.nameZh}</option>
+                    <option key={b.id} value={b.id}>{dn(b.nameZh, b.nameEn)}</option>
                   ))}
                   <option value="">{t.builder.custom}</option>
                 </select>
@@ -415,7 +419,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                           checked={chosenSkills.includes(sk)}
                           onChange={(e) => setChosenSkills((s) => (e.target.checked ? [...s, sk] : s.filter((x) => x !== sk)))}
                         />
-                        {sk}
+                        {skillLabel(t, sk)}
                       </label>
                     ))}
                   </div>
@@ -478,8 +482,8 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
               <label>{t.builder.player}<input aria-label="builder player" value={player} onChange={(e) => setPlayer(e.target.value)} /></label>
               <ul className="wt-builder-review">
                 <li>{raceLabel || "—"} · {classesText.replace(/\n/g, " / ")}</li>
-                <li>HP {hp} · AC {ac.ac} · {t.builder.speed} {race ? race.speedFt : 30}呎</li>
-                <li>{ABILITY_KEYS.map((k) => `${k} ${finalAbilities.find((a) => a.key === k)!.score}`).join(" · ")}</li>
+                <li>HP {hp} · AC {ac.ac} · {t.builder.speed} {race ? race.speedFt : 30}{cc.ftSuffix}</li>
+                <li>{ABILITY_KEYS.map((k) => `${abilityLabel(t, k)} ${finalAbilities.find((a) => a.key === k)!.score}`).join(" · ")}</li>
               </ul>
             </fieldset>
           )}

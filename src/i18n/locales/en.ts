@@ -495,6 +495,17 @@ export const en: Messages = {
     nextStep: "Next",
     finish: "Create",
     creating: "Creating…",
+    content: {
+      ftSuffix: " ft",
+      inactive: ", inactive",
+      l1Tag: " (L1)",
+      raceTitle: "Race",
+      slotLabel: "L1 spell slots",
+      statusNormal: "Normal",
+      asiChoose: "choice",
+      sizes: { 小型: "Small", 中型: "Medium" },
+      profPrefix: { armor: "Armor", weapon: "Weapons", tool: "Tools", language: "Languages" },
+    },
   },
 
   cardErrors: {
