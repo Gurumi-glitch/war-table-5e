@@ -461,6 +461,8 @@ export const en: Messages = {
       "This card is too big overall (300KB limit). Move the longest reference section to an external doc and link to it from the card, and it will save.",
     badEnvelope:
       "That isn't a card file from this tool. Pick a .dndcard.json file produced by Export.",
+    unsupportedVersion:
+      "This card is from a newer build of the tool. Update this deployment, or import it with a version that can read it.",
     seedReadOnly:
       "Demo cards can't be edited. Hit Export to save this one as your own card, then Import it back and edit freely.",
     unknown: "Couldn't save — please try again.",

@@ -471,6 +471,8 @@ export const zhTW = {
     cardTooLarge:
       "整張卡太大了（上限 300KB）。把最長的參考段落搬到外部文件、卡上貼連結，就能存檔了。",
     badEnvelope: "這不是本工具的角卡檔。請選擇由「匯出」產生的 .dndcard.json 檔案。",
+    unsupportedVersion:
+      "這張卡來自比目前版本更新的工具。請先更新這個部署，或改用能開啟它的版本匯入。",
     seedReadOnly:
       "示範卡不能修改。按「匯出」把它存成自己的卡，再匯入回來就能隨意編輯。",
     unknown: "存檔失敗，請再試一次。",

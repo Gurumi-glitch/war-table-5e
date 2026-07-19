@@ -18,7 +18,7 @@ import { ABILITY_KEYS, defaultSaves, defaultSkills, modByKey } from "./dndCalc";
 export const CARD_FILE_FORMAT = "war-table-5e-character";
 
 /** Bumped only when the card shape changes in a way an old file can't express. */
-export const CARD_FILE_VERSION = 1;
+export const CARD_FILE_VERSION = 2;
 
 export type CardFile = {
   format: typeof CARD_FILE_FORMAT;
@@ -170,6 +170,8 @@ export function cardErrorMessage(error: unknown, t: Messages): string {
       return t.cardErrors.cardTooLarge;
     case "card.badEnvelope":
       return t.cardErrors.badEnvelope;
+    case "card.unsupportedVersion":
+      return t.cardErrors.unsupportedVersion;
     case "card.seedReadOnly":
       return t.cardErrors.seedReadOnly;
     default:

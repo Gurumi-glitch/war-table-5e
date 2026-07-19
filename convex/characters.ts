@@ -54,6 +54,17 @@ export type SkillView = {
 };
 
 /** A character card as projected to any role (no DM-only fields on cards). */
+/** One structured class row (character-builder). `classesText` is derived from
+ * this for display; a card without `classes` renders `classesText` (legacy). */
+export type ClassEntry = {
+  classId: string;
+  classNameZh?: string;
+  subclassId?: string;
+  subclassNameZh?: string;
+  level: number;
+  active: boolean;
+};
+
 export type CharacterView = {
   _id: string;
   _creationTime: number;
@@ -63,6 +74,9 @@ export type CharacterView = {
   nameEn: string;
   race: string;
   classesText: string;
+  /** Structured class list (character-builder); absent on migrated/old cards
+   * (they render `classesText`). Multiclass combination math is out of scope. */
+  classes?: ClassEntry[];
   level: number;
   alignment: string;
   statusText: string;
@@ -95,6 +109,12 @@ export type CharacterView = {
   /** @deprecated superseded by `skills` (structured). Kept for old docs. */
   skillsText?: string;
   toolsText: string;
+  /** Structured proficiency categories (character-builder); absent on migrated/
+   * old cards, which render `toolsText` verbatim as a fallback. */
+  armorProfs?: string[];
+  weaponProfs?: string[];
+  toolProfs?: string[];
+  languageProfs?: string[];
   goldText: string;
   refs: RefSection[];
   /** Free-text homebrew/class-specific rule notes — plain strings, no title. */
@@ -120,6 +140,16 @@ const abilityValidator = v.object({
 });
 
 const refValidator = v.object({ title: v.string(), body: v.string() });
+
+/** One structured class row (character-builder; mirrors the schema). */
+const classEntryValidator = v.object({
+  classId: v.string(),
+  classNameZh: v.optional(v.string()),
+  subclassId: v.optional(v.string()),
+  subclassNameZh: v.optional(v.string()),
+  level: v.number(),
+  active: v.boolean(),
+});
 
 const saveValidator = v.object({
   key: v.string(),
@@ -147,6 +177,7 @@ const characterFieldsValidator = v.object({
   nameEn: v.string(),
   race: v.string(),
   classesText: v.string(),
+  classes: v.optional(v.array(classEntryValidator)),
   level: v.number(),
   alignment: v.string(),
   statusText: v.string(),
@@ -169,6 +200,10 @@ const characterFieldsValidator = v.object({
   savesText: v.optional(v.string()),
   skillsText: v.optional(v.string()),
   toolsText: v.string(),
+  armorProfs: v.optional(v.array(v.string())),
+  weaponProfs: v.optional(v.array(v.string())),
+  toolProfs: v.optional(v.array(v.string())),
+  languageProfs: v.optional(v.array(v.string())),
   goldText: v.string(),
   refs: v.array(refValidator),
   classRules: v.optional(v.array(v.string())),
@@ -182,6 +217,7 @@ const characterPatchValidator = v.object({
   nameEn: v.optional(v.string()),
   race: v.optional(v.string()),
   classesText: v.optional(v.string()),
+  classes: v.optional(v.array(classEntryValidator)),
   level: v.optional(v.number()),
   alignment: v.optional(v.string()),
   statusText: v.optional(v.string()),
@@ -204,6 +240,10 @@ const characterPatchValidator = v.object({
   savesText: v.optional(v.string()),
   skillsText: v.optional(v.string()),
   toolsText: v.optional(v.string()),
+  armorProfs: v.optional(v.array(v.string())),
+  weaponProfs: v.optional(v.array(v.string())),
+  toolProfs: v.optional(v.array(v.string())),
+  languageProfs: v.optional(v.array(v.string())),
   goldText: v.optional(v.string()),
   refs: v.optional(v.array(refValidator)),
   classRules: v.optional(v.array(v.string())),
@@ -232,6 +272,7 @@ export function toCharacterView(
     nameEn: c.nameEn,
     race: c.race,
     classesText: c.classesText,
+    classes: c.classes,
     level: c.level,
     alignment: c.alignment,
     statusText: c.statusText,
@@ -258,6 +299,10 @@ export function toCharacterView(
     savesText: c.savesText,
     skillsText: c.skillsText,
     toolsText: c.toolsText,
+    armorProfs: c.armorProfs,
+    weaponProfs: c.weaponProfs,
+    toolProfs: c.toolProfs,
+    languageProfs: c.languageProfs,
     goldText: c.goldText,
     refs: c.refs,
     classRules: c.classRules ?? [],
@@ -529,12 +574,14 @@ export const create = mutation({
 });
 
 /**
- * The envelope an exported card file carries (design D4). `version` exists so
- * a future schema change can migrate old files on the way in (switch by
- * version) instead of rejecting them.
+ * The envelope an exported card file carries (design D4). `version` lets the
+ * importer migrate old files on the way in (switch by version) instead of
+ * rejecting them. v2 (character-builder) added optional structured fields
+ * (`classes[]`, armor/weapon/tool/language profs); a v1 file simply lacks them
+ * and the optional-field whitelist carries it through untouched.
  */
 export const CARD_FILE_FORMAT = "war-table-5e-character";
-export const CARD_FILE_VERSION = 1;
+export const CARD_FILE_VERSION = 2;
 
 /**
  * Formats this importer still accepts. `dnd-combat-toolkit-character` is what
@@ -697,6 +744,13 @@ export const importCards = mutation({
       envelope.cards.length === 0
     ) {
       throw new ConvexError({ code: CARD_ERROR.badEnvelope });
+    }
+    // Version customs: v1 and v2 are both accepted (v1 simply lacks the
+    // structured fields v2 added — the optional-field whitelist carries it
+    // through). A file from a NEWER build than this deployment carries fields
+    // we can't validate, so refuse it rather than silently drop them.
+    if (typeof envelope.version === "number" && envelope.version > CARD_FILE_VERSION) {
+      throw new ConvexError({ code: CARD_ERROR.unsupportedVersion });
     }
     const ids: string[] = [];
     for (const raw of envelope.cards) {

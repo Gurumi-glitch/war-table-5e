@@ -154,6 +154,25 @@ export default defineSchema({
     nameEn: v.string(),
     race: v.string(),
     classesText: v.string(),
+    // Structured class list (character-builder). Source of truth for a
+    // builder-made card; `classesText` is DERIVED from it for display + legacy
+    // read-side compat. Optional: migrated/old cards have only `classesText`
+    // (multiclass text can't be safely reverse-parsed) and render from it.
+    // `active`/`level` mirror the seed CSV's class_levels_json (e.g. a paladin
+    // 1 with an inactive cleric 0). Multiclass slot/proficiency COMBINATION math
+    // is intentionally out of scope — this only records the rows.
+    classes: v.optional(
+      v.array(
+        v.object({
+          classId: v.string(),
+          classNameZh: v.optional(v.string()),
+          subclassId: v.optional(v.string()),
+          subclassNameZh: v.optional(v.string()),
+          level: v.number(),
+          active: v.boolean(),
+        }),
+      ),
+    ),
     level: v.number(),
     alignment: v.string(),
     statusText: v.string(),
@@ -219,6 +238,15 @@ export default defineSchema({
     savesText: v.optional(v.string()),
     skillsText: v.optional(v.string()),
     toolsText: v.string(),
+    // Structured proficiency categories (character-builder). Split out of the
+    // single `toolsText` string so the builder can auto-grant them from
+    // race/class/background and the card can render per-category blocks
+    // (ui-design-requirement-character-card.md §3). Optional: cards without
+    // these render `toolsText` verbatim as a fallback (no content lost).
+    armorProfs: v.optional(v.array(v.string())),
+    weaponProfs: v.optional(v.array(v.string())),
+    toolProfs: v.optional(v.array(v.string())),
+    languageProfs: v.optional(v.array(v.string())),
     goldText: v.string(),
     // Long reference sections (法術/特性/裝備/物品 …), never computed. Bounded
     // (a card has a handful of sections).
