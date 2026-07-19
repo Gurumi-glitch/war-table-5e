@@ -15,7 +15,10 @@
     "gen:enemies": "node scripts/gen-enemies.mjs",
     "gen:library": "node scripts/gen-library.mjs",
     "convex": "convex",
-    "deploy:demo": "node scripts/deploy-demo.mjs"
+    "predeploy:demo": "vitest run convex-tests",
+    "deploy:demo": "node scripts/deploy-demo.mjs",
+    "predeploy:prod": "vitest run convex-tests",
+    "deploy:prod": "convex deploy"
   },
   "dependencies": {
     "convex": "^1.42.1",
