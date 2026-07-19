@@ -164,6 +164,17 @@ test("the sheet is paged: only the active page's fields are visible, all stay mo
   expect(screen.getByLabelText("story")).not.toBeVisible();
 });
 
+test("picking armor writes AC via SRD rules (heavy = base, no DEX)", () => {
+  render(<CharacterCardWindow {...baseProps()} />);
+  // Chain mail (heavy, base 16) ignores DEX regardless of the card's DEX mod.
+  fireEvent.change(screen.getByLabelText("ac armor"), { target: { value: "chain-mail" } });
+  expect((screen.getByLabelText("ac") as HTMLInputElement).value).toBe("16");
+  expect((screen.getByLabelText("ac formula") as HTMLInputElement).value).toContain("16");
+  // Adding a shield stacks +2 → 18, and the result stays hand-editable.
+  fireEvent.click(screen.getByLabelText("ac shield"));
+  expect((screen.getByLabelText("ac") as HTMLInputElement).value).toBe("18");
+});
+
 test("dragging the head calls onDrag with the pointer-relative position", () => {
   const onDrag = vi.fn();
   render(<CharacterCardWindow {...baseProps({ onDrag, win: { x: 10, y: 20, z: 1, folded: false } })} />);

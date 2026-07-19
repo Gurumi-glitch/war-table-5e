@@ -34,9 +34,11 @@ import {
   skillTotal,
   spellAttackFn,
   spellDcFn,
+  acFor,
   type SaveRow,
   type SkillRow,
 } from "../lib/dndCalc";
+import { SRD_ARMORS } from "../lib/srdContent";
 
 /**
  * Issue #9 step 4 — a floating parchment character-card window (gothic horror,
@@ -278,6 +280,11 @@ export function CharacterCardWindow({
   // every aria-label test survive a page switch; the leather footer sits
   // outside the paged body and shows on every page.
   const [page, setPage] = useState(0);
+  // Ephemeral armor picker (character-sheet-pages): picking armor/shield writes
+  // ac + acFormula via acFor (SRD rules); the picked armor isn't itself stored,
+  // only the resulting AC is (which stays hand-overridable like every field).
+  const [acArmor, setAcArmor] = useState("");
+  const [acShield, setAcShield] = useState(false);
 
   // Adopt remote changes for fields the user isn't currently editing. Scalars
   // adopt per-field; abilities/saves/skills/refs adopt only if untouched
@@ -387,6 +394,24 @@ export function CharacterCardWindow({
 
   const setScalar = (f: ScalarField, v: string) =>
     setDraft((d) => ({ ...d, scalars: { ...d.scalars, [f]: v } }));
+
+  /** Compute AC from a chosen armor + shield (SRD rules) and write ac/acFormula.
+   * The result stays hand-editable; picking armor is just a shortcut to the
+   * number the DM would otherwise type. */
+  const applyAc = (armorId: string, shield: boolean) => {
+    const dexMod = draft.abilities.find((a) => a.key === "敏捷")?.mod ?? 0;
+    const armor = SRD_ARMORS.find((a) => a.id === armorId);
+    const r = acFor({
+      dexMod,
+      armor: armor && armor.cat !== "shield" ? armor : null,
+      shield,
+      armorLabel: armor?.name,
+    });
+    setDraft((d) => ({
+      ...d,
+      scalars: { ...d.scalars, ac: String(r.ac), acFormula: r.acFormula },
+    }));
+  };
 
   const setAbilityKey = (i: number, key: string) =>
     setDraft((d) => ({
@@ -880,6 +905,39 @@ export function CharacterCardWindow({
               onChange={(e) => setScalar("toolsText", e.target.value)}
               aria-label="tools"
             />
+          </div>
+          <div className="ccw-ac-armor">
+            <label>
+              {t.builder.armorForAc}
+              <select
+                aria-label="ac armor"
+                value={acArmor}
+                onChange={(e) => {
+                  setAcArmor(e.target.value);
+                  applyAc(e.target.value, acShield);
+                }}
+              >
+                <option value="">{t.builder.unarmored}</option>
+                {SRD_ARMORS.filter((a) => a.cat !== "shield").map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}（{a.cat}, {a.base}）
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="ccw-ac-shield">
+              <input
+                type="checkbox"
+                aria-label="ac shield"
+                checked={acShield}
+                onChange={(e) => {
+                  setAcShield(e.target.checked);
+                  applyAc(acArmor, e.target.checked);
+                }}
+              />
+              {t.builder.shield}
+            </label>
+            <span className="ccw-ac-hint">→ AC {draft.scalars.ac}</span>
           </div>
           </div>
 

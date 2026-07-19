@@ -768,3 +768,24 @@
 .ccw-body button[aria-label^='remove'] {
   margin-left: 0.5em;
 }
+
+/* AC-from-armor picker on the 熟練 page (character-sheet-pages). */
+.ccw-ac-armor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 0.5em;
+  font-size: 0.85em;
+}
+.ccw-ac-armor label {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.ccw-ac-shield {
+  gap: 0.25em;
+}
+.ccw-ac-hint {
+  color: #9fd6a8;
+}
