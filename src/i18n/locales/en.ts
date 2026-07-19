@@ -440,6 +440,7 @@ export const en: Messages = {
     save: "💾 Save",
     edit: "edit",
     preview: "preview",
+    pages: { core: "Core", skills: "Skills", combat: "Combat", spells: "Spells", story: "Story" },
     panelTitle: "Character cards",
     seedButton: "Load sample cards",
     newCard: "➕ New card",

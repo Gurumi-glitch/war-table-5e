@@ -298,9 +298,49 @@
 /* --- main grid: ability rail | saves+skills ledger | sheet | vitals rail ---- */
 .ccw-main {
   display: grid;
-  grid-template-columns: 6.5em minmax(0, 1fr) minmax(0, 1.5fr) 8em;
+  /* ability rail | saves+skills ledger | vitals rail. The sheet column moved
+     to its own page (character-sheet-pages), so this is 3 columns now. */
+  grid-template-columns: 6.5em minmax(0, 1fr) 8em;
   gap: 0.4em 1.1em;
   align-items: start;
+}
+
+/* --- Paged sheet (character-sheet-pages) --------------------------------- */
+/* All 5 pages stay mounted; only the active one is visible, so unsaved edits
+   on another page and every aria-label test survive a switch. */
+.ccw-page[hidden] {
+  display: none;
+}
+.ccw-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0.2em;
+  padding: 0.35em 0.5em 0;
+  flex-wrap: wrap;
+}
+.ccw-tab,
+.ccw-tab-arrow {
+  background: #160f20;
+  border: 1px solid #4f3a63;
+  color: #b9a9cf;
+  padding: 0.25em 0.7em;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.86em;
+}
+.ccw-tab.is-active {
+  background: linear-gradient(180deg, #4f3a63, #2a1f38);
+  color: #ece4f5;
+  border-color: #9c3466;
+  font-weight: 700;
+}
+.ccw-tab-arrow {
+  flex: none;
+  color: #e0729a;
+}
+.ccw-tab-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 .ccw-rail {
   display: flex;

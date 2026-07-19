@@ -143,6 +143,27 @@ function baseProps(overrides: Partial<CharacterCardWindowProps> = {}): Character
   };
 }
 
+test("the sheet is paged: only the active page's fields are visible, all stay mounted", () => {
+  render(<CharacterCardWindow {...baseProps()} />);
+  // Page 0 (核心) is shown by default; page 4 (故事) is mounted but hidden.
+  expect(screen.getByLabelText("name zh")).toBeVisible();
+  expect(screen.getByLabelText("story")).not.toBeVisible();
+  // Every field is still in the DOM regardless of page — the aria-label test
+  // contracts don't depend on navigation.
+  expect(screen.getByLabelText("ac")).toBeInTheDocument();
+  expect(screen.getByLabelText("attack")).toBeInTheDocument();
+
+  // Jump to 故事 (page index 4): story becomes visible, core hides.
+  fireEvent.click(screen.getByLabelText("page 4"));
+  expect(screen.getByLabelText("story")).toBeVisible();
+  expect(screen.getByLabelText("name zh")).not.toBeVisible();
+
+  // The ← / → arrows walk pages too (4 → back to 3, 法術·特性).
+  fireEvent.click(screen.getByLabelText("prev page"));
+  expect(screen.getByLabelText("ref 0 title")).toBeVisible();
+  expect(screen.getByLabelText("story")).not.toBeVisible();
+});
+
 test("dragging the head calls onDrag with the pointer-relative position", () => {
   const onDrag = vi.fn();
   render(<CharacterCardWindow {...baseProps({ onDrag, win: { x: 10, y: 20, z: 1, folded: false } })} />);

@@ -446,6 +446,7 @@ export const zhTW = {
     save: "💾 儲存",
     edit: "編輯",
     preview: "預覽",
+    pages: { core: "核心", skills: "技能·熟練", combat: "戰鬥", spells: "法術·特性", story: "故事" },
     panelTitle: "角色卡",
     seedButton: "載入示範角卡",
     // 角卡建立／攜帶（prep-public-release）
