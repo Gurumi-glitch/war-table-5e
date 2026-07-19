@@ -8,6 +8,7 @@ import {
   CARD_FIELD_KEYS,
   CHILD_KEYS,
   CARD_FILE_FORMAT,
+  REQUIRED_CARD_DEFAULTS,
 } from "../convex/characters";
 import { add as addRecipe } from "../convex/recipes";
 import { add as addResource } from "../convex/resources";
@@ -78,6 +79,20 @@ test("every effects column is carried by the card file", () => {
   expect(schemaFields("effects", OWNER_KEYS)).toEqual(
     [...CHILD_KEYS.effects].sort(),
   );
+});
+
+test("every required characters column has an import default", () => {
+  // A file exported before a required column existed doesn't carry it; the
+  // import must fill it rather than die in the schema validator. Add a
+  // required column without extending REQUIRED_CARD_DEFAULTS and this fails.
+  const validator = (schema as any).tables.characters.validator;
+  const required = Object.keys(validator.fields).filter(
+    (f) => validator.fields[f].isOptional !== "optional",
+  );
+  expect(required.length).toBeGreaterThan(0);
+  for (const f of required) {
+    expect(REQUIRED_CARD_DEFAULTS, `default for required field: ${f}`).toHaveProperty(f);
+  }
 });
 
 // ── 2. Behavioral: a fully-populated card survives the real export path ─────
@@ -230,6 +245,24 @@ async function linkPool(t: any, playerToken: string, characterId: string) {
     });
   });
 }
+
+test("a pre-rename export (dnd-combat-toolkit-character) is still accepted", async () => {
+  // Files exported before the project rename carry the old discriminator.
+  // Verified 2026-07-19 against all six real prod-backup-2026-07-16 cards;
+  // this inline minimal card is the committable stand-in for那批私人檔案.
+  const { t, playerToken } = await newGame();
+  await t.mutation(importCards, {
+    playerToken,
+    envelope: {
+      format: "dnd-combat-toolkit-character",
+      version: 1,
+      exportedAt: "2026-07-16T00:00:00.000Z",
+      cards: [{ nameZh: "舊版匯出", nameEn: "Legacy", hp: 10, maxHp: 10 }],
+    },
+  });
+  const cards = await t.query(listCharacters, { playerToken });
+  expect(cards.some((c: any) => c.nameZh === "舊版匯出")).toBe(true);
+});
 
 test("a fully-populated card survives export → import byte-identically", async () => {
   const { t, playerToken } = await newGame();

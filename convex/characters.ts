@@ -569,6 +569,49 @@ export function pickCardFields(card: Record<string, unknown>): Record<string, un
 }
 
 /**
+ * Defaults for every REQUIRED card column, applied under an imported card.
+ *
+ * A file exported before a required column existed doesn't carry it, and
+ * without this the insert dies in the schema validator — surfaced to the
+ * player as a generic "unknown error" on a file the app itself once wrote.
+ * The customs stance is symmetric: junk in a file is dropped without
+ * complaint, so a hole in a file is filled without complaint. A default is
+ * visible on the card and editable; a rejection loses the character.
+ *
+ * Keep every default the blank-card value (`blankCardFields` in
+ * src/lib/cardFile.ts) so an old file imports as "blank card + whatever the
+ * file does carry". The structural test in cardRoundTrip.test.ts fails the
+ * day a new required column is added without a default here.
+ */
+export const REQUIRED_CARD_DEFAULTS: Record<string, unknown> = {
+  player: "",
+  nameZh: "",
+  nameEn: "",
+  race: "",
+  classesText: "",
+  level: 1,
+  alignment: "",
+  statusText: "",
+  hp: 10,
+  maxHp: 10,
+  ac: 10,
+  acFormula: "",
+  speedText: "30",
+  initBonus: 0,
+  pb: 2,
+  abilities: ["力量", "敏捷", "體質", "智力", "感知", "魅力"].map((key) => ({
+    key,
+    score: 10,
+    mod: 0,
+  })),
+  attackText: "",
+  toolsText: "",
+  goldText: "",
+  refs: [],
+  story: "",
+};
+
+/**
  * The child rows a card file carries, and the keys each may set. Enumerated
  * rather than passed through: Convex rejects a document carrying a field the
  * schema doesn't declare, so an un-picked stray key would make the whole
@@ -660,7 +703,7 @@ export const importCards = mutation({
       if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
         throw new ConvexError({ code: CARD_ERROR.badEnvelope });
       }
-      const fields = pickCardFields(raw);
+      const fields = { ...REQUIRED_CARD_DEFAULTS, ...pickCardFields(raw) };
       const resources = childRows(raw, "resources").map((r) =>
         pickChild(r, CHILD_KEYS.resources),
       );
