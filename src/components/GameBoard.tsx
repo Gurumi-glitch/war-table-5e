@@ -3,7 +3,7 @@ import type { GameState } from "../../convex/games";
 import type { BattleDraftView } from "../../convex/battleDrafts";
 import type { CombatLogEntry } from "../../convex/combatLog";
 import type { DieType } from "../../convex/diceHelpers";
-import type { CharacterCardPatch } from "../../convex/characters";
+import type { CharacterCardPatch, CharacterFields } from "../../convex/characters";
 import type { RecipeDraft } from "../../convex/recipeLibrary";
 import { normalizeCombatant } from "../lib/normalize";
 import { CombatantList } from "./CombatantList";
@@ -28,11 +28,12 @@ import type { RecipeConfirm } from "./ConfirmPanel";
 export type CharacterHandlers = {
   onUpdateCharacter: (characterId: string, patch: CharacterCardPatch) => void;
   /**
-   * Create a blank card, resolving to its id (character-creation spec). The id
-   * is what lets GameShell open the editor on the new card — creating a card
-   * you then have to hunt for in the strip is a worse button than none.
+   * Create a card from the builder's assembled fields (or a blank card when
+   * `fields` is omitted — legacy callers), resolving to its id. The id is what
+   * lets GameShell open the editor on the new card — creating a card you then
+   * have to hunt for in the strip is a worse button than none.
    */
-  onCreateCharacter?: () => Promise<string>;
+  onCreateCharacter?: (fields?: CharacterFields) => Promise<string>;
   onAddCharacterResource: (
     characterId: string,
     label: string,

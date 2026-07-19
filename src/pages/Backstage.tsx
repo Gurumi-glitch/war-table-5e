@@ -211,10 +211,10 @@ export function Backstage() {
           patch,
         })
       }
-      onCreateCharacter={async () =>
+      onCreateCharacter={async (fields) =>
         (await createCharacter({
           playerToken,
-          fields: blankCardFields(t) as Parameters<typeof createCharacter>[0]["fields"],
+          fields: (fields ?? blankCardFields(t)) as Parameters<typeof createCharacter>[0]["fields"],
         })) as string
       }
       onImportCards={async (envelope) => {
