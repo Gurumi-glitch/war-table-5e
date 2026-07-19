@@ -380,13 +380,19 @@ test("import: one bad card rolls the whole file back", async () => {
   expect(await t.query(listCharacters, { playerToken })).toHaveLength(0);
 });
 
-test("import: a card missing required fields is refused, nothing written", async () => {
+test("import: a card missing required fields gets blank-card defaults", async () => {
+  // Flipped 2026-07-19 (was: refused outright). A file exported before a
+  // required column existed doesn't carry it — refusing it loses the
+  // character, which is the one failure the card file exists to prevent.
+  // The hole is filled with the blank-card default: visible and editable,
+  // while every field the file DOES carry is kept.
   const { t, playerToken } = await newGame();
   const { nameZh, ...incomplete } = charFields();
-  await expect(
-    t.mutation(importCards, { playerToken, envelope: envelope([incomplete]) }),
-  ).rejects.toThrow();
-  expect(await t.query(listCharacters, { playerToken })).toHaveLength(0);
+  await t.mutation(importCards, { playerToken, envelope: envelope([incomplete]) });
+  const cards = await t.query(listCharacters, { playerToken });
+  expect(cards).toHaveLength(1);
+  expect(cards[0].nameZh).toBe("");
+  expect(cards[0].player).toBe(incomplete.player);
 });
 
 test("playground: imported cards are stamped like created ones", async () => {
