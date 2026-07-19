@@ -441,6 +441,7 @@ export const en: Messages = {
     edit: "edit",
     preview: "preview",
     pages: { core: "Core", skills: "Skills", combat: "Combat", spells: "Spells", story: "Story" },
+    divergedTitle: "This value is overridden away from the engine result; ignore it if it is intentional homebrew.",
     panelTitle: "Character cards",
     seedButton: "Load sample cards",
     newCard: "➕ New card",

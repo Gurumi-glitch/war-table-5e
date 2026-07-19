@@ -164,6 +164,42 @@ test("the sheet is paged: only the active page's fields are visible, all stay mo
   expect(screen.getByLabelText("story")).not.toBeVisible();
 });
 
+test("soft warning marks an overridden derived value on engine-backed cards only", () => {
+  // STR mod +3, PB 2, non-proficient → the engine expects a STR save of 3.
+  // Save 0's total is set to 99 (overridden); the rest match the engine.
+  const saves = [
+    { key: "力量", prof: false, total: 99 },
+    { key: "敏捷", prof: false, total: 0 },
+    { key: "體質", prof: false, total: 2 },
+    { key: "智力", prof: false, total: -1 },
+    { key: "感知", prof: false, total: 3 },
+    { key: "魅力", prof: false, total: 0 },
+  ];
+  // Legacy card (no `classes`): nothing to diverge from — no marker.
+  const { unmount } = render(
+    <CharacterCardWindow {...baseProps({ character: { ...character, saves } })} />,
+  );
+  expect(screen.getByLabelText("save 0 total")).not.toHaveClass("ccw-diverged");
+  unmount();
+
+  // Engine-backed card (built by the wizard → has `classes`): the override
+  // away from the engine result IS marked.
+  render(
+    <CharacterCardWindow
+      {...baseProps({
+        character: {
+          ...character,
+          classes: [{ classId: "cleric", level: 1, active: true }],
+          saves,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByLabelText("save 0 total")).toHaveClass("ccw-diverged");
+  // A field left at the engine value is NOT marked.
+  expect(screen.getByLabelText("save 1 total")).not.toHaveClass("ccw-diverged");
+});
+
 test("picking armor writes AC via SRD rules (heavy = base, no DEX)", () => {
   render(<CharacterCardWindow {...baseProps()} />);
   // Chain mail (heavy, base 16) ignores DEX regardless of the card's DEX mod.

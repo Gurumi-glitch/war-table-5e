@@ -447,6 +447,7 @@ export const zhTW = {
     edit: "編輯",
     preview: "預覽",
     pages: { core: "核心", skills: "技能·熟練", combat: "戰鬥", spells: "法術·特性", story: "故事" },
+    divergedTitle: "此值已偏離引擎推導結果；若是 homebrew 可忽略此提示。",
     panelTitle: "角色卡",
     seedButton: "載入示範角卡",
     // 角卡建立／攜帶（prep-public-release）

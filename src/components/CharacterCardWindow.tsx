@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SafeMarkdown } from "./SafeMarkdown";
 import { useT } from "../i18n";
 import { abilityLabel, skillLabel } from "../i18n/terms";
@@ -395,6 +395,36 @@ export function CharacterCardWindow({
   const setScalar = (f: ScalarField, v: string) =>
     setDraft((d) => ({ ...d, scalars: { ...d.scalars, [f]: v } }));
 
+  // Soft "diverged from the engine" warning (character-sheet-pages). Only for
+  // engine-backed cards (built by the wizard → have structured `classes`): a
+  // fresh one matches recalc exactly, so a marker appears ONLY where the user
+  // has overridden a derived number. Legacy homebrew cards (no `classes`) are
+  // never marked — nothing to diverge from. Never shown on the read-only view.
+  const engineBacked = (c.classes?.length ?? 0) > 0;
+  const expected = useMemo(
+    () =>
+      recalcCard({
+        abilities: draft.abilities,
+        // Use the draft's PB (not level-derived) so only a direct override of a
+        // total flags — not the whole cascade when PB itself is overridden.
+        pb: Number(draft.scalars.pb) || 0,
+        initBonus: Number(draft.scalars.initBonus) || 0,
+        saves: draft.saves,
+        skills: draft.skills,
+        spellcastingAbility: draft.scalars.spellcastingAbility,
+        spellAttack: Number(draft.scalars.spellAttack) || 0,
+        spellDc: Number(draft.scalars.spellDc) || 0,
+        passivePerception: Number(draft.scalars.passivePerception) || 0,
+      }),
+    [draft],
+  );
+  /** True when a derived numeric field has been overridden away from the engine. */
+  const diverged = (valueStr: string, expectedNum: number) =>
+    engineBacked && !readOnly && (Number(valueStr) || 0) !== expectedNum;
+  /** Attrs for a diverged field: a subtle class + an explain-on-hover title. */
+  const divAttrs = (on: boolean) =>
+    on ? { className: "ccw-diverged", title: t.card.divergedTitle } : {};
+
   /** Compute AC from a chosen armor + shield (SRD rules) and write ac/acFormula.
    * The result stays hand-editable; picking armor is just a shortcut to the
    * number the DM would otherwise type. */
@@ -762,11 +792,12 @@ export function CharacterCardWindow({
                   </label>
                   <span className="ccw-leader" />
                   <input
-                    className="ccw-prof-total"
+                    className={`ccw-prof-total${diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
                     type="number"
                     value={s.total}
                     onChange={(e) => setSaveTotal(i, Number(e.target.value))}
                     aria-label={`save ${i} total`}
+                    title={diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
                   />
                 </div>
               ))}
@@ -784,11 +815,12 @@ export function CharacterCardWindow({
                   <span className="ccw-prof-name">{skillLabel(t, s.key)}</span>
                   <span className="ccw-leader" />
                   <input
-                    className="ccw-prof-total"
+                    className={`ccw-prof-total${diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
                     type="number"
                     value={s.total}
                     onChange={(e) => setSkillTotal(i, Number(e.target.value))}
                     aria-label={`skill ${i} total`}
+                    title={diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
                   />
                 </div>
               ))}
@@ -839,10 +871,11 @@ export function CharacterCardWindow({
               <Plaque label={t.card.initiative}>
                 <span className="ccw-plaque-plus">+</span>
                 <input
+                  className={diverged(draft.scalars.initBonus, expected.initBonus) ? "ccw-diverged" : undefined}
                   value={draft.scalars.initBonus}
                   onChange={(e) => setScalar("initBonus", e.target.value)}
                   aria-label="init bonus"
-                  title={t.card.initAutoTitle}
+                  title={diverged(draft.scalars.initBonus, expected.initBonus) ? t.card.divergedTitle : t.card.initAutoTitle}
                 />
               </Plaque>
               <Plaque label={t.card.pb}>
@@ -869,6 +902,7 @@ export function CharacterCardWindow({
               <Plaque label={t.card.spellAttack}>
                 <span className="ccw-plaque-plus">+</span>
                 <input
+                  {...divAttrs(diverged(draft.scalars.spellAttack, expected.spellAttack))}
                   value={draft.scalars.spellAttack}
                   onChange={(e) => setScalar("spellAttack", e.target.value)}
                   aria-label="spell attack"
@@ -876,6 +910,7 @@ export function CharacterCardWindow({
               </Plaque>
               <Plaque label={t.card.spellDc}>
                 <input
+                  {...divAttrs(diverged(draft.scalars.spellDc, expected.spellDc))}
                   value={draft.scalars.spellDc}
                   onChange={(e) => setScalar("spellDc", e.target.value)}
                   aria-label="spell dc"
@@ -883,10 +918,11 @@ export function CharacterCardWindow({
               </Plaque>
               <Plaque label={t.card.passivePerception}>
                 <input
+                  className={diverged(draft.scalars.passivePerception, expected.passivePerception) ? "ccw-diverged" : undefined}
                   value={draft.scalars.passivePerception}
                   onChange={(e) => setScalar("passivePerception", e.target.value)}
                   aria-label="passive perception"
-                  title={t.card.passiveAutoTitle}
+                  title={diverged(draft.scalars.passivePerception, expected.passivePerception) ? t.card.divergedTitle : t.card.passiveAutoTitle}
                 />
               </Plaque>
             </div>
