@@ -115,6 +115,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   const defaultSkillsFor = (cls: SrdClass): string[] =>
     (cls.skillFrom.length ? cls.skillFrom : SKILLS.map((s) => s.key)).slice(0, cls.skillChoose);
 
+  // Skills granted by race + background — derived, not stored. Switching race
+  // or background just recomputes this; there's nothing to filter-then-merge.
+  const grantedSkills = useMemo(() => {
+    const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
+    return new Set([...(race?.skills ?? []), ...(bg?.skills ?? [])]);
+  }, [race, bgId]);
+
   // Merged racial ASI (fixed race.asi + any free-choice picks), keyed by
   // ability — the single source both finalAbilities and the per-row "race
   // gave you +N" badge read from. Custom race (no `race`) = no auto ASI.
@@ -155,7 +162,6 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   // Seed proficiencies + skills-available from class + background once we reach that step.
   const seedProfs = () => {
     if (profsSeeded || !primaryClass) return;
-    const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
     const sub = primaryClass.subclasses[0];
     setArmorProfs(
       [...primaryClass.armorProfs, ...(sub.l1 && sub.bonusArmorProfs ? sub.bonusArmorProfs : [])].map((p) => profLabel(t, p)),
@@ -170,17 +176,16 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     };
     setLanguageProfs(race ? race.languages.map(langDn) : []);
     setProfsSeeded(true);
-    if (bg) setChosenSkills((s) => Array.from(new Set([...s, ...bg.skills])));
   };
 
   // Seed default skill picks (first `skillChoose` of the class list) the first
-  // time the class step is reached with a class already selected. Union-merge
-  // only — never removes a skill the player already (un)checked, so a later
-  // reseed (class switch, see the class-select handler below) can't clobber
-  // manual picks.
+  // time the class step is reached with a class already selected. Guarded by
+  // `skillsSeeded` so a re-render of the same class doesn't stomp manual
+  // (un)checks — a real class switch goes through the class-select handler
+  // below instead, which reseeds on purpose.
   const seedSkills = () => {
     if (skillsSeeded || !primaryClass) return;
-    setChosenSkills((s) => Array.from(new Set([...s, ...defaultSkillsFor(primaryClass)])));
+    setChosenSkills(defaultSkillsFor(primaryClass));
     setSkillsSeeded(true);
   };
 
@@ -207,9 +212,17 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
       ...s,
       prof: primaryClass?.saveProfs.includes(s.key as AbilityKey) ?? false,
     }));
+    // Last-line-of-defense filter: only class-legal self-picks + granted
+    // skills ever become proficiencies, even if `chosenSkills` somehow holds
+    // a stale entry from a prior class.
+    const classSkillsForAssemble = primaryClass?.skillFrom.length ? primaryClass.skillFrom : SKILLS.map((s) => s.key);
+    const proficientSkills = new Set([
+      ...grantedSkills,
+      ...chosenSkills.filter((sk) => !primaryClass || classSkillsForAssemble.includes(sk)),
+    ]);
     const skills = defaultSkills(mods, pb).map((s) => ({
       ...s,
-      prof: chosenSkills.includes(s.key) ? ("proficient" as const) : s.prof,
+      prof: proficientSkills.has(s.key) ? ("proficient" as const) : s.prof,
     }));
     const spellAbility = primaryClass?.spellAbility ?? "";
 
@@ -309,29 +322,34 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   };
 
   // Shared skill-proficiency picker — rendered on both the class step and the
-  // background step (same state, same merge-with-background-grants logic).
+  // background step (same state, same granted-skills-are-disabled logic).
   const skillPicker = () => {
     if (!primaryClass) return null;
     // [] skillFrom means "choose any" (Bard) — list every skill, not zero checkboxes.
     const classSkills = primaryClass.skillFrom.length ? primaryClass.skillFrom : SKILLS.map((s) => s.key);
     const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
-    const skillOptions = bg ? [...classSkills, ...bg.skills.filter((sk) => !classSkills.includes(sk))] : classSkills;
+    const skillOptions = [...classSkills, ...[...grantedSkills].filter((sk) => !classSkills.includes(sk))];
+    const chosenCount = chosenSkills.filter((sk) => !grantedSkills.has(sk)).length;
     return (
       <div>
-        <p className="wt-builder-hint">{t.builder.pickSkills}（{primaryClass.skillChoose}）</p>
+        <p className="wt-builder-hint">
+          {t.builder.pickSkills}（{primaryClass.skillChoose}）
+          {chosenCount !== primaryClass.skillChoose && ` ${t.builder.skillCountHint(chosenCount, primaryClass.skillChoose)}`}
+        </p>
         <div className="wt-builder-skills">
           {skillOptions.map((sk) => {
+            const granted = grantedSkills.has(sk);
             const bgGranted = !!bg?.skills.includes(sk);
             return (
               <label key={sk}>
                 <input
                   type="checkbox"
                   aria-label={`skill ${sk}`}
-                  checked={bgGranted || chosenSkills.includes(sk)}
-                  disabled={bgGranted}
+                  checked={granted || chosenSkills.includes(sk)}
+                  disabled={granted}
                   onChange={(e) => setChosenSkills((s) => (e.target.checked ? [...s, sk] : s.filter((x) => x !== sk)))}
                 />
-                {skillLabel(t, sk)}{bgGranted ? t.builder.bgGrantedTag : ""}
+                {skillLabel(t, sk)}{granted ? (bgGranted ? t.builder.bgGrantedTag : t.builder.raceGrantedTag) : ""}
               </label>
             );
           })}
@@ -344,13 +362,6 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   const next = () => {
     if (current === "race") seedSkills();
     if (current === "background") seedProfs();
-    // Arriving at the background step: pre-check the current background's
-    // granted skills so they show up without the player having to touch the
-    // select first (they still get merged again in seedProfs on the way out).
-    if (current === "abilities") {
-      const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
-      if (bg) setChosenSkills((s) => Array.from(new Set([...s, ...bg.skills])));
-    }
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
@@ -380,9 +391,6 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                     setAsiChoices(newRace?.asiChoice ? Array(newRace.asiChoice.count).fill("") : []);
                     // Race now feeds seeded languages too — reseed on race change.
                     setProfsSeeded(false);
-                    // Fixed racial skills (High Elf 察覺, Half-Orc 威嚇…) union-merge
-                    // in immediately, same union-merge-only rule as class skills below.
-                    if (newRace?.skills) setChosenSkills((s) => Array.from(new Set([...s, ...newRace.skills!])));
                   }}
                 >
                   {SRD_RACES.map((r) => (
@@ -428,15 +436,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                           setProfsSeeded(false);
                           setClasses((rows) => rows.map((r, j) => (j === i ? { classId: e.target.value, classNameZh: cls?.nameZh, level: r.level, active: r.active } : r)));
                           // Row 0 drives `primaryClass` in the common (non-multiclass)
-                          // case — reseed its skill defaults live on switch. Union-merge,
-                          // so it never clears skills the player already picked.
+                          // case — reseed its skill defaults live on switch. This is a
+                          // full reseed, not a merge: the old class's picks (self-chosen
+                          // or seeded) aren't legal under the new class's skillFrom, so
+                          // they're dropped. Matches background's reseed-on-switch below.
                           if (i === 0) {
-                            if (cls) {
-                              setChosenSkills((s) => Array.from(new Set([...s, ...defaultSkillsFor(cls)])));
-                              setSkillsSeeded(true);
-                            } else {
-                              setSkillsSeeded(false);
-                            }
+                            setChosenSkills(cls ? defaultSkillsFor(cls) : []);
+                            setSkillsSeeded(!!cls);
                           }
                         }}
                       >
@@ -576,12 +582,6 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                   aria-label="background select"
                   value={bgId}
                   onChange={(e) => {
-                    const oldBg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
-                    const newBg = SRD_BACKGROUNDS.find((b) => b.id === e.target.value);
-                    setChosenSkills((s) => {
-                      const withoutOld = oldBg ? s.filter((sk) => !oldBg.skills.includes(sk)) : s;
-                      return newBg ? Array.from(new Set([...withoutOld, ...newBg.skills])) : withoutOld;
-                    });
                     setBgId(e.target.value);
                     setProfsSeeded(false);
                   }}

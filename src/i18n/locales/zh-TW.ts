@@ -499,6 +499,8 @@ export const zhTW = {
     background: "選擇背景",
     pickSkills: "選擇技能熟練",
     bgGrantedTag: "（背景）",
+    raceGrantedTag: "（種族）",
+    skillCountHint: (chosen: number, needed: number): string => `⚠ 已選 ${chosen} 項，職業規則為 ${needed} 項`,
     armor: "護甲熟練",
     weapons: "武器熟練",
     tools: "工具熟練",

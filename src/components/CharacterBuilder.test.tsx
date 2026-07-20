@@ -264,6 +264,72 @@ test("class step: barbarian's first `skillChoose` skills are pre-checked, and re
   const insight = screen.getByLabelText("skill 洞悉") as HTMLInputElement;
   expect(history.checked).toBe(true);
   expect(insight.checked).toBe(true);
+  // Barbarian's old seed (馴獸) isn't in Cleric's skillFrom — it must be fully
+  // gone, not just hidden-but-still-checked (regression: the old union-merge
+  // left it checked-and-invisible).
+  expect(screen.queryByLabelText("skill 馴獸")).toBeNull();
+});
+
+test("switching class clears the old class's seeded skills from the assembled payload (regression)", () => {
+  const onCreate = vi.fn((_p: BuilderPayload) => Promise.resolve());
+  render(<CharacterBuilder onCreate={onCreate} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class (default: barbarian, seeds 馴獸/運動)
+
+  // Bard (skillFrom: any) — union-merge used to pile 特技/馴獸/運動 on top.
+  fireEvent.change(screen.getByLabelText("class select 0"), { target: { value: "bard" } });
+  // Wizard (skillFrom: 奧秘/歷史/洞悉/調查/醫藥/宗教) — none of barbarian's or
+  // bard's picks are legal here.
+  fireEvent.change(screen.getByLabelText("class select 0"), { target: { value: "wizard" } });
+
+  expect(screen.queryByLabelText("skill 馴獸")).toBeNull();
+  // Already 1 click into the wizard: class → abilities → background → profs
+  // → spells → review is 5 more (not walkToReview()'s 6, which assumes a
+  // fresh start at the race step).
+  for (let i = 0; i < 5; i++) fireEvent.click(screen.getByLabelText("builder next"));
+  fireEvent.click(screen.getByLabelText("builder finish"));
+
+  const { fields } = onCreate.mock.calls[0][0] as BuilderPayload;
+  // Assert on the PAYLOAD, not just the UI — the bug was UI/state divergence.
+  const profOf = (key: string) => fields.skills!.find((s) => s.key === key)!.prof;
+  expect(profOf("馴獸")).not.toBe("proficient");
+  expect(profOf("運動")).not.toBe("proficient");
+  expect(profOf("特技")).not.toBe("proficient");
+  expect(profOf("奧秘")).toBe("proficient");
+  expect(profOf("歷史")).toBe("proficient");
+});
+
+test("switching race clears the old race's granted skills from the assembled payload (regression)", () => {
+  const onCreate = vi.fn((_p: BuilderPayload) => Promise.resolve());
+  render(<CharacterBuilder onCreate={onCreate} onCancel={vi.fn()} />);
+
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "high-elf" } }); // grants 察覺
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "half-orc" } }); // grants 威嚇
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  // Wizard's skillFrom has neither 察覺 nor 威嚇 — isolates the race-grant path
+  // from the class-grant path.
+  fireEvent.change(screen.getByLabelText("class select 0"), { target: { value: "wizard" } });
+  // Already 1 click into class: 5 more next-clicks reach review (see the
+  // sibling test above for why walkToReview()'s hardcoded 6 doesn't fit here).
+  for (let i = 0; i < 5; i++) fireEvent.click(screen.getByLabelText("builder next"));
+  fireEvent.click(screen.getByLabelText("builder finish"));
+
+  const { fields } = onCreate.mock.calls[0][0] as BuilderPayload;
+  const profOf = (key: string) => fields.skills!.find((s) => s.key === key)!.prof;
+  expect(profOf("察覺")).not.toBe("proficient");
+  expect(profOf("威嚇")).toBe("proficient");
+});
+
+test("race-granted skill shows disabled+checked on the class step even when outside the class's skillFrom", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "high-elf" } }); // grants 察覺
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  // Wizard's skillFrom doesn't include 察覺 — it used to be fully invisible.
+  fireEvent.change(screen.getByLabelText("class select 0"), { target: { value: "wizard" } });
+
+  const perception = screen.getByLabelText("skill 察覺") as HTMLInputElement;
+  expect(perception.checked).toBe(true);
+  expect(perception.disabled).toBe(true);
 });
 
 test("bard's empty skillFrom means 'choose any' — background step lists every skill, not zero", () => {

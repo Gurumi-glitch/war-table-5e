@@ -17,6 +17,18 @@ Because auto-derivation is incomplete, derived fields carry manual overrides tha
 - **Recompute all derived values on any base edit.** Rejected — silently wipes unrelated manual overrides (the compensating overrides for un-modeled bonuses).
 - **Full auto-derivation incl. all species/subrace bonuses.** Out of v1 scope (too many species, each different). Deferred. Until then: manual compensation + granular recompute.
 
+## Amendment (2026-07-20, PR #10 character builder): granted values are derived, chosen values are state
+
+The character **builder** (`CharacterBuilder.tsx`, shipped in PR #10) creates the card this ADR governs, and it hit the same hazard from the other direction. Its proficiency state had three sources — species grants, background grants, and the player's own class picks — all union-merged into one `chosenSkills` array. Only the background handler removed the *previous* background's grants; switching class or species left the old source's skills in state forever. Because the picker renders only the *current* class's list, the leftovers became **checked but unrenderable**, and card assembly wrote them out as real proficiencies. A wizard could ship with five skill proficiencies, three of them not even on the wizard list, with no UI surface showing it. Fixed by removing the accumulator, not by adding a third filter (`4fdb742`).
+
+**The rule this establishes for builder-shaped state:** anything *implied by a selection* (species/background grants, racial ASI, seeded languages) is a **derived `useMemo`, never stored state** — changing the selection recomputes it, so there is nothing to filter-then-merge. Only what the **user actively chose** goes in state. The tell that you are on the wrong side of this line is writing a second "remove the old source's contribution first" filter in a handler: the third source will get it wrong, and the wrongness will be invisible rather than loud.
+
+Two corollaries, both consistent with ADR-0002:
+- **Granted values must be visible, not merely applied.** Grants render as disabled+checked with a `（種族）`/`（背景）` tag. A silently-applied grant is the same failure class as a silently-wrong derived value — the DM cannot audit what the UI does not draw. (Species grants outside the class list used to render nowhere at all.)
+- **Rule violations warn, never block.** Picking more skills than the class allows produces a soft `⚠` hint next to the count and nothing else — same shape as the "diverged from engine" warning on overridden values (`493b673`) and the point-buy out-of-range hint. Manual override still wins; the hint exists so the deviation is *visible* rather than silent.
+
+Testing corollary: when the defect is UI/state divergence, the regression test must assert on the **assembled payload** (the `onCreate` call), not on checkbox state. A test that reads the UI is reading the half that lies.
+
 ## Consequence for future work
 
 Extending the auto-derivation graph (e.g. adding a species-bonus layer) must **preserve the granular-recompute guarantee**: a newly-derived value recomputes only when its own inputs change, never as part of a global recompute. Do not collapse the granular helpers into a "recompute everything" pass. Any new derived field must declare its dependency set explicitly so its recompute stays scoped. This ADR and ADR-0002 together are why the character card's overrides survive edits.

@@ -492,6 +492,8 @@ export const en: Messages = {
     background: "Choose background",
     pickSkills: "Choose skill proficiencies",
     bgGrantedTag: " (background)",
+    raceGrantedTag: " (race)",
+    skillCountHint: (chosen: number, needed: number): string => `⚠ ${chosen} chosen, class rule allows ${needed}`,
     armor: "Armor proficiencies",
     weapons: "Weapon proficiencies",
     tools: "Tool proficiencies",
