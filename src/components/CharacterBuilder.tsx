@@ -103,12 +103,17 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
 
   // Skills chosen (zh keys), Armor for AC
   const [chosenSkills, setChosenSkills] = useState<string[]>([]);
+  const [skillsSeeded, setSkillsSeeded] = useState(false);
   const [armorId, setArmorId] = useState<string>(""); // "" = unarmored
   const [shield, setShield] = useState(false);
 
   const race = SRD_RACES.find((r) => r.id === raceId);
   const primary = classes.find((c) => c.active) ?? classes[0];
   const primaryClass: SrdClass | undefined = SRD_CLASSES.find((c) => c.id === primary?.classId);
+
+  // [] skillFrom means "choose any" (Bard) — treat as every skill key.
+  const defaultSkillsFor = (cls: SrdClass): string[] =>
+    (cls.skillFrom.length ? cls.skillFrom : SKILLS.map((s) => s.key)).slice(0, cls.skillChoose);
 
   // Merged racial ASI (fixed race.asi + any free-choice picks), keyed by
   // ability — the single source both finalAbilities and the per-row "race
@@ -165,6 +170,17 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     setLanguageProfs(race ? race.languages.map(langDn) : []);
     setProfsSeeded(true);
     if (bg) setChosenSkills((s) => Array.from(new Set([...s, ...bg.skills])));
+  };
+
+  // Seed default skill picks (first `skillChoose` of the class list) the first
+  // time the class step is reached with a class already selected. Union-merge
+  // only — never removes a skill the player already (un)checked, so a later
+  // reseed (class switch, see the class-select handler below) can't clobber
+  // manual picks.
+  const seedSkills = () => {
+    if (skillsSeeded || !primaryClass) return;
+    setChosenSkills((s) => Array.from(new Set([...s, ...defaultSkillsFor(primaryClass)])));
+    setSkillsSeeded(true);
   };
 
   const pointBudget = POINT_BUY_BUDGET - pointBuyTotal(ABILITY_KEYS.map((k) => baseScores[k]));
@@ -291,8 +307,41 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     }
   };
 
+  // Shared skill-proficiency picker — rendered on both the class step and the
+  // background step (same state, same merge-with-background-grants logic).
+  const skillPicker = () => {
+    if (!primaryClass) return null;
+    // [] skillFrom means "choose any" (Bard) — list every skill, not zero checkboxes.
+    const classSkills = primaryClass.skillFrom.length ? primaryClass.skillFrom : SKILLS.map((s) => s.key);
+    const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
+    const skillOptions = bg ? [...classSkills, ...bg.skills.filter((sk) => !classSkills.includes(sk))] : classSkills;
+    return (
+      <div>
+        <p className="wt-builder-hint">{t.builder.pickSkills}（{primaryClass.skillChoose}）</p>
+        <div className="wt-builder-skills">
+          {skillOptions.map((sk) => {
+            const bgGranted = !!bg?.skills.includes(sk);
+            return (
+              <label key={sk}>
+                <input
+                  type="checkbox"
+                  aria-label={`skill ${sk}`}
+                  checked={bgGranted || chosenSkills.includes(sk)}
+                  disabled={bgGranted}
+                  onChange={(e) => setChosenSkills((s) => (e.target.checked ? [...s, sk] : s.filter((x) => x !== sk)))}
+                />
+                {skillLabel(t, sk)}{bgGranted ? t.builder.bgGrantedTag : ""}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const current: Step = STEPS[step];
   const next = () => {
+    if (current === "race") seedSkills();
     if (current === "background") seedProfs();
     // Arriving at the background step: pre-check the current background's
     // granted skills so they show up without the player having to touch the
@@ -365,6 +414,17 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                           const cls = SRD_CLASSES.find((x) => x.id === e.target.value);
                           setProfsSeeded(false);
                           setClasses((rows) => rows.map((r, j) => (j === i ? { classId: e.target.value, classNameZh: cls?.nameZh, level: r.level, active: r.active } : r)));
+                          // Row 0 drives `primaryClass` in the common (non-multiclass)
+                          // case — reseed its skill defaults live on switch. Union-merge,
+                          // so it never clears skills the player already picked.
+                          if (i === 0) {
+                            if (cls) {
+                              setChosenSkills((s) => Array.from(new Set([...s, ...defaultSkillsFor(cls)])));
+                              setSkillsSeeded(true);
+                            } else {
+                              setSkillsSeeded(false);
+                            }
+                          }
                         }}
                       >
                         {SRD_CLASSES.map((x) => (
@@ -425,6 +485,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
               <button aria-label="add class" onClick={() => setClasses((rows) => [...rows, { classId: SRD_CLASSES[0].id, classNameZh: SRD_CLASSES[0].nameZh, level: 0, active: false }])}>
                 + {t.builder.addClass}
               </button>
+              {skillPicker()}
             </fieldset>
           )}
 
@@ -518,37 +579,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                   <option value="">{t.builder.custom}</option>
                 </select>
               </label>
-              {primaryClass && (
-                <div>
-                  <p className="wt-builder-hint">{t.builder.pickSkills}（{primaryClass.skillChoose}）</p>
-                  <div className="wt-builder-skills">
-                    {(() => {
-                      // [] skillFrom means "choose any" (Bard) — list every skill,
-                      // not zero checkboxes.
-                      const classSkills = primaryClass.skillFrom.length ? primaryClass.skillFrom : SKILLS.map((s) => s.key);
-                      const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
-                      const skillOptions = bg
-                        ? [...classSkills, ...bg.skills.filter((sk) => !classSkills.includes(sk))]
-                        : classSkills;
-                      return skillOptions.map((sk) => {
-                        const bgGranted = !!bg?.skills.includes(sk);
-                        return (
-                          <label key={sk}>
-                            <input
-                              type="checkbox"
-                              aria-label={`skill ${sk}`}
-                              checked={bgGranted || chosenSkills.includes(sk)}
-                              disabled={bgGranted}
-                              onChange={(e) => setChosenSkills((s) => (e.target.checked ? [...s, sk] : s.filter((x) => x !== sk)))}
-                            />
-                            {skillLabel(t, sk)}{bgGranted ? t.builder.bgGrantedTag : ""}
-                          </label>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
+              {skillPicker()}
             </fieldset>
           )}
 

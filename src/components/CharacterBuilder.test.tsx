@@ -242,6 +242,30 @@ test("acolyte background: granted skills (洞悉/宗教) show pre-checked and di
   expect(religion.disabled).toBe(true);
 });
 
+test("class step: barbarian's first `skillChoose` skills are pre-checked, and reseed on class switch", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class (default: barbarian)
+
+  // Barbarian: skillChoose 2, skillFrom starts with 馴獸, 運動.
+  const beastHandling = screen.getByLabelText("skill 馴獸") as HTMLInputElement;
+  const athletics = screen.getByLabelText("skill 運動") as HTMLInputElement;
+  expect(beastHandling.checked).toBe(true);
+  expect(athletics.checked).toBe(true);
+  const intimidation = screen.getByLabelText("skill 威嚇") as HTMLInputElement;
+  expect(intimidation.checked).toBe(false);
+
+  // Player unchecks a default — manual pick must survive a re-render of this step.
+  fireEvent.click(athletics);
+  expect((screen.getByLabelText("skill 運動") as HTMLInputElement).checked).toBe(false);
+
+  // Switching class reseeds: Cleric's first 2 skillFrom (歷史, 洞悉) get pre-checked.
+  fireEvent.change(screen.getByLabelText("class select 0"), { target: { value: "cleric" } });
+  const history = screen.getByLabelText("skill 歷史") as HTMLInputElement;
+  const insight = screen.getByLabelText("skill 洞悉") as HTMLInputElement;
+  expect(history.checked).toBe(true);
+  expect(insight.checked).toBe(true);
+});
+
 test("bard's empty skillFrom means 'choose any' — background step lists every skill, not zero", () => {
   render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
   fireEvent.click(screen.getByLabelText("builder next")); // → class
