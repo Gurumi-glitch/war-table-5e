@@ -652,6 +652,7 @@ export const en: Messages = {
       autoFail: "Auto-fail (saves)",
     },
     displayName: (nameZh: string, nameEn: string): string => nameEn || nameZh,
+    acLabels: { armor: "armor", unarmored: "unarmored", mageArmor: "mage armor", dex: "DEX", mod: "mod", shield: "shield" },
     profs: {
       輕甲: "Light armor",
       中甲: "Medium armor",

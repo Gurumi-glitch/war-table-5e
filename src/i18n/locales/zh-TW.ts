@@ -674,6 +674,8 @@ export const zhTW = {
     },
     /** Locale-priority pick for bilingual name fields (characters/enemies): zh first, fallback en. */
     displayName: (nameZh: string, nameEn: string): string => nameZh || nameEn,
+    /** acFor()'s acFormula fixed-word parts (dndCalc.ts AcFormulaLabels). */
+    acLabels: { armor: "護甲", unarmored: "無甲", mageArmor: "法師護甲", dex: "敏", mod: "調", shield: "盾" },
     /** SRD armor/weapon proficiency terms (srdContent armorProfs/weaponProfs/bonusArmorProfs values). zh is identity. */
     profs: {
       輕甲: "輕甲",

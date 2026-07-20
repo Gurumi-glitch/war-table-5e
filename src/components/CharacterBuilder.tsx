@@ -143,9 +143,10 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
         armor: armor && armor.cat !== "shield" ? armor : null,
         shield: shield || armor?.cat === "shield",
         armorLabel: armor && dn(armor.nameZh, armor.name),
+        labels: t.terms.acLabels,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [armorId, shield, finalAbilities],
+    [armorId, shield, finalAbilities, t],
   );
 
   // HP preview (primary class hit die)

@@ -487,6 +487,7 @@ export function CharacterCardWindow({
       armor: armor && armor.cat !== "shield" ? armor : null,
       shield,
       armorLabel: armor && t.terms.displayName(armor.nameZh, armor.name),
+      labels: t.terms.acLabels,
     });
     setDraft((d) => ({
       ...d,

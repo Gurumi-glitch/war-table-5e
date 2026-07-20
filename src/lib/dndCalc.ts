@@ -238,6 +238,20 @@ export type ArmorClass = { base: number; dexBonus: boolean; maxBonus?: number };
  *   - unarmored: unarmoredBase (10, or 13 for Mage Armor) + dex
  *                + unarmoredExtraMod (CON barbarian / WIS monk) + shield
  */
+/** acFormula's fixed-word parts (armor/unarmored/mage-armor/dex/mod/shield
+ * labels) — zh default so every existing caller/test is unaffected; UI
+ * callers pass the active locale's labels so the formula matches the
+ * interface language instead of always rendering in zh. */
+export type AcFormulaLabels = {
+  armor: string;
+  unarmored: string;
+  mageArmor: string;
+  dex: string;
+  mod: string;
+  shield: string;
+};
+const AC_LABELS_ZH: AcFormulaLabels = { armor: "護甲", unarmored: "無甲", mageArmor: "法師護甲", dex: "敏", mod: "調", shield: "盾" };
+
 export function acFor(opts: {
   dexMod: number;
   armor?: ArmorClass | null;
@@ -247,22 +261,24 @@ export function acFor(opts: {
   unarmoredBase?: number;
   /** Extra ability mod for Unarmored Defense (Barbarian CON / Monk WIS). */
   unarmoredExtraMod?: number;
+  labels?: AcFormulaLabels;
 }): { ac: number; acFormula: string } {
+  const L = opts.labels ?? AC_LABELS_ZH;
   const shieldBonus = opts.shield ? 2 : 0;
   if (opts.armor) {
     const dex = opts.armor.dexBonus
       ? Math.min(opts.dexMod, opts.armor.maxBonus ?? Infinity)
       : 0;
-    const parts = [`${opts.armorLabel ?? "護甲"} ${opts.armor.base}`];
-    if (opts.armor.dexBonus && dex !== 0) parts.push(`敏 ${dex}`);
-    if (shieldBonus) parts.push(`盾 ${shieldBonus}`);
+    const parts = [`${opts.armorLabel ?? L.armor} ${opts.armor.base}`];
+    if (opts.armor.dexBonus && dex !== 0) parts.push(`${L.dex} ${dex}`);
+    if (shieldBonus) parts.push(`${L.shield} ${shieldBonus}`);
     return { ac: opts.armor.base + dex + shieldBonus, acFormula: parts.join(" + ") };
   }
   const base = opts.unarmoredBase ?? 10;
   const extra = opts.unarmoredExtraMod ?? 0;
-  const parts = [`${base === 13 ? "法師護甲" : "無甲"} ${base}`, `敏 ${opts.dexMod}`];
-  if (extra) parts.push(`調 ${extra}`);
-  if (shieldBonus) parts.push(`盾 ${shieldBonus}`);
+  const parts = [`${base === 13 ? L.mageArmor : L.unarmored} ${base}`, `${L.dex} ${opts.dexMod}`];
+  if (extra) parts.push(`${L.mod} ${extra}`);
+  if (shieldBonus) parts.push(`${L.shield} ${shieldBonus}`);
   return { ac: base + opts.dexMod + extra + shieldBonus, acFormula: parts.join(" + ") };
 }
 
