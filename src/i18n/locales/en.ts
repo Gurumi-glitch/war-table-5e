@@ -481,6 +481,7 @@ export const en: Messages = {
     methods: { manual: "Manual / rolled", array: "Standard array", pointbuy: "Point buy (27)" },
     arrayHint: "Standard array",
     pointsLeft: "Points left",
+    pointsOverRange: (list: string): string => `⚠ ${list} outside the point-buy range 8–15, not counted`,
     asiChoicePick: "Racial +1 (choose)",
     modTag: "mod ",
     asiChoosePlaceholder: "Choose an ability…",
@@ -492,6 +493,11 @@ export const en: Messages = {
     weapons: "Weapon proficiencies",
     tools: "Tool proficiencies",
     languages: "Languages",
+    langHint: (fromRace: number, fromBg: number): string => {
+      const total = fromRace + fromBg;
+      const parts = [fromRace > 0 ? `race ${fromRace}` : "", fromBg > 0 ? `background ${fromBg}` : ""].filter(Boolean).join(" + ");
+      return `Choose ${total} language${total > 1 ? "s" : ""} of your choice (${parts})`;
+    },
     armorForAc: "Armor worn (for AC)",
     unarmored: "Unarmored",
     shield: "Shield (+2)",

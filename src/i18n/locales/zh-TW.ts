@@ -488,6 +488,7 @@ export const zhTW = {
     methods: { manual: "手動 / 手骰", array: "固定陣列", pointbuy: "27 點購買" },
     arrayHint: "固定陣列",
     pointsLeft: "剩餘點數",
+    pointsOverRange: (list: string): string => `⚠ ${list} 超出點購範圍 8–15，未計入`,
     asiChoicePick: "種族自選 +1",
     modTag: "調整 ",
     asiChoosePlaceholder: "選擇能力值…",
@@ -499,6 +500,10 @@ export const zhTW = {
     weapons: "武器熟練",
     tools: "工具熟練",
     languages: "語言",
+    langHint: (fromRace: number, fromBg: number): string => {
+      const parts = [fromRace > 0 ? `種族 ${fromRace}` : "", fromBg > 0 ? `背景 ${fromBg}` : ""].filter(Boolean).join("＋");
+      return `可自選語言 ${fromRace + fromBg} 種（${parts}）`;
+    },
     armorForAc: "穿著護甲（計算 AC）",
     unarmored: "無甲",
     shield: "持盾（+2）",

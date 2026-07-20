@@ -28,6 +28,10 @@ export type SrdRace = {
   speedFt: number;
   size: Size;
   traits: string[];
+  /** Languages every member speaks (zh, must match LANGUAGE_OPTIONS zh exactly). */
+  languages: string[];
+  /** Count of extra free-choice languages (Human/High Elf/Half-Elf: 1). */
+  languageChoice?: number;
 };
 
 export type SrdSubclass = {
@@ -216,15 +220,15 @@ export const LANGUAGE_OPTIONS: ProfOption[] = [
 // --- Races (SRD 01_Races): 9, one SRD subrace baked into each ---
 
 export const SRD_RACES: SrdRace[] = [
-  { id: "dragonborn", nameZh: "龍裔", nameEn: "Dragonborn", asi: { 力量: 2, 魅力: 1 }, speedFt: 30, size: "中型", traits: ["龍息", "傷害抗性"] },
-  { id: "hill-dwarf", nameZh: "丘陵矮人", nameEn: "Hill Dwarf", asi: { 體質: 2, 感知: 1 }, speedFt: 25, size: "中型", traits: ["黑暗視覺", "矮人韌性", "矮人戰鬥訓練", "石之狡詐", "重甲不減速", "丘陵矮人堅韌（每級 +1 HP）"] },
-  { id: "high-elf", nameZh: "高等精靈", nameEn: "High Elf", asi: { 敏捷: 2, 智力: 1 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "精類血統（魅惑優勢、免疫魔法沉睡）", "敏銳感官（察覺熟練）", "法術戲法（1 個法師戲法）", "額外語言"] },
-  { id: "rock-gnome", nameZh: "岩石侏儒", nameEn: "Rock Gnome", asi: { 智力: 2, 體質: 1 }, speedFt: 25, size: "小型", traits: ["黑暗視覺", "侏儒狡詐（對抗魔法的智/感/魅豁免優勢）", "工匠巧手"] },
-  { id: "half-elf", nameZh: "半精靈", nameEn: "Half-Elf", asi: { 魅力: 2 }, asiChoice: { count: 2, amount: 1 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "精類血統", "技能多才（2 項技能熟練）"] },
-  { id: "half-orc", nameZh: "半獸人", nameEn: "Half-Orc", asi: { 力量: 2, 體質: 1 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "威嚇熟練", "頑強耐力", "野蠻攻擊"] },
-  { id: "lightfoot-halfling", nameZh: "輕足半身人", nameEn: "Lightfoot Halfling", asi: { 敏捷: 2, 魅力: 1 }, speedFt: 25, size: "小型", traits: ["幸運", "勇敢", "半身人靈巧", "天生潛行"] },
-  { id: "human", nameZh: "人類", nameEn: "Human", asi: { 力量: 1, 敏捷: 1, 體質: 1, 智力: 1, 感知: 1, 魅力: 1 }, speedFt: 30, size: "中型", traits: ["額外語言"] },
-  { id: "tiefling", nameZh: "提夫林", nameEn: "Tiefling", asi: { 智力: 1, 魅力: 2 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "地獄抗性（火焰抗性）", "地獄血脈（戲法：法焰術等）"] },
+  { id: "dragonborn", nameZh: "龍裔", nameEn: "Dragonborn", asi: { 力量: 2, 魅力: 1 }, speedFt: 30, size: "中型", traits: ["龍息", "傷害抗性"], languages: ["通用語", "龍語"] },
+  { id: "hill-dwarf", nameZh: "丘陵矮人", nameEn: "Hill Dwarf", asi: { 體質: 2, 感知: 1 }, speedFt: 25, size: "中型", traits: ["黑暗視覺", "矮人韌性", "矮人戰鬥訓練", "石之狡詐", "重甲不減速", "丘陵矮人堅韌（每級 +1 HP）"], languages: ["通用語", "矮人語"] },
+  { id: "high-elf", nameZh: "高等精靈", nameEn: "High Elf", asi: { 敏捷: 2, 智力: 1 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "精類血統（魅惑優勢、免疫魔法沉睡）", "敏銳感官（察覺熟練）", "法術戲法（1 個法師戲法）", "額外語言"], languages: ["通用語", "精靈語"], languageChoice: 1 },
+  { id: "rock-gnome", nameZh: "岩石侏儒", nameEn: "Rock Gnome", asi: { 智力: 2, 體質: 1 }, speedFt: 25, size: "小型", traits: ["黑暗視覺", "侏儒狡詐（對抗魔法的智/感/魅豁免優勢）", "工匠巧手"], languages: ["通用語", "侏儒語"] },
+  { id: "half-elf", nameZh: "半精靈", nameEn: "Half-Elf", asi: { 魅力: 2 }, asiChoice: { count: 2, amount: 1 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "精類血統", "技能多才（2 項技能熟練）"], languages: ["通用語", "精靈語"], languageChoice: 1 },
+  { id: "half-orc", nameZh: "半獸人", nameEn: "Half-Orc", asi: { 力量: 2, 體質: 1 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "威嚇熟練", "頑強耐力", "野蠻攻擊"], languages: ["通用語", "獸人語"] },
+  { id: "lightfoot-halfling", nameZh: "輕足半身人", nameEn: "Lightfoot Halfling", asi: { 敏捷: 2, 魅力: 1 }, speedFt: 25, size: "小型", traits: ["幸運", "勇敢", "半身人靈巧", "天生潛行"], languages: ["通用語", "半身人語"] },
+  { id: "human", nameZh: "人類", nameEn: "Human", asi: { 力量: 1, 敏捷: 1, 體質: 1, 智力: 1, 感知: 1, 魅力: 1 }, speedFt: 30, size: "中型", traits: ["額外語言"], languages: ["通用語"], languageChoice: 1 },
+  { id: "tiefling", nameZh: "提夫林", nameEn: "Tiefling", asi: { 智力: 1, 魅力: 2 }, speedFt: 30, size: "中型", traits: ["黑暗視覺", "地獄抗性（火焰抗性）", "地獄血脈（戲法：法焰術等）"], languages: ["通用語", "煉獄語"] },
 ];
 
 // --- Classes (SRD 02_Classes): 12, each with its single SRD subclass ---

@@ -156,12 +156,22 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     );
     setWeaponProfs(primaryClass.weaponProfs.map((p) => profLabel(t, p)));
     setToolProfs([]);
-    setLanguageProfs([]);
+    // Racial fixed languages (Human/Dragonborn/…) seed as chips; SRD classes
+    // grant none, so there's no class-side language list to fold in here.
+    const langDn = (zh: string) => {
+      const o = LANGUAGE_OPTIONS.find((x) => x.zh === zh);
+      return o ? dn(o.zh, o.en) : zh;
+    };
+    setLanguageProfs(race ? race.languages.map(langDn) : []);
     setProfsSeeded(true);
     if (bg) setChosenSkills((s) => Array.from(new Set([...s, ...bg.skills])));
   };
 
   const pointBudget = POINT_BUY_BUDGET - pointBuyTotal(ABILITY_KEYS.map((k) => baseScores[k]));
+  // pointBuyTotal treats scores outside 8-15 as 0 cost (dndCalc.ts, unchanged) —
+  // that's a silent no-op that makes the remaining-points number jump when a
+  // score crosses 15. Explain it here instead of clamping the input.
+  const outOfRange = ABILITY_KEYS.filter((k) => baseScores[k] < 8 || baseScores[k] > 15);
 
   const raceLabel = race ? `${dn(race.nameZh, race.nameEn)}（${cc.sizes[race.size]}）` : customRace;
   const classesText = classes
@@ -318,6 +328,8 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                     setRaceId(e.target.value);
                     const newRace = SRD_RACES.find((r) => r.id === e.target.value);
                     setAsiChoices(newRace?.asiChoice ? Array(newRace.asiChoice.count).fill("") : []);
+                    // Race now feeds seeded languages too — reseed on race change.
+                    setProfsSeeded(false);
                   }}
                 >
                   {SRD_RACES.map((r) => (
@@ -427,7 +439,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                 ))}
               </div>
               {method === "array" && <p className="wt-builder-hint">{t.builder.arrayHint}：{STANDARD_ARRAY.join("、")}</p>}
-              {method === "pointbuy" && <p className="wt-builder-hint">{t.builder.pointsLeft}：{pointBudget}</p>}
+              {method === "pointbuy" && (
+                <p className="wt-builder-hint">
+                  {t.builder.pointsLeft}：{pointBudget}
+                  {outOfRange.length > 0 &&
+                    ` ${t.builder.pointsOverRange(outOfRange.map((k) => abilityLabel(t, k)).join("、"))}`}
+                </p>
+              )}
               {race?.asiChoice && (
                 <div className="wt-builder-asichoice">
                   {Array.from({ length: race.asiChoice.count }).map((_, i) => {
@@ -540,6 +558,16 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
               <ProfPicker fieldKey="weapon" label={t.builder.weapons} options={WEAPON_PROF_OPTIONS} list={weaponProfs} onChange={setWeaponProfs} />
               <ProfPicker fieldKey="tool" label={t.builder.tools} options={TOOL_PROF_OPTIONS} list={toolProfs} onChange={setToolProfs} />
               <ProfPicker fieldKey="lang" label={t.builder.languages} options={LANGUAGE_OPTIONS} list={languageProfs} onChange={setLanguageProfs} />
+              {(() => {
+                const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
+                const fromRace = race?.languageChoice ?? 0;
+                const fromBg = bg?.languages ?? 0;
+                // Race's FIXED languages are already visible as chips — only
+                // the free-choice counts (race + background) go in the hint.
+                return fromRace + fromBg > 0 ? (
+                  <p className="wt-builder-hint" aria-label="lang hint">{t.builder.langHint(fromRace, fromBg)}</p>
+                ) : null;
+              })()}
               <hr />
               <label>
                 {t.builder.armorForAc}

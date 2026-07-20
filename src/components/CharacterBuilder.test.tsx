@@ -169,6 +169,65 @@ test("point buy starts at the base-8 score: full 27 points unspent", () => {
   expect(screen.getByText(/剩餘點數/).textContent).toContain("27");
 });
 
+test("point buy: a score outside 8-15 shows a soft warning without blocking input", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("method pointbuy"));
+
+  fireEvent.change(screen.getByLabelText("ability 力量"), { target: { value: "16" } });
+  expect(screen.getByText(/剩餘點數/).textContent).toContain("超出點購範圍");
+  expect(screen.getByText(/剩餘點數/).textContent).toContain("力量");
+  // Not clamped — the raw value the player typed stays in the input.
+  expect((screen.getByLabelText("ability 力量") as HTMLInputElement).value).toBe("16");
+
+  fireEvent.change(screen.getByLabelText("ability 力量"), { target: { value: "15" } });
+  expect(screen.getByText(/剩餘點數/).textContent).not.toContain("超出點購範圍");
+});
+
+test("acolyte background (default dragonborn, no racial language choice): lang hint shows background-only count", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background (acolyte is the default)
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs
+
+  // Dragonborn has no languageChoice → total is background's 2 alone.
+  expect(screen.getByLabelText("lang hint")).toHaveTextContent("可自選語言 2 種（背景 2）");
+});
+
+test("high elf + acolyte: racial fixed languages seed as chips, hint totals race + background choices", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "high-elf" } });
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background (acolyte is the default)
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs (seeds here)
+
+  // High Elf's fixed languages (通用語/精靈語) show up as chips.
+  expect(screen.getByText("通用語")).toBeInTheDocument();
+  expect(screen.getByText("精靈語")).toBeInTheDocument();
+  // High Elf languageChoice: 1 + acolyte's 2 = 3.
+  expect(screen.getByLabelText("lang hint")).toHaveTextContent("可自選語言 3 種（種族 1＋背景 2）");
+});
+
+test("switching race after profs were already seeded re-seeds languages (regression)", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs (seeds dragonborn: 通用語/龍語)
+  expect(screen.getByText("龍語")).toBeInTheDocument();
+
+  // Back to race, switch to Human (通用語 only — no fixed second language).
+  for (let i = 0; i < 4; i++) fireEvent.click(screen.getByLabelText("builder back"));
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "human" } });
+  for (let i = 0; i < 4; i++) fireEvent.click(screen.getByLabelText("builder next")); // → profs again
+
+  // Dragonborn seeded 2 language chips (通用語/龍語); Human seeds only 1 (通用語).
+  expect(screen.getAllByRole("button", { name: /remove lang/ })).toHaveLength(1);
+});
+
 test("acolyte background: granted skills (洞悉/宗教) show pre-checked and disabled", () => {
   render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
   fireEvent.click(screen.getByLabelText("builder next")); // → class
