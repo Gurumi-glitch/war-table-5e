@@ -54,7 +54,7 @@ const STEPS = ["race", "class", "abilities", "background", "profs", "spells", "r
 type Step = (typeof STEPS)[number];
 
 const emptyScores = (): Record<AbilityKey, number> =>
-  Object.fromEntries(ABILITY_KEYS.map((k) => [k, 10])) as Record<AbilityKey, number>;
+  Object.fromEntries(ABILITY_KEYS.map((k) => [k, 8])) as Record<AbilityKey, number>;
 
 export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) {
   const t = useT();
@@ -104,17 +104,23 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   const primary = classes.find((c) => c.active) ?? classes[0];
   const primaryClass: SrdClass | undefined = SRD_CLASSES.find((c) => c.id === primary?.classId);
 
-  // Final ability rows = base + racial ASI (SRD race only; custom race = no auto
-  // ASI) + the race's free-choice ASI picks (Half-Elf's two +1s), if any.
-  const finalAbilities: AbilityRow[] = useMemo(() => {
-    const base = ABILITY_KEYS.map((k) => ({ key: k, score: baseScores[k], mod: modFor(baseScores[k]) }));
-    if (!race) return base;
+  // Merged racial ASI (fixed race.asi + any free-choice picks), keyed by
+  // ability — the single source both finalAbilities and the per-row "race
+  // gave you +N" badge read from. Custom race (no `race`) = no auto ASI.
+  const racialAsi: Record<string, number> = useMemo(() => {
+    if (!race) return {};
     const asi: Record<string, number> = { ...race.asi };
     if (race.asiChoice) {
       for (const k of asiChoices) if (k) asi[k] = (asi[k] ?? 0) + race.asiChoice.amount;
     }
-    return applyRacialAsi(base, asi);
-  }, [baseScores, race, asiChoices]);
+    return asi;
+  }, [race, asiChoices]);
+
+  // Final ability rows = base + racialAsi.
+  const finalAbilities: AbilityRow[] = useMemo(() => {
+    const base = ABILITY_KEYS.map((k) => ({ key: k, score: baseScores[k], mod: modFor(baseScores[k]) }));
+    return applyRacialAsi(base, racialAsi);
+  }, [baseScores, racialAsi]);
   const modOf = (k: AbilityKey) => finalAbilities.find((a) => a.key === k)!.mod;
 
   // AC preview
@@ -328,64 +334,70 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
 
           {current === "class" && (
             <fieldset>
-              <div className="wt-builder-classhead" aria-hidden="true">
-                <span>{t.builder.colClass}</span>
-                <span>{t.builder.colSubclass}</span>
-                <span>{t.builder.colLevel}</span>
-                <span>{t.builder.active}</span>
-              </div>
               {classes.map((c, i) => {
                 const sc = SRD_CLASSES.find((x) => x.id === c.classId);
                 return (
                   <div key={i} className="wt-builder-classrow">
-                    <select
-                      aria-label={`class select ${i}`}
-                      value={sc ? c.classId : ""}
-                      onChange={(e) => {
-                        const cls = SRD_CLASSES.find((x) => x.id === e.target.value);
-                        setProfsSeeded(false);
-                        setClasses((rows) => rows.map((r, j) => (j === i ? { classId: e.target.value, classNameZh: cls?.nameZh, level: r.level, active: r.active } : r)));
-                      }}
-                    >
-                      {SRD_CLASSES.map((x) => (
-                        <option key={x.id} value={x.id}>{dn(x.nameZh, x.nameEn)}</option>
-                      ))}
-                      <option value="">{t.builder.custom}</option>
-                    </select>
-                    {sc ? (
+                    <div className="wt-builder-col">
+                      {i === 0 && <span className="wt-builder-collabel">{t.builder.colClass}</span>}
                       <select
-                        aria-label={`subclass select ${i}`}
-                        value={c.subclassId ?? ""}
+                        aria-label={`class select ${i}`}
+                        value={sc ? c.classId : ""}
                         onChange={(e) => {
-                          const sub = sc.subclasses.find((s) => s.id === e.target.value);
-                          setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, subclassId: sub?.id, subclassNameZh: sub?.nameZh } : r)));
+                          const cls = SRD_CLASSES.find((x) => x.id === e.target.value);
+                          setProfsSeeded(false);
+                          setClasses((rows) => rows.map((r, j) => (j === i ? { classId: e.target.value, classNameZh: cls?.nameZh, level: r.level, active: r.active } : r)));
                         }}
                       >
-                        <option value="">{dn(sc.subclassLabel, sc.subclassLabelEn)}…</option>
-                        {sc.subclasses.map((s) => (
-                          <option key={s.id} value={s.id}>{dn(s.nameZh, s.nameEn)}{s.l1 ? cc.l1Tag : ""}</option>
+                        {SRD_CLASSES.map((x) => (
+                          <option key={x.id} value={x.id}>{dn(x.nameZh, x.nameEn)}</option>
                         ))}
+                        <option value="">{t.builder.custom}</option>
                       </select>
-                    ) : (
+                    </div>
+                    <div className="wt-builder-col">
+                      {i === 0 && <span className="wt-builder-collabel">{t.builder.colSubclass}</span>}
+                      {sc ? (
+                        <select
+                          aria-label={`subclass select ${i}`}
+                          value={c.subclassId ?? ""}
+                          onChange={(e) => {
+                            const sub = sc.subclasses.find((s) => s.id === e.target.value);
+                            setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, subclassId: sub?.id, subclassNameZh: sub?.nameZh } : r)));
+                          }}
+                        >
+                          <option value="">{dn(sc.subclassLabel, sc.subclassLabelEn)}…</option>
+                          {sc.subclasses.map((s) => (
+                            <option key={s.id} value={s.id}>{dn(s.nameZh, s.nameEn)}{s.l1 ? cc.l1Tag : ""}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          aria-label={`class custom ${i}`}
+                          placeholder={t.builder.classCustom}
+                          value={c.classNameZh ?? ""}
+                          onChange={(e) => setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, classNameZh: e.target.value } : r)))}
+                        />
+                      )}
+                    </div>
+                    <div className="wt-builder-col">
+                      {i === 0 && <span className="wt-builder-collabel">{t.builder.colLevel}</span>}
                       <input
-                        aria-label={`class custom ${i}`}
-                        placeholder={t.builder.classCustom}
-                        value={c.classNameZh ?? ""}
-                        onChange={(e) => setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, classNameZh: e.target.value } : r)))}
+                        aria-label={`class level ${i}`}
+                        type="number"
+                        min={0}
+                        style={{ width: "3.5em" }}
+                        value={c.level}
+                        onChange={(e) => setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, level: Number(e.target.value) } : r)))}
                       />
-                    )}
-                    <input
-                      aria-label={`class level ${i}`}
-                      type="number"
-                      min={0}
-                      style={{ width: "3.5em" }}
-                      value={c.level}
-                      onChange={(e) => setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, level: Number(e.target.value) } : r)))}
-                    />
-                    <label className="wt-builder-active">
-                      <input type="checkbox" aria-label={`class active ${i}`} checked={c.active} onChange={(e) => setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, active: e.target.checked } : r)))} />
-                      {t.builder.active}
-                    </label>
+                    </div>
+                    <div className="wt-builder-col">
+                      {i === 0 && <span className="wt-builder-collabel">{t.builder.active}</span>}
+                      <label className="wt-builder-active">
+                        <input type="checkbox" aria-label={`class active ${i}`} checked={c.active} onChange={(e) => setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, active: e.target.checked } : r)))} />
+                        {t.builder.active}
+                      </label>
+                    </div>
                     {classes.length > 1 && (
                       <button aria-label={`remove class ${i}`} onClick={() => setClasses((rows) => rows.filter((_, j) => j !== i))}>✕</button>
                     )}
@@ -444,8 +456,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                       value={baseScores[k]}
                       onChange={(e) => setBaseScores((s) => ({ ...s, [k]: Number(e.target.value) }))}
                     />
+                    {(racialAsi[k] ?? 0) !== 0 && (
+                      <span className="wt-builder-asi" aria-label={`racial ${k}`}>
+                        {t.builder.racialTag}+{racialAsi[k]}
+                      </span>
+                    )}
                     <span className="wt-builder-final" aria-label={`final ${k}`}>
-                      → {finalAbilities.find((a) => a.key === k)!.score}（{modOf(k) >= 0 ? "+" : ""}{modOf(k)}）
+                      → {finalAbilities.find((a) => a.key === k)!.score}（{t.builder.modTag}{modOf(k) >= 0 ? "+" : ""}{modOf(k)}）
                     </span>
                   </label>
                 ))}

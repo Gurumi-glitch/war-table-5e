@@ -53,9 +53,9 @@ test("a SRD Life Domain cleric auto-derives the whole card", async () => {
   expect(fields.classes).toHaveLength(1);
   expect(fields.classes![0].classId).toBe("cleric");
   expect(fields.classes![0].subclassId).toBe("life-domain");
-  // High Elf ASI applied: DEX 12 (+1), INT 11
-  expect(fields.abilities.find((a) => a.key === "敏捷")!.score).toBe(12);
-  expect(fields.abilities.find((a) => a.key === "智力")!.score).toBe(11);
+  // High Elf ASI applied on top of the base-8 starting score: DEX 10 (+2), INT 9 (+1)
+  expect(fields.abilities.find((a) => a.key === "敏捷")!.score).toBe(10);
+  expect(fields.abilities.find((a) => a.key === "智力")!.score).toBe(9);
   // Life Domain grants heavy armor (bonus proficiency)
   expect(fields.armorProfs).toContain("重甲");
   // Cleric spellcasting → WIS, save proficiencies WIS/CHA
@@ -80,8 +80,8 @@ test("custom/homebrew race derives nothing and is recorded verbatim", () => {
 
   const { fields } = onCreate.mock.calls[0][0] as BuilderPayload;
   expect(fields.race).toBe("蓮花半身人");
-  // No racial ASI applied for a custom race: base 10 stays 10 (+0)
-  expect(fields.abilities.find((a) => a.key === "敏捷")!.score).toBe(10);
+  // No racial ASI applied for a custom race: base 8 stays 8 (+0)
+  expect(fields.abilities.find((a) => a.key === "敏捷")!.score).toBe(8);
   // No warning UI exists in the builder for filling homebrew — assert the flow
   // completed and produced a card (the absence of a gate IS the contract).
   expect(onCreate).toHaveBeenCalledTimes(1);
@@ -140,10 +140,33 @@ test("half-elf ASI choice: two free +1s, separate from the 27-point budget", () 
   expect(Array.from(choice1.options).map((o) => o.value)).not.toContain("力量");
   fireEvent.change(choice1, { target: { value: "敏捷" } });
 
-  expect(screen.getByLabelText("final 力量")).toHaveTextContent("11");
-  expect(screen.getByLabelText("final 敏捷")).toHaveTextContent("11");
+  expect(screen.getByLabelText("final 力量")).toHaveTextContent("9");
+  expect(screen.getByLabelText("final 敏捷")).toHaveTextContent("9");
   // The 27-point budget only tracks baseScores — the racial pick doesn't touch it.
   expect(screen.getByText(/剩餘點數/).textContent).toBe(pointsBefore);
+});
+
+test("racial ASI badge: a fixed racial bonus shows inline on its ability row", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+
+  // Dragonborn: 力量+2, 魅力+1 (fixed, no choice).
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "dragonborn" } });
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+
+  expect(screen.getByLabelText("racial 力量")).toHaveTextContent("+2");
+  expect(screen.getByLabelText("racial 魅力")).toHaveTextContent("+1");
+  // No bonus on an ability the race doesn't touch — no badge rendered.
+  expect(screen.queryByLabelText("racial 敏捷")).toBeNull();
+});
+
+test("point buy starts at the base-8 score: full 27 points unspent", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("method pointbuy"));
+
+  expect(screen.getByText(/剩餘點數/).textContent).toContain("27");
 });
 
 test("acolyte background: granted skills (洞悉/宗教) show pre-checked and disabled", () => {
