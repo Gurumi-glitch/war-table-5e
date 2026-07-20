@@ -208,5 +208,66 @@ test("English locale: seeded proficiencies translate srdContent's zh terms", () 
   fireEvent.click(screen.getByLabelText("builder next")); // → background
   fireEvent.click(screen.getByLabelText("builder next")); // → profs (seeds here)
 
-  expect((screen.getByLabelText("profs armor") as HTMLInputElement).value).toContain("Light armor");
+  // Seeded proficiencies render as chips now (dropdown-add UI), not a free-text input.
+  expect(screen.getByText("Light armor")).toBeInTheDocument();
+});
+
+test("profs step: dropdown-add appends a chip, then resets and drops the picked option", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs
+
+  const langAdd = screen.getByLabelText("profs lang add") as HTMLSelectElement;
+  fireEvent.change(langAdd, { target: { value: "龍語" } });
+
+  expect(screen.getByText("龍語")).toBeInTheDocument();
+  // Controlled dropdown resets to blank after adding.
+  expect(langAdd.value).toBe("");
+  // Already-picked options drop out of the list (no dupes offered).
+  expect(screen.queryByRole("option", { name: "龍語" })).toBeNull();
+});
+
+test("profs step: homebrew — picking custom opens a text slot, Add appends a chip", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs
+
+  expect(screen.queryByLabelText("profs tool custom")).toBeNull();
+  fireEvent.change(screen.getByLabelText("profs tool add"), { target: { value: "__custom" } });
+  expect(screen.getByLabelText("profs tool custom")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText("profs tool custom"), { target: { value: "占卜用具" } });
+  fireEvent.click(screen.getByLabelText("profs tool custom add"));
+
+  expect(screen.getByText("占卜用具")).toBeInTheDocument();
+  // The text slot closes again after adding.
+  expect(screen.queryByLabelText("profs tool custom")).toBeNull();
+});
+
+test("profs step: clicking a chip's × removes it", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs (seeds armor chips here)
+
+  // Barbarian seeds 3 armor chips (輕甲/中甲/盾牌) — indices 0..2.
+  expect(screen.getByLabelText("remove armor 2")).toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText("remove armor 0"));
+  // Down to 2 chips — index 2 no longer exists.
+  expect(screen.queryByLabelText("remove armor 2")).toBeNull();
+});
+
+test("armor-for-AC dropdown shows zh names in Chinese mode", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs
+
+  expect(screen.getByRole("option", { name: /^皮甲/ })).toBeInTheDocument();
 });

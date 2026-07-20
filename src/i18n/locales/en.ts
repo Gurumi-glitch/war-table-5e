@@ -470,6 +470,8 @@ export const en: Messages = {
     raceSrd: "Choose race (SRD)",
     raceCustom: "Custom race name",
     custom: "Custom / homebrew",
+    addProf: "Add…",
+    addWord: "Add",
     classCustom: "Custom class name",
     addClass: "Add class (multiclass)",
     active: "Active",

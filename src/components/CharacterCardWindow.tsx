@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SafeMarkdown } from "./SafeMarkdown";
 import { useT } from "../i18n";
-import { abilityLabel, skillLabel } from "../i18n/terms";
+import { abilityLabel, skillLabel, profLabel } from "../i18n/terms";
 import { clampedDragPos } from "./windowState";
 import { downloadCard } from "../lib/cardFile";
 import "./CharacterCardWindow.css";
@@ -38,7 +38,7 @@ import {
   type SaveRow,
   type SkillRow,
 } from "../lib/dndCalc";
-import { SRD_ARMORS } from "../lib/srdContent";
+import { SRD_ARMORS, ARMOR_CAT_ZH } from "../lib/srdContent";
 
 /**
  * Issue #9 step 4 — a floating parchment character-card window (gothic horror,
@@ -466,7 +466,7 @@ export function CharacterCardWindow({
       dexMod,
       armor: armor && armor.cat !== "shield" ? armor : null,
       shield,
-      armorLabel: armor?.name,
+      armorLabel: armor && t.terms.displayName(armor.nameZh, armor.name),
     });
     setDraft((d) => ({
       ...d,
@@ -1043,7 +1043,7 @@ export function CharacterCardWindow({
                 <option value="">{t.builder.unarmored}</option>
                 {SRD_ARMORS.filter((a) => a.cat !== "shield").map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name}（{a.cat}, {a.base}）
+                    {t.terms.displayName(a.nameZh, a.name)}（{profLabel(t, ARMOR_CAT_ZH[a.cat])}, {a.base}）
                   </option>
                 ))}
               </select>

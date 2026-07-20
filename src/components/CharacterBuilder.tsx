@@ -25,7 +25,13 @@ import {
   SRD_CLASSES,
   SRD_BACKGROUNDS,
   SRD_ARMORS,
+  ARMOR_CAT_ZH,
+  ARMOR_PROF_OPTIONS,
+  WEAPON_PROF_OPTIONS,
+  TOOL_PROF_OPTIONS,
+  LANGUAGE_OPTIONS,
   type SrdClass,
+  type ProfOption,
 } from "../lib/srdContent";
 
 /**
@@ -131,7 +137,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
         dexMod: modOf("敏捷"),
         armor: armor && armor.cat !== "shield" ? armor : null,
         shield: shield || armor?.cat === "shield",
-        armorLabel: armor?.name,
+        armorLabel: armor && dn(armor.nameZh, armor.name),
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [armorId, shield, finalAbilities],
@@ -530,30 +536,17 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
 
           {current === "profs" && (
             <fieldset>
-              {(
-                [
-                  ["armor", armorProfs, setArmorProfs, t.builder.armor],
-                  ["weapon", weaponProfs, setWeaponProfs, t.builder.weapons],
-                  ["tool", toolProfs, setToolProfs, t.builder.tools],
-                  ["lang", languageProfs, setLanguageProfs, t.builder.languages],
-                ] as const
-              ).map(([key, list, set, label]) => (
-                <label key={key}>
-                  {label}
-                  <input
-                    aria-label={`profs ${key}`}
-                    value={list.join("、")}
-                    onChange={(e) => set(e.target.value.split(/[、,]/).map((s) => s.trim()).filter(Boolean))}
-                  />
-                </label>
-              ))}
+              <ProfPicker fieldKey="armor" label={t.builder.armor} options={ARMOR_PROF_OPTIONS} list={armorProfs} onChange={setArmorProfs} />
+              <ProfPicker fieldKey="weapon" label={t.builder.weapons} options={WEAPON_PROF_OPTIONS} list={weaponProfs} onChange={setWeaponProfs} />
+              <ProfPicker fieldKey="tool" label={t.builder.tools} options={TOOL_PROF_OPTIONS} list={toolProfs} onChange={setToolProfs} />
+              <ProfPicker fieldKey="lang" label={t.builder.languages} options={LANGUAGE_OPTIONS} list={languageProfs} onChange={setLanguageProfs} />
               <hr />
               <label>
                 {t.builder.armorForAc}
                 <select aria-label="armor select" value={armorId} onChange={(e) => setArmorId(e.target.value)}>
                   <option value="">{t.builder.unarmored}</option>
                   {SRD_ARMORS.filter((a) => a.cat !== "shield").map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}（{a.cat}, {a.base}）</option>
+                    <option key={a.id} value={a.id}>{dn(a.nameZh, a.name)}（{profLabel(t, ARMOR_CAT_ZH[a.cat])}, {a.base}）</option>
                   ))}
                 </select>
               </label>
@@ -598,6 +591,93 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
           )}
         </footer>
       </div>
+    </div>
+  );
+}
+
+/**
+ * A proficiency picker for the profs step: chips for the current list + a
+ * dropdown to add from the SRD option table (or open a homebrew text slot).
+ * The underlying state stays a plain string[] — this only changes how it's
+ * edited, not what it holds (assemble()/toolsText derive from it unchanged).
+ */
+function ProfPicker({
+  fieldKey,
+  label,
+  options,
+  list,
+  onChange,
+}: {
+  fieldKey: string;
+  label: string;
+  options: ProfOption[];
+  list: string[];
+  onChange: (list: string[]) => void;
+}) {
+  const t = useT();
+  const dn = (zh: string, en: string) => t.terms.displayName(zh, en);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customText, setCustomText] = useState("");
+
+  const addCustom = () => {
+    const v = customText.trim();
+    if (v) onChange([...list, v]);
+    setCustomText("");
+    setCustomOpen(false);
+  };
+
+  return (
+    <div className="wt-builder-profpicker">
+      <span className="wt-builder-collabel">{label}</span>
+      <div className="wt-builder-chips">
+        {list.map((item, i) => (
+          <span key={i} className="wt-builder-chip">
+            {item}
+            <button
+              type="button"
+              aria-label={`remove ${fieldKey} ${i}`}
+              onClick={() => onChange(list.filter((_, j) => j !== i))}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <select
+        aria-label={`profs ${fieldKey} add`}
+        value=""
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === "__custom") setCustomOpen(true);
+          else if (v) onChange([...list, v]);
+        }}
+      >
+        <option value="">{t.builder.addProf}</option>
+        {options
+          .filter((o) => !list.includes(dn(o.zh, o.en)))
+          .map((o) => (
+            <option key={o.zh} value={dn(o.zh, o.en)}>{dn(o.zh, o.en)}</option>
+          ))}
+        <option value="__custom">{t.builder.custom}</option>
+      </select>
+      {customOpen && (
+        <span className="wt-builder-custominput">
+          <input
+            aria-label={`profs ${fieldKey} custom`}
+            value={customText}
+            onChange={(e) => setCustomText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
+          />
+          <button type="button" aria-label={`profs ${fieldKey} custom add`} onClick={addCustom}>
+            {t.builder.addWord}
+          </button>
+        </span>
+      )}
     </div>
   );
 }

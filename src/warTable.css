@@ -1931,6 +1931,27 @@ button.wt-altar-accordion-trigger {
 .wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2em 0.6em; }
 .wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.3em; font-size: 0.85em; }
 .wt-builder-hint { margin: 0; font-size: 0.82em; color: #b9a9cf; }
+.wt-builder-profpicker { display: flex; flex-direction: column; gap: 0.3em; padding: 0.3em 0; border-bottom: 1px dashed #3a2c4a; }
+.wt-builder-chips { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.wt-builder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  background: #160f20;
+  border: 1px solid #3a2c4a;
+  border-radius: 1em;
+  padding: 0.15em 0.3em 0.15em 0.6em;
+  font-size: 0.85em;
+}
+.wt-builder-chip button {
+  background: none;
+  border: none;
+  color: #e0729a;
+  cursor: pointer;
+  padding: 0 0.2em;
+  font-family: inherit;
+}
+.wt-builder-custominput { display: flex; gap: 0.4em; align-items: center; }
 .wt-builder-review { margin: 0.4em 0 0; padding-left: 1.1em; font-size: 0.9em; line-height: 1.6; }
 .wt-builder-foot {
   display: flex;

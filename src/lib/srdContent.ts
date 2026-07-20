@@ -74,6 +74,7 @@ export type SrdBackground = {
 export type SrdArmor = {
   id: string;
   name: string;
+  nameZh: string;
   cat: "light" | "medium" | "heavy" | "shield";
   base: number;
   dexBonus: boolean;
@@ -81,6 +82,136 @@ export type SrdArmor = {
   strMin?: number;
   stealthDis?: boolean;
 };
+
+/** SrdArmor.cat → zh key, for display via profLabel (armor cat isn't itself a
+ *  proficiency term, but reads the same "輕甲/中甲/重甲/盾牌" vocabulary). */
+export const ARMOR_CAT_ZH: Record<SrdArmor["cat"], string> = {
+  light: "輕甲",
+  medium: "中甲",
+  heavy: "重甲",
+  shield: "盾牌",
+};
+
+/** One dropdown-add option for the builder's proficiency pickers (profs step). */
+export type ProfOption = { zh: string; en: string };
+
+export const ARMOR_PROF_OPTIONS: ProfOption[] = [
+  { zh: "輕甲", en: "Light armor" },
+  { zh: "中甲", en: "Medium armor" },
+  { zh: "重甲", en: "Heavy armor" },
+  { zh: "盾牌", en: "Shields" },
+];
+
+export const WEAPON_PROF_OPTIONS: ProfOption[] = [
+  { zh: "簡易武器", en: "Simple weapons" },
+  { zh: "軍用武器", en: "Martial weapons" },
+  // Simple melee
+  { zh: "棍棒", en: "Club" },
+  { zh: "匕首", en: "Dagger" },
+  { zh: "巨棍棒", en: "Greatclub" },
+  { zh: "手斧", en: "Handaxe" },
+  { zh: "標槍", en: "Javelin" },
+  { zh: "輕錘", en: "Light hammer" },
+  { zh: "硬頭錘", en: "Mace" },
+  { zh: "木杖", en: "Quarterstaff" },
+  { zh: "鐮刀", en: "Sickle" },
+  { zh: "長矛", en: "Spear" },
+  // Simple ranged
+  { zh: "輕弩", en: "Light crossbow" },
+  { zh: "飛鏢", en: "Dart" },
+  { zh: "短弓", en: "Shortbow" },
+  { zh: "投石索", en: "Sling" },
+  // Martial melee
+  { zh: "戰斧", en: "Battleaxe" },
+  { zh: "鏈枷", en: "Flail" },
+  { zh: "長柄刀", en: "Glaive" },
+  { zh: "巨斧", en: "Greataxe" },
+  { zh: "巨劍", en: "Greatsword" },
+  { zh: "戟", en: "Halberd" },
+  { zh: "騎槍", en: "Lance" },
+  { zh: "長劍", en: "Longsword" },
+  { zh: "大錘", en: "Maul" },
+  { zh: "釘頭錘", en: "Morningstar" },
+  { zh: "長槍", en: "Pike" },
+  { zh: "刺劍", en: "Rapier" },
+  { zh: "彎刀", en: "Scimitar" },
+  { zh: "短劍", en: "Shortsword" },
+  { zh: "三叉戟", en: "Trident" },
+  { zh: "戰鎬", en: "War pick" },
+  { zh: "戰錘", en: "Warhammer" },
+  { zh: "長鞭", en: "Whip" },
+  // Martial ranged
+  { zh: "吹箭筒", en: "Blowgun" },
+  { zh: "手弩", en: "Hand crossbow" },
+  { zh: "重弩", en: "Heavy crossbow" },
+  { zh: "長弓", en: "Longbow" },
+  { zh: "網", en: "Net" },
+];
+
+export const TOOL_PROF_OPTIONS: ProfOption[] = [
+  // Artisan's tools
+  { zh: "煉金術士用品", en: "Alchemist's supplies" },
+  { zh: "釀酒師用品", en: "Brewer's supplies" },
+  { zh: "書法家用品", en: "Calligrapher's supplies" },
+  { zh: "木匠工具", en: "Carpenter's tools" },
+  { zh: "製圖師工具", en: "Cartographer's tools" },
+  { zh: "製鞋匠工具", en: "Cobbler's tools" },
+  { zh: "廚師用具", en: "Cook's utensils" },
+  { zh: "吹玻璃工工具", en: "Glassblower's tools" },
+  { zh: "珠寶匠工具", en: "Jeweler's tools" },
+  { zh: "皮革匠工具", en: "Leatherworker's tools" },
+  { zh: "石匠工具", en: "Mason's tools" },
+  { zh: "畫家用品", en: "Painter's supplies" },
+  { zh: "陶匠工具", en: "Potter's tools" },
+  { zh: "鐵匠工具", en: "Smith's tools" },
+  { zh: "修補匠工具", en: "Tinker's tools" },
+  { zh: "織工工具", en: "Weaver's tools" },
+  { zh: "木雕師工具", en: "Woodcarver's tools" },
+  // Kits
+  { zh: "易容組", en: "Disguise kit" },
+  { zh: "偽造工具組", en: "Forgery kit" },
+  { zh: "骰子組", en: "Dice set" },
+  { zh: "紙牌組", en: "Playing card set" },
+  { zh: "草藥組", en: "Herbalism kit" },
+  // Musical instruments
+  { zh: "風笛", en: "Bagpipes" },
+  { zh: "鼓", en: "Drum" },
+  { zh: "揚琴", en: "Dulcimer" },
+  { zh: "長笛", en: "Flute" },
+  { zh: "魯特琴", en: "Lute" },
+  { zh: "里拉琴", en: "Lyre" },
+  { zh: "號角", en: "Horn" },
+  { zh: "排笛", en: "Pan flute" },
+  { zh: "蕭姆管", en: "Shawm" },
+  { zh: "維奧爾琴", en: "Viol" },
+  // Other
+  { zh: "領航員工具", en: "Navigator's tools" },
+  { zh: "下毒者工具組", en: "Poisoner's kit" },
+  { zh: "盜賊工具", en: "Thieves' tools" },
+  { zh: "載具（陸上）", en: "Vehicles (land)" },
+  { zh: "載具（水上）", en: "Vehicles (water)" },
+];
+
+export const LANGUAGE_OPTIONS: ProfOption[] = [
+  // Standard
+  { zh: "通用語", en: "Common" },
+  { zh: "矮人語", en: "Dwarvish" },
+  { zh: "精靈語", en: "Elvish" },
+  { zh: "巨人語", en: "Giant" },
+  { zh: "侏儒語", en: "Gnomish" },
+  { zh: "哥布林語", en: "Goblin" },
+  { zh: "半身人語", en: "Halfling" },
+  { zh: "獸人語", en: "Orc" },
+  // Exotic
+  { zh: "深淵語", en: "Abyssal" },
+  { zh: "天界語", en: "Celestial" },
+  { zh: "龍語", en: "Draconic" },
+  { zh: "幽邃語", en: "Deep Speech" },
+  { zh: "煉獄語", en: "Infernal" },
+  { zh: "始源語", en: "Primordial" },
+  { zh: "妖精語", en: "Sylvan" },
+  { zh: "地底通用語", en: "Undercommon" },
+];
 
 // --- Races (SRD 01_Races): 9, one SRD subrace baked into each ---
 
@@ -124,17 +255,17 @@ export const SRD_BACKGROUNDS: SrdBackground[] = [
 // --- Armor (extracted from seed/5e-SRD-Equipment.json — not re-transcribed) ---
 
 export const SRD_ARMORS: SrdArmor[] = [
-  { id: "padded-armor", name: "Padded Armor", cat: "light", base: 11, dexBonus: true, stealthDis: true },
-  { id: "leather-armor", name: "Leather Armor", cat: "light", base: 11, dexBonus: true },
-  { id: "studded-leather-armor", name: "Studded Leather Armor", cat: "light", base: 12, dexBonus: true },
-  { id: "hide-armor", name: "Hide Armor", cat: "medium", base: 12, dexBonus: true, maxBonus: 2 },
-  { id: "chain-shirt", name: "Chain Shirt", cat: "medium", base: 13, dexBonus: true, maxBonus: 2 },
-  { id: "scale-mail", name: "Scale Mail", cat: "medium", base: 14, dexBonus: true, maxBonus: 2, stealthDis: true },
-  { id: "breastplate", name: "Breastplate", cat: "medium", base: 14, dexBonus: true, maxBonus: 2 },
-  { id: "half-plate-armor", name: "Half Plate Armor", cat: "medium", base: 15, dexBonus: true, maxBonus: 2, stealthDis: true },
-  { id: "ring-mail", name: "Ring Mail", cat: "heavy", base: 14, dexBonus: false, stealthDis: true },
-  { id: "chain-mail", name: "Chain Mail", cat: "heavy", base: 16, dexBonus: false, strMin: 13, stealthDis: true },
-  { id: "splint-armor", name: "Splint Armor", cat: "heavy", base: 17, dexBonus: false, strMin: 15, stealthDis: true },
-  { id: "plate-armor", name: "Plate Armor", cat: "heavy", base: 18, dexBonus: false, strMin: 15, stealthDis: true },
-  { id: "shield", name: "Shield", cat: "shield", base: 2, dexBonus: false },
+  { id: "padded-armor", name: "Padded Armor", nameZh: "軟墊甲", cat: "light", base: 11, dexBonus: true, stealthDis: true },
+  { id: "leather-armor", name: "Leather Armor", nameZh: "皮甲", cat: "light", base: 11, dexBonus: true },
+  { id: "studded-leather-armor", name: "Studded Leather Armor", nameZh: "鑲釘皮甲", cat: "light", base: 12, dexBonus: true },
+  { id: "hide-armor", name: "Hide Armor", nameZh: "獸皮甲", cat: "medium", base: 12, dexBonus: true, maxBonus: 2 },
+  { id: "chain-shirt", name: "Chain Shirt", nameZh: "鏈甲衫", cat: "medium", base: 13, dexBonus: true, maxBonus: 2 },
+  { id: "scale-mail", name: "Scale Mail", nameZh: "鱗甲", cat: "medium", base: 14, dexBonus: true, maxBonus: 2, stealthDis: true },
+  { id: "breastplate", name: "Breastplate", nameZh: "胸甲", cat: "medium", base: 14, dexBonus: true, maxBonus: 2 },
+  { id: "half-plate-armor", name: "Half Plate Armor", nameZh: "半身板甲", cat: "medium", base: 15, dexBonus: true, maxBonus: 2, stealthDis: true },
+  { id: "ring-mail", name: "Ring Mail", nameZh: "環甲", cat: "heavy", base: 14, dexBonus: false, stealthDis: true },
+  { id: "chain-mail", name: "Chain Mail", nameZh: "鏈甲", cat: "heavy", base: 16, dexBonus: false, strMin: 13, stealthDis: true },
+  { id: "splint-armor", name: "Splint Armor", nameZh: "板條甲", cat: "heavy", base: 17, dexBonus: false, strMin: 15, stealthDis: true },
+  { id: "plate-armor", name: "Plate Armor", nameZh: "全身板甲", cat: "heavy", base: 18, dexBonus: false, strMin: 15, stealthDis: true },
+  { id: "shield", name: "Shield", nameZh: "盾牌", cat: "shield", base: 2, dexBonus: false },
 ];

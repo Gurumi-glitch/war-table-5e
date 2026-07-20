@@ -477,6 +477,8 @@ export const zhTW = {
     raceSrd: "選擇種族（SRD）",
     raceCustom: "自訂種族名稱",
     custom: "自訂 / homebrew",
+    addProf: "新增…",
+    addWord: "加入",
     classCustom: "自訂職業名稱",
     addClass: "增加職業（多職）",
     active: "啟用",
