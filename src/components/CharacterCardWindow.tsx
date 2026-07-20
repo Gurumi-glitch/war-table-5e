@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SafeMarkdown } from "./SafeMarkdown";
 import { useT } from "../i18n";
-import { abilityLabel, skillLabel } from "../i18n/terms";
+import { abilityLabel, skillLabel, profLabel } from "../i18n/terms";
 import { clampedDragPos } from "./windowState";
 import { downloadCard } from "../lib/cardFile";
 import "./CharacterCardWindow.css";
@@ -34,9 +34,19 @@ import {
   skillTotal,
   spellAttackFn,
   spellDcFn,
+  acFor,
   type SaveRow,
   type SkillRow,
 } from "../lib/dndCalc";
+import {
+  SRD_ARMORS,
+  ARMOR_CAT_ZH,
+  ARMOR_PROF_OPTIONS,
+  WEAPON_PROF_OPTIONS,
+  TOOL_PROF_OPTIONS,
+  LANGUAGE_OPTIONS,
+} from "../lib/srdContent";
+import { ProfPicker } from "./ProfPicker";
 
 /**
  * Issue #9 step 4 — a floating parchment character-card window (gothic horror,
@@ -80,6 +90,9 @@ export type CharacterCardWindowProps = {
   onClose: () => void;
   onUpdateCharacter: (characterId: string, patch: CharacterCardPatch) => void;
   onJoinBattle: (characterId: string) => void;
+  /** Permanently delete this card (backend keeps any in-battle combatant's
+   *  current values and just unlinks it — see convex/characters.ts remove). */
+  onDeleteCard: () => void;
   // Character-owned sheet (write-through):
   onAddResource: (label: string, max: number) => void;
   onUpdateResource: (
@@ -144,7 +157,15 @@ type Draft = {
   skills: SkillRow[];
   refs: RefSection[];
   classRules: string[];
+  armorProfs: string[];
+  weaponProfs: string[];
+  toolProfs: string[];
+  languageProfs: string[];
 };
+
+/** The four structured proficiency categories, in display order. */
+const PROF_CATS = ["armorProfs", "weaponProfs", "toolProfs", "languageProfs"] as const;
+type ProfCat = (typeof PROF_CATS)[number];
 
 /**
  * Build the draft from a (possibly migrated) character view. Structured
@@ -207,6 +228,10 @@ function snapshot(c: CharacterView): Draft {
     skills,
     refs: (c.refs ?? []).map((r) => ({ ...r })),
     classRules: [...(c.classRules ?? [])],
+    armorProfs: [...(c.armorProfs ?? [])],
+    weaponProfs: [...(c.weaponProfs ?? [])],
+    toolProfs: [...(c.toolProfs ?? [])],
+    languageProfs: [...(c.languageProfs ?? [])],
   };
 }
 
@@ -248,6 +273,7 @@ export function CharacterCardWindow({
   onClose,
   onUpdateCharacter,
   onJoinBattle,
+  onDeleteCard,
   onAddResource,
   onUpdateResource,
   onRemoveResource,
@@ -273,6 +299,26 @@ export function CharacterCardWindow({
         (c.classRules ?? []).map((body, i) => [i, body.trim() !== ""]),
       ),
   );
+  // Which of the 5 sheet pages is showing (character-sheet-pages). All pages
+  // stay mounted (hidden, not unmounted) so unsaved edits on another page and
+  // every aria-label test survive a page switch; the leather footer sits
+  // outside the paged body and shows on every page.
+  const [page, setPage] = useState(0);
+  // Ephemeral armor picker (character-sheet-pages): picking armor/shield writes
+  // ac + acFormula via acFor (SRD rules); the picked armor isn't itself stored,
+  // only the resulting AC is (which stays hand-overridable like every field).
+  const [acArmor, setAcArmor] = useState("");
+  const [acShield, setAcShield] = useState(false);
+  // Two-step delete confirm (mirrors EnemyDbPanel's confirmingDelete): first
+  // click arms it, second click within the window fires onDeleteCard. Auto-
+  // reverts so a stale confirmation never sits armed while the DM/player
+  // works elsewhere.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const timeout = window.setTimeout(() => setConfirmingDelete(false), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [confirmingDelete]);
 
   // Adopt remote changes for fields the user isn't currently editing. Scalars
   // adopt per-field; abilities/saves/skills/refs adopt only if untouched
@@ -296,12 +342,18 @@ export function CharacterCardWindow({
       const skills = adopt(prev.skills, base.skills, next.skills);
       const refs = adopt(prev.refs, base.refs, next.refs);
       const classRules = adopt(prev.classRules, base.classRules, next.classRules);
+      const profs = Object.fromEntries(
+        PROF_CATS.map((cat) => [cat, adopt(prev[cat], base[cat], next[cat])]),
+      ) as Record<ProfCat, string[]>;
       if (abilities !== prev.abilities) changed = true;
       if (saves !== prev.saves) changed = true;
       if (skills !== prev.skills) changed = true;
       if (refs !== prev.refs) changed = true;
       if (classRules !== prev.classRules) changed = true;
-      return changed ? { scalars, abilities, saves, skills, refs, classRules } : prev;
+      for (const cat of PROF_CATS) if (profs[cat] !== prev[cat]) changed = true;
+      return changed
+        ? { scalars, abilities, saves, skills, refs, classRules, ...profs }
+        : prev;
     });
     baseRef.current = next;
   }, [
@@ -333,6 +385,10 @@ export function CharacterCardWindow({
     c.skills,
     c.refs,
     c.classRules,
+    c.armorProfs,
+    c.weaponProfs,
+    c.toolProfs,
+    c.languageProfs,
   ]);
 
   const base = baseRef.current;
@@ -344,13 +400,15 @@ export function CharacterCardWindow({
   const dirtySkills = !sameArr(draft.skills, base.skills);
   const dirtyRefs = !sameArr(draft.refs, base.refs);
   const dirtyClassRules = !sameArr(draft.classRules, base.classRules);
+  const dirtyProfs = PROF_CATS.filter((cat) => !sameArr(draft[cat], base[cat]));
   const isDirty =
     dirtyScalars.length > 0 ||
     dirtyAbilities ||
     dirtySaves ||
     dirtySkills ||
     dirtyRefs ||
-    dirtyClassRules;
+    dirtyClassRules ||
+    dirtyProfs.length > 0;
 
   /** Recompute the saves/skills/spell/init that depend on one ability's mod. */
   const recomputeDependents = (d: Draft, key: string, mod: number): Partial<Draft> => {
@@ -382,6 +440,60 @@ export function CharacterCardWindow({
 
   const setScalar = (f: ScalarField, v: string) =>
     setDraft((d) => ({ ...d, scalars: { ...d.scalars, [f]: v } }));
+
+  /** Edit one structured proficiency category — same patch shape the old
+   *  free-text input used, just fed a chip list instead of a parsed string. */
+  const setProfList = (cat: ProfCat, list: string[]) =>
+    setDraft((d) => ({ ...d, [cat]: list }));
+
+  // Soft "diverged from the engine" warning (character-sheet-pages). Only for
+  // engine-backed cards (built by the wizard → have structured `classes`): a
+  // fresh one matches recalc exactly, so a marker appears ONLY where the user
+  // has overridden a derived number. Legacy homebrew cards (no `classes`) are
+  // never marked — nothing to diverge from. Never shown on the read-only view.
+  const engineBacked = (c.classes?.length ?? 0) > 0;
+  const expected = useMemo(
+    () =>
+      recalcCard({
+        abilities: draft.abilities,
+        // Use the draft's PB (not level-derived) so only a direct override of a
+        // total flags — not the whole cascade when PB itself is overridden.
+        pb: Number(draft.scalars.pb) || 0,
+        initBonus: Number(draft.scalars.initBonus) || 0,
+        saves: draft.saves,
+        skills: draft.skills,
+        spellcastingAbility: draft.scalars.spellcastingAbility,
+        spellAttack: Number(draft.scalars.spellAttack) || 0,
+        spellDc: Number(draft.scalars.spellDc) || 0,
+        passivePerception: Number(draft.scalars.passivePerception) || 0,
+      }),
+    [draft],
+  );
+  /** True when a derived numeric field has been overridden away from the engine. */
+  const diverged = (valueStr: string, expectedNum: number) =>
+    engineBacked && !readOnly && (Number(valueStr) || 0) !== expectedNum;
+  /** Attrs for a diverged field: a subtle class + an explain-on-hover title. */
+  const divAttrs = (on: boolean) =>
+    on ? { className: "ccw-diverged", title: t.card.divergedTitle } : {};
+
+  /** Compute AC from a chosen armor + shield (SRD rules) and write ac/acFormula.
+   * The result stays hand-editable; picking armor is just a shortcut to the
+   * number the DM would otherwise type. */
+  const applyAc = (armorId: string, shield: boolean) => {
+    const dexMod = draft.abilities.find((a) => a.key === "敏捷")?.mod ?? 0;
+    const armor = SRD_ARMORS.find((a) => a.id === armorId);
+    const r = acFor({
+      dexMod,
+      armor: armor && armor.cat !== "shield" ? armor : null,
+      shield,
+      armorLabel: armor && t.terms.displayName(armor.nameZh, armor.name),
+      labels: t.terms.acLabels,
+    });
+    setDraft((d) => ({
+      ...d,
+      scalars: { ...d.scalars, ac: String(r.ac), acFormula: r.acFormula },
+    }));
+  };
 
   const setAbilityKey = (i: number, key: string) =>
     setDraft((d) => ({
@@ -577,6 +689,7 @@ export function CharacterCardWindow({
     if (dirtySkills) patch.skills = draft.skills;
     if (dirtyRefs) patch.refs = draft.refs;
     if (dirtyClassRules) patch.classRules = draft.classRules;
+    for (const cat of dirtyProfs) (patch as Record<string, unknown>)[cat] = draft[cat];
     onUpdateCharacter(c._id, patch);
   };
 
@@ -614,6 +727,40 @@ export function CharacterCardWindow({
       </div>
       {!win.folded && (
         <div className="ccw-body">
+          <nav className="ccw-tabs" aria-label="card pages">
+            <button
+              className="ccw-tab-arrow"
+              aria-label="prev page"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              ←
+            </button>
+            {[t.card.pages.core, t.card.pages.skills, t.card.pages.spells, t.card.pages.story].map(
+              (label, i) => (
+                <button
+                  key={i}
+                  className={`ccw-tab${page === i ? " is-active" : ""}`}
+                  aria-label={`page ${i}`}
+                  aria-current={page === i}
+                  onClick={() => setPage(i)}
+                >
+                  {label}
+                </button>
+              ),
+            )}
+            <button
+              className="ccw-tab-arrow"
+              aria-label="next page"
+              disabled={page === 3}
+              onClick={() => setPage((p) => Math.min(3, p + 1))}
+            >
+              →
+            </button>
+          </nav>
+
+          {/* Page 0 — 核心: masthead + ability rail | saves | vitals rail. */}
+          <div className="ccw-page" hidden={page !== 0}>
           {/* Masthead — the document's identity line. */}
           <div className="ccw-masthead">
             <div className="ccw-names">
@@ -698,11 +845,12 @@ export function CharacterCardWindow({
                   </label>
                   <span className="ccw-leader" />
                   <input
-                    className="ccw-prof-total"
+                    className={`ccw-prof-total${diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
                     type="number"
                     value={s.total}
                     onChange={(e) => setSaveTotal(i, Number(e.target.value))}
                     aria-label={`save ${i} total`}
+                    title={diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
                   />
                 </div>
               ))}
@@ -720,11 +868,12 @@ export function CharacterCardWindow({
                   <span className="ccw-prof-name">{skillLabel(t, s.key)}</span>
                   <span className="ccw-leader" />
                   <input
-                    className="ccw-prof-total"
+                    className={`ccw-prof-total${diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
                     type="number"
                     value={s.total}
                     onChange={(e) => setSkillTotal(i, Number(e.target.value))}
                     aria-label={`skill ${i} total`}
+                    title={diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
                   />
                 </div>
               ))}
@@ -794,10 +943,11 @@ export function CharacterCardWindow({
               <Plaque label={t.card.initiative}>
                 <span className="ccw-plaque-plus">+</span>
                 <input
+                  className={diverged(draft.scalars.initBonus, expected.initBonus) ? "ccw-diverged" : undefined}
                   value={draft.scalars.initBonus}
                   onChange={(e) => setScalar("initBonus", e.target.value)}
                   aria-label="init bonus"
-                  title={t.card.initAutoTitle}
+                  title={diverged(draft.scalars.initBonus, expected.initBonus) ? t.card.divergedTitle : t.card.initAutoTitle}
                 />
               </Plaque>
               <Plaque label={t.card.pb}>
@@ -824,6 +974,7 @@ export function CharacterCardWindow({
               <Plaque label={t.card.spellAttack}>
                 <span className="ccw-plaque-plus">+</span>
                 <input
+                  {...divAttrs(diverged(draft.scalars.spellAttack, expected.spellAttack))}
                   value={draft.scalars.spellAttack}
                   onChange={(e) => setScalar("spellAttack", e.target.value)}
                   aria-label="spell attack"
@@ -831,6 +982,7 @@ export function CharacterCardWindow({
               </Plaque>
               <Plaque label={t.card.spellDc}>
                 <input
+                  {...divAttrs(diverged(draft.scalars.spellDc, expected.spellDc))}
                   value={draft.scalars.spellDc}
                   onChange={(e) => setScalar("spellDc", e.target.value)}
                   aria-label="spell dc"
@@ -838,10 +990,11 @@ export function CharacterCardWindow({
               </Plaque>
               <Plaque label={t.card.passivePerception}>
                 <input
+                  className={diverged(draft.scalars.passivePerception, expected.passivePerception) ? "ccw-diverged" : undefined}
                   value={draft.scalars.passivePerception}
                   onChange={(e) => setScalar("passivePerception", e.target.value)}
                   aria-label="passive perception"
-                  title={t.card.passiveAutoTitle}
+                  title={diverged(draft.scalars.passivePerception, expected.passivePerception) ? t.card.divergedTitle : t.card.passiveAutoTitle}
                 />
               </Plaque>
             </div>
@@ -856,18 +1009,81 @@ export function CharacterCardWindow({
               <CardInput value={draft.scalars.goldText} onChange={(v) => setScalar("goldText", v)} ariaLabel="gold" />
             </Field>
           </div>
-          <div className="ccw-ref">
-            <div className="ccw-ref-head">
-              <span className="ccw-block-title">{t.card.toolProfs}</span>
-            </div>
-            <textarea
-              className="ccw-ref-body"
-              value={draft.scalars.toolsText}
-              onChange={(e) => setScalar("toolsText", e.target.value)}
-              aria-label="tools"
-            />
           </div>
 
+          {/* Page 1 — 熟練: always the four structured proficiency pickers;
+              legacy toolsText (pre-picker cards) lists separately below when
+              non-empty, so old data stays visible instead of hidden. */}
+          <div className="ccw-page" hidden={page !== 1}>
+          <div className="ccw-profblocks">
+            {(
+              [
+                ["armorProfs", "armor", t.builder.armor, ARMOR_PROF_OPTIONS],
+                ["weaponProfs", "weapon", t.builder.weapons, WEAPON_PROF_OPTIONS],
+                ["toolProfs", "tool", t.builder.tools, TOOL_PROF_OPTIONS],
+                ["languageProfs", "lang", t.builder.languages, LANGUAGE_OPTIONS],
+              ] as const
+            ).map(([cat, fieldKey, label, options]) => (
+              <ProfPicker
+                key={cat}
+                fieldKey={fieldKey}
+                label={label}
+                options={options}
+                list={draft[cat]}
+                onChange={(list) => setProfList(cat, list)}
+              />
+            ))}
+          </div>
+          {draft.scalars.toolsText.trim() !== "" && (
+            <div className="ccw-ref">
+              <div className="ccw-ref-head">
+                <span className="ccw-block-title">{t.card.legacyProfNotes}</span>
+              </div>
+              <textarea
+                className="ccw-ref-body"
+                value={draft.scalars.toolsText}
+                onChange={(e) => setScalar("toolsText", e.target.value)}
+                aria-label="tools"
+              />
+            </div>
+          )}
+          <div className="ccw-ac-armor">
+            <label>
+              {t.builder.armorForAc}
+              <select
+                aria-label="ac armor"
+                value={acArmor}
+                onChange={(e) => {
+                  setAcArmor(e.target.value);
+                  applyAc(e.target.value, acShield);
+                }}
+              >
+                <option value="">{t.builder.unarmored}</option>
+                {SRD_ARMORS.filter((a) => a.cat !== "shield").map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {t.terms.displayName(a.nameZh, a.name)}（{profLabel(t, ARMOR_CAT_ZH[a.cat])}, {a.base}）
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="ccw-ac-shield">
+              <input
+                type="checkbox"
+                aria-label="ac shield"
+                checked={acShield}
+                onChange={(e) => {
+                  setAcShield(e.target.checked);
+                  applyAc(acArmor, e.target.checked);
+                }}
+              />
+              {t.builder.shield}
+            </label>
+            <span className="ccw-ac-hint">→ AC {draft.scalars.ac}</span>
+          </div>
+          </div>
+
+          {/* Page 2 — 法術·特性: refs + class rules. */}
+          <div className="ccw-page" hidden={page !== 2}>
           <h4>{t.card.spellsAndTraits}</h4>
           <div className="ccw-refs">
             {draft.refs.map((r, i) => (
@@ -923,7 +1139,10 @@ export function CharacterCardWindow({
             ))}
           </div>
           <button onClick={addClassRule}>+ section</button>
+          </div>
 
+          {/* Page 3 — 故事. */}
+          <div className="ccw-page" hidden={page !== 3}>
           <h4>{t.card.story}</h4>
           <textarea
             className="ccw-story"
@@ -931,6 +1150,7 @@ export function CharacterCardWindow({
             onChange={(e) => setScalar("story", e.target.value)}
             aria-label="story"
           />
+          </div>
         </div>
       )}
       {!win.folded && readOnly && (
@@ -940,6 +1160,27 @@ export function CharacterCardWindow({
       )}
       {!win.folded && (
         <div className="ccw-foot">
+          <button
+            className="ccw-btn blood ccw-delete-btn"
+            disabled={readOnly}
+            title={readOnly ? t.card.readOnly : t.card.deleteCardTitle}
+            onClick={() => {
+              if (confirmingDelete) {
+                setConfirmingDelete(false);
+                onDeleteCard();
+              } else {
+                setConfirmingDelete(true);
+              }
+            }}
+            onBlur={() => {
+              if (confirmingDelete) setConfirmingDelete(false);
+            }}
+            aria-label={
+              confirmingDelete ? `confirm delete card ${c.nameZh}` : `delete card ${c.nameZh}`
+            }
+          >
+            {confirmingDelete ? t.card.confirmDeleteCard : t.card.deleteCard}
+          </button>
           {isDirty && <span className="ccw-dirty">{t.card.unsaved}</span>}
           <button
             className="ccw-btn"

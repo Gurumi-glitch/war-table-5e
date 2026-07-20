@@ -1865,3 +1865,108 @@ button.wt-altar-accordion-trigger {
     font-size: 0.62em;
   }
 }
+
+/* --- Character builder wizard (character-builder) ------------------------- */
+/* Matches the card's "Sigil" violet-crimson theme; a modal over the board. */
+.wt-builder-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 6, 16, 0.72);
+  padding: 12px;
+}
+.wt-builder {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(170deg, #241a30, #1a1224 55%, #120c1a);
+  color: #d9d0e6;
+  border: 1px solid #4f3a63;
+  box-shadow: 0 0 0 1px rgba(156, 52, 102, 0.15), 0 14px 40px rgba(0, 0, 0, 0.75);
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.wt-builder-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.45em 0.8em;
+  background: linear-gradient(90deg, #1c1526, #4f3a63);
+  color: #ece4f5;
+  border-bottom: 2px solid #9c3466;
+}
+.wt-builder-head b { font-size: 1.05em; letter-spacing: 0.03em; }
+.wt-builder-progress { flex: 1; font-size: 0.82em; color: #b9a9cf; }
+.wt-builder-head button { background: none; border: 1px solid #6a4f80; color: #e0729a; padding: 0 0.5em; cursor: pointer; }
+.wt-builder-body { padding: 0.9em 1em; overflow-y: auto; }
+.wt-builder-body fieldset { border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6em; }
+.wt-builder-body label { display: flex; flex-direction: column; gap: 0.25em; font-size: 0.9em; }
+.wt-builder-body select,
+.wt-builder-body input[type="text"],
+.wt-builder-body input:not([type]) ,
+.wt-builder-body input[type="number"] {
+  background: #160f20;
+  border: 1px solid #4f3a63;
+  color: #ece4f5;
+  padding: 0.3em 0.4em;
+  font-family: inherit;
+}
+.wt-builder-classrow { display: flex; flex-wrap: wrap; align-items: end; gap: 0.4em; padding: 0.3em 0; border-bottom: 1px dashed #3a2c4a; }
+.wt-builder-col { display: flex; flex-direction: column; gap: 0.15em; }
+.wt-builder-collabel { font-size: 0.78em; color: #b9a9cf; }
+.wt-builder-active { flex-direction: row; align-items: center; gap: 0.3em; }
+.wt-builder-asichoice { display: flex; gap: 1em; flex-wrap: wrap; }
+.wt-builder-asichoice label { flex-direction: row; align-items: center; gap: 0.4em; }
+.wt-builder-methods { display: flex; gap: 1em; flex-wrap: wrap; }
+.wt-builder-methods label { flex-direction: row; align-items: center; gap: 0.3em; }
+.wt-builder-abilities { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5em 1em; }
+.wt-builder-abilities label { flex-direction: row; align-items: center; gap: 0.4em; }
+.wt-builder-abilities input { width: 4em; }
+.wt-builder-asi { font-size: 0.8em; color: #b9a9cf; white-space: nowrap; }
+.wt-builder-final { color: #9fd6a8; font-size: 0.9em; }
+.wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2em 0.6em; }
+.wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.3em; font-size: 0.85em; }
+.wt-builder-hint { margin: 0; font-size: 0.82em; color: #b9a9cf; }
+.wt-builder-profpicker { display: flex; flex-direction: column; gap: 0.3em; padding: 0.3em 0; border-bottom: 1px dashed #3a2c4a; }
+.wt-builder-chips { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.wt-builder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  background: #160f20;
+  border: 1px solid #3a2c4a;
+  border-radius: 1em;
+  padding: 0.15em 0.3em 0.15em 0.6em;
+  font-size: 0.85em;
+}
+.wt-builder-chip button {
+  background: none;
+  border: none;
+  color: #e0729a;
+  cursor: pointer;
+  padding: 0 0.2em;
+  font-family: inherit;
+}
+.wt-builder-custominput { display: flex; gap: 0.4em; align-items: center; }
+.wt-builder-review { margin: 0.4em 0 0; padding-left: 1.1em; font-size: 0.9em; line-height: 1.6; }
+.wt-builder-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
+  padding: 0.6em 0.9em;
+  border-top: 2px solid #9c3466;
+  background: linear-gradient(90deg, #1c1526, #2a1f38);
+}
+.wt-builder-foot button {
+  background: #2a1f38;
+  border: 1px solid #6a4f80;
+  color: #ece4f5;
+  padding: 0.35em 0.9em;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wt-builder-foot button:disabled { opacity: 0.4; cursor: default; }

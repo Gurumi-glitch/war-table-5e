@@ -95,6 +95,7 @@ function props(overrides: Partial<GameBoardProps> = {}): GameBoardProps {
     onSeedCharacters: noop,
     onJoinBattle: noop,
     onUpdateCharacter: noop,
+    onDeleteCharacter: async () => {},
     onAddCharacterResource: noop,
     onUpdateCharacterResource: noop,
     onRemoveCharacterResource: noop,

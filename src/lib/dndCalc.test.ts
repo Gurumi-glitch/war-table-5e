@@ -13,6 +13,14 @@ import {
   skillTotal,
   spellAttackFn,
   spellDcFn,
+  startingHpFor,
+  acFor,
+  STANDARD_ARRAY,
+  POINT_BUY_BUDGET,
+  pointBuyCost,
+  pointBuyTotal,
+  applyRacialAsi,
+  spellSlotsL1For,
 } from "./dndCalc";
 
 test("modFor: floor((score - 10) / 2) across the common range", () => {
@@ -191,4 +199,62 @@ test("passivePerception = 10 + Perception total (SRD § Passive Checks)", () => 
   // re-derives. (The granular card-window handlers preserve overrides; that's
   // covered by the component tests.) Here we assert the formula root.
   expect(recalcCard({ ...proficient, passivePerception: 99 }).passivePerception).toBe(14);
+});
+
+// --- character-builder: L1 derivation ---
+
+test("startingHpFor: hit die max + CON mod", () => {
+  expect(startingHpFor(10, 2)).toBe(12); // d10 class, CON 14
+  expect(startingHpFor(8, -1)).toBe(7); // d8 class, CON 8
+  expect(startingHpFor(6, 0)).toBe(6); // d6 wizard, CON 10
+});
+
+test("acFor: every SRD armor category branch", () => {
+  // 無甲 = 10 + DEX
+  expect(acFor({ dexMod: 3 })).toEqual({ ac: 13, acFormula: "無甲 10 + 敏 3" });
+  // 輕甲 = base + full DEX (leather base 11, DEX +2)
+  expect(acFor({ dexMod: 2, armor: { base: 11, dexBonus: true }, armorLabel: "皮甲" }).ac).toBe(13);
+  // 中甲 = base + min(DEX, 2) — hide base 12, DEX +3 → 14 not 15
+  expect(acFor({ dexMod: 3, armor: { base: 12, dexBonus: true, maxBonus: 2 }, armorLabel: "獸皮甲" }).ac).toBe(14);
+  // 重甲 = base, no DEX — chain mail base 16, DEX +3 → 16
+  expect(acFor({ dexMod: 3, armor: { base: 16, dexBonus: false }, armorLabel: "鏈甲" })).toEqual({
+    ac: 16,
+    acFormula: "鏈甲 16",
+  });
+  // 盾 stacks +2 — leather (11) + DEX 2 + shield 2 = 15
+  expect(acFor({ dexMod: 2, armor: { base: 11, dexBonus: true }, armorLabel: "皮甲", shield: true }).ac).toBe(15);
+  // 法師護甲 = 13 + DEX
+  expect(acFor({ dexMod: 3, unarmoredBase: 13 })).toEqual({ ac: 16, acFormula: "法師護甲 13 + 敏 3" });
+  // 無甲防禦 = 10 + DEX + CON/WIS
+  expect(acFor({ dexMod: 2, unarmoredExtraMod: 3 }).ac).toBe(15);
+});
+
+test("ability-score methods: standard array + point buy budget", () => {
+  expect([...STANDARD_ARRAY]).toEqual([15, 14, 13, 12, 10, 8]);
+  expect(POINT_BUY_BUDGET).toBe(27);
+  expect(pointBuyCost(8)).toBe(0);
+  expect(pointBuyCost(14)).toBe(7);
+  expect(pointBuyCost(15)).toBe(9);
+  expect(Number.isNaN(pointBuyCost(16))).toBe(true); // out of range
+  // A legal 27-point spread (15,15,15,8,8,8 = 9+9+9 = 27)
+  expect(pointBuyTotal([15, 15, 15, 8, 8, 8])).toBe(27);
+  expect(pointBuyTotal([15, 14, 13, 12, 10, 8])).toBe(27); // standard array equivalent
+});
+
+test("applyRacialAsi: adds per-key increments and re-derives mods", () => {
+  const base = ABILITY_KEYS.map((key) => ({ key, score: 14, mod: modFor(14) }));
+  const out = applyRacialAsi(base, { 敏捷: 2, 智力: 1 });
+  const dex = out.find((a) => a.key === "敏捷")!;
+  const int = out.find((a) => a.key === "智力")!;
+  const str = out.find((a) => a.key === "力量")!;
+  expect(dex).toEqual({ key: "敏捷", score: 16, mod: 3 });
+  expect(int).toEqual({ key: "智力", score: 15, mod: 2 });
+  expect(str).toEqual({ key: "力量", score: 14, mod: 2 }); // untouched
+});
+
+test("spellSlotsL1For: caster types", () => {
+  expect(spellSlotsL1For("full")).toBe(2);
+  expect(spellSlotsL1For("pact")).toBe(1);
+  expect(spellSlotsL1For("half")).toBe(0);
+  expect(spellSlotsL1For("none")).toBe(0);
 });

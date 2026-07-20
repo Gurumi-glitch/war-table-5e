@@ -215,3 +215,115 @@ export function recalcCard(card: CalcCard): CalcCard {
     passivePerception,
   };
 }
+
+// --- character-builder: L1 creation-time derivation (all overrideable) ---
+
+/**
+ * L1 starting HP = hit die max + CON mod (SRD § Hit Points at 1st Level).
+ * e.g. d10 class, CON 14 (+2) → 12. Deterministic at L1 (higher levels roll,
+ * which is why HP stays manual there).
+ */
+export function startingHpFor(hitDieMax: number, conMod: number): number {
+  return hitDieMax + conMod;
+}
+
+/** One armor's AC data, mirroring 5e-SRD-Equipment.json's `armor_class`. */
+export type ArmorClass = { base: number; dexBonus: boolean; maxBonus?: number };
+
+/**
+ * AC per SRD armor rules (character-sheet-pages). Returns the number + a zh
+ * `acFormula`. Armored and the special unarmored cases are mutually exclusive
+ * (mage armor / unarmored defense require no armor):
+ *   - armored:  base + (dexBonus ? min(dex, maxBonus) : 0) + shield
+ *   - unarmored: unarmoredBase (10, or 13 for Mage Armor) + dex
+ *                + unarmoredExtraMod (CON barbarian / WIS monk) + shield
+ */
+/** acFormula's fixed-word parts (armor/unarmored/mage-armor/dex/mod/shield
+ * labels) — zh default so every existing caller/test is unaffected; UI
+ * callers pass the active locale's labels so the formula matches the
+ * interface language instead of always rendering in zh. */
+export type AcFormulaLabels = {
+  armor: string;
+  unarmored: string;
+  mageArmor: string;
+  dex: string;
+  mod: string;
+  shield: string;
+};
+const AC_LABELS_ZH: AcFormulaLabels = { armor: "護甲", unarmored: "無甲", mageArmor: "法師護甲", dex: "敏", mod: "調", shield: "盾" };
+
+export function acFor(opts: {
+  dexMod: number;
+  armor?: ArmorClass | null;
+  shield?: boolean;
+  armorLabel?: string;
+  /** 10 default; 13 for Mage Armor (SRD Mage_Armor: "base AC becomes 13 + DEX"). */
+  unarmoredBase?: number;
+  /** Extra ability mod for Unarmored Defense (Barbarian CON / Monk WIS). */
+  unarmoredExtraMod?: number;
+  labels?: AcFormulaLabels;
+}): { ac: number; acFormula: string } {
+  const L = opts.labels ?? AC_LABELS_ZH;
+  const shieldBonus = opts.shield ? 2 : 0;
+  if (opts.armor) {
+    const dex = opts.armor.dexBonus
+      ? Math.min(opts.dexMod, opts.armor.maxBonus ?? Infinity)
+      : 0;
+    const parts = [`${opts.armorLabel ?? L.armor} ${opts.armor.base}`];
+    if (opts.armor.dexBonus && dex !== 0) parts.push(`${L.dex} ${dex}`);
+    if (shieldBonus) parts.push(`${L.shield} ${shieldBonus}`);
+    return { ac: opts.armor.base + dex + shieldBonus, acFormula: parts.join(" + ") };
+  }
+  const base = opts.unarmoredBase ?? 10;
+  const extra = opts.unarmoredExtraMod ?? 0;
+  const parts = [`${base === 13 ? L.mageArmor : L.unarmored} ${base}`, `${L.dex} ${opts.dexMod}`];
+  if (extra) parts.push(`${L.mod} ${extra}`);
+  if (shieldBonus) parts.push(`${L.shield} ${shieldBonus}`);
+  return { ac: base + opts.dexMod + extra + shieldBonus, acFormula: parts.join(" + ") };
+}
+
+/** Standard array — six fixed scores the builder assigns (PHB/SRD). */
+export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
+
+/** Point-buy budget (PHB variant). */
+export const POINT_BUY_BUDGET = 27;
+
+const POINT_BUY_COST: Readonly<Record<number, number>> = {
+  8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9,
+};
+
+/** Point-buy cost of one score (8–15); NaN outside the legal range. */
+export function pointBuyCost(score: number): number {
+  return score in POINT_BUY_COST ? POINT_BUY_COST[score] : NaN;
+}
+
+/** Total point-buy spend for a set of scores (illegal scores count 0). */
+export function pointBuyTotal(scores: number[]): number {
+  return scores.reduce((sum, s) => sum + (POINT_BUY_COST[s] ?? 0), 0);
+}
+
+/**
+ * Apply racial ASI increments (per zh ability key) onto base scores, re-deriving
+ * mods. One-shot: the builder holds base scores + the race's ASI separately and
+ * calls this to produce the final rows (don't feed the result back in, or it
+ * double-applies).
+ */
+export function applyRacialAsi(
+  abilities: AbilityRow[],
+  asi: Record<string, number>,
+): AbilityRow[] {
+  return abilities.map((a) => {
+    const score = a.score + (asi[a.key] ?? 0);
+    return { ...a, score, mod: modFor(score) };
+  });
+}
+
+/**
+ * L1 spell slots by caster type (SRD class tables). Full casters (Bard/Cleric/
+ * Druid/Sorcerer/Wizard) get 2; Warlock pact magic gets 1; half-casters
+ * (Paladin/Ranger) get 0 at L1. The class → caster-type map lives in the SRD
+ * content module.
+ */
+export function spellSlotsL1For(casterType: "full" | "half" | "pact" | "none"): number {
+  return casterType === "full" ? 2 : casterType === "pact" ? 1 : 0;
+}

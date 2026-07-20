@@ -35,6 +35,7 @@ export const CARD_ERROR = {
   cardTooLarge: "card.cardTooLarge",
   badEnvelope: "card.badEnvelope",
   seedReadOnly: "card.seedReadOnly",
+  unsupportedVersion: "card.unsupportedVersion",
 } as const;
 
 /** Whether this deployment runs as the public playground (design D1). */

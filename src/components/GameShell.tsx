@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { CombatantView } from "../../convex/games";
 import { normalizeCombatant } from "../lib/normalize";
 import { CharacterCardWindow } from "./CharacterCardWindow";
+import { CharacterBuilder, type BuilderPayload } from "./CharacterBuilder";
 import { ClassRulesWindow } from "./ClassRulesWindow";
 import { EnemyEditorWindow } from "./EnemyEditorWindow";
 import { useT } from "../i18n";
@@ -51,6 +52,7 @@ export function GameShell(props: GameBoardProps) {
     onUpdateCharacter,
     onCreateCharacter,
     onJoinBattle,
+    onDeleteCharacter,
     onAddCharacterResource,
     onUpdateCharacterResource,
     onRemoveCharacterResource,
@@ -80,10 +82,16 @@ export function GameShell(props: GameBoardProps) {
   const activeWorkspace: Workspace = isTablet ? "war" : workspace;
 
   const openCharacter = (characterId: string) => cards.open(characterKey(characterId));
-  /** Make a blank card and land the user in its editor (not in the strip). */
-  const newCard = async () => {
-    const id = await onCreateCharacter?.();
-    if (id !== undefined) openCharacter(id);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  /** "➕ New card" launches the guided builder (character-creation spec). */
+  const newCard = () => setBuilderOpen(true);
+  /** Builder finished: create the card, arm its L1 slot pool, open its editor. */
+  const finishBuilder = async ({ fields, resources }: BuilderPayload) => {
+    const id = await onCreateCharacter?.(fields);
+    if (id === undefined) return;
+    for (const r of resources) await onAddCharacterResource?.(id, r.label, r.max, r.current);
+    setBuilderOpen(false);
+    openCharacter(id);
   };
   const openRules = (characterId: string) => rules.open(rulesKey(characterId));
   const openEnemy = (combatantId: string) => enemies.open(enemyKey(combatantId));
@@ -247,6 +255,7 @@ export function GameShell(props: GameBoardProps) {
               onClose={() => cards.close(typedKey)}
               onUpdateCharacter={onUpdateCharacter}
               onJoinBattle={(characterId) => onJoinBattle?.(characterId)}
+              onDeleteCard={() => onDeleteCharacter(id).then(() => cards.close(typedKey))}
               onAddResource={(label, max) => onAddCharacterResource(id, label, max)}
               onUpdateResource={onUpdateCharacterResource}
               onRemoveResource={onRemoveCharacterResource}
@@ -279,6 +288,10 @@ export function GameShell(props: GameBoardProps) {
             />
           );
         })}
+
+      {builderOpen && (
+        <CharacterBuilder onCreate={finishBuilder} onCancel={() => setBuilderOpen(false)} />
+      )}
     </>
   );
 }

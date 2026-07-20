@@ -264,6 +264,73 @@ test("a pre-rename export (dnd-combat-toolkit-character) is still accepted", asy
   expect(cards.some((c: any) => c.nameZh === "舊版匯出")).toBe(true);
 });
 
+test("v1 import (no structured builder fields) is carried through untouched", async () => {
+  const { t, playerToken } = await newGame();
+  await t.mutation(importCards, {
+    playerToken,
+    envelope: {
+      format: CARD_FILE_FORMAT,
+      version: 1,
+      exportedAt: "2026-07-16T00:00:00.000Z",
+      cards: [{ nameZh: "無結構化欄位", nameEn: "V1", hp: 8, maxHp: 8 }],
+    },
+  });
+  const [card] = (await t.query(listCharacters, { playerToken })).filter(
+    (c: any) => c.nameZh === "無結構化欄位",
+  );
+  expect(card.classes).toBeUndefined(); // absent, not fabricated
+  expect(card.armorProfs).toBeUndefined();
+  expect(card.classesText).toBe(""); // required default filled
+});
+
+test("v2 import keeps the structured builder fields", async () => {
+  const { t, playerToken } = await newGame();
+  await t.mutation(importCards, {
+    playerToken,
+    envelope: {
+      format: CARD_FILE_FORMAT,
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      cards: [
+        {
+          nameZh: "向導卡",
+          nameEn: "Wizard-made",
+          hp: 10,
+          maxHp: 10,
+          classes: [
+            { classId: "cleric", classNameZh: "牧師", subclassId: "life-domain", level: 1, active: true },
+          ],
+          armorProfs: ["輕甲", "中甲", "重甲", "盾牌"],
+          languageProfs: ["通用語", "矮人語"],
+        },
+      ],
+    },
+  });
+  const [card] = (await t.query(listCharacters, { playerToken })).filter(
+    (c: any) => c.nameZh === "向導卡",
+  );
+  expect(card.classes).toHaveLength(1);
+  expect(card.classes[0].subclassId).toBe("life-domain");
+  expect(card.armorProfs).toContain("重甲");
+});
+
+test("a card from a NEWER build (version > current) is refused", async () => {
+  const { t, playerToken } = await newGame();
+  await expect(
+    t.mutation(importCards, {
+      playerToken,
+      envelope: {
+        format: CARD_FILE_FORMAT,
+        version: 99,
+        exportedAt: new Date().toISOString(),
+        cards: [{ nameZh: "太新", nameEn: "Too new", hp: 1, maxHp: 1 }],
+      },
+    }),
+  ).rejects.toThrow();
+  const cards = await t.query(listCharacters, { playerToken });
+  expect(cards.some((c: any) => c.nameZh === "太新")).toBe(false); // no write
+});
+
 test("a fully-populated card survives export → import byte-identically", async () => {
   const { t, playerToken } = await newGame();
   const characterId = await seedFullCard(t, playerToken);

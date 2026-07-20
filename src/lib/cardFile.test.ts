@@ -154,7 +154,7 @@ test("an exported card keeps every field the player filled in", () => {
 test("the envelope is what the server's import customs expects", () => {
   const file = buildCardFile([card(), card({ nameZh: "第二張" })]);
   expect(file.format).toBe(CARD_FILE_FORMAT);
-  expect(file.version).toBe(1);
+  expect(file.version).toBe(2);
   expect(file.cards).toHaveLength(2);
   expect(Date.parse(file.exportedAt)).not.toBeNaN();
 });

@@ -132,6 +132,7 @@ function baseProps(overrides: Partial<CharacterCardWindowProps> = {}): Character
     onClose: () => {},
     onUpdateCharacter: () => {},
     onJoinBattle: () => {},
+    onDeleteCard: () => {},
     onAddResource: () => {},
     onUpdateResource: () => {},
     onRemoveResource: () => {},
@@ -142,6 +143,115 @@ function baseProps(overrides: Partial<CharacterCardWindowProps> = {}): Character
     ...overrides,
   };
 }
+
+test("the sheet is paged: only the active page's fields are visible, all stay mounted", () => {
+  render(<CharacterCardWindow {...baseProps()} />);
+  // Page 0 (核心) is shown by default; page 3 (故事) is mounted but hidden.
+  expect(screen.getByLabelText("name zh")).toBeVisible();
+  expect(screen.getByLabelText("story")).not.toBeVisible();
+  // Resources/recipes/attack fields live on page 0 (combat page merged back
+  // into core) — visible without switching pages.
+  expect(screen.getByLabelText("ac")).toBeInTheDocument();
+  expect(screen.getByLabelText("attack")).toBeVisible();
+  expect(screen.getByLabelText("attack")).toBeInTheDocument();
+
+  // Jump to 故事 (page index 3): story becomes visible, core hides.
+  fireEvent.click(screen.getByLabelText("page 3"));
+  expect(screen.getByLabelText("story")).toBeVisible();
+  expect(screen.getByLabelText("name zh")).not.toBeVisible();
+
+  // The ← / → arrows walk pages too (3 → back to 2, 法術·特性).
+  fireEvent.click(screen.getByLabelText("prev page"));
+  expect(screen.getByLabelText("ref 0 title")).toBeVisible();
+  expect(screen.getByLabelText("story")).not.toBeVisible();
+});
+
+test("soft warning marks an overridden derived value on engine-backed cards only", () => {
+  // STR mod +3, PB 2, non-proficient → the engine expects a STR save of 3.
+  // Save 0's total is set to 99 (overridden); the rest match the engine.
+  const saves = [
+    { key: "力量", prof: false, total: 99 },
+    { key: "敏捷", prof: false, total: 0 },
+    { key: "體質", prof: false, total: 2 },
+    { key: "智力", prof: false, total: -1 },
+    { key: "感知", prof: false, total: 3 },
+    { key: "魅力", prof: false, total: 0 },
+  ];
+  // Legacy card (no `classes`): nothing to diverge from — no marker.
+  const { unmount } = render(
+    <CharacterCardWindow {...baseProps({ character: { ...character, saves } })} />,
+  );
+  expect(screen.getByLabelText("save 0 total")).not.toHaveClass("ccw-diverged");
+  unmount();
+
+  // Engine-backed card (built by the wizard → has `classes`): the override
+  // away from the engine result IS marked.
+  render(
+    <CharacterCardWindow
+      {...baseProps({
+        character: {
+          ...character,
+          classes: [{ classId: "cleric", level: 1, active: true }],
+          saves,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByLabelText("save 0 total")).toHaveClass("ccw-diverged");
+  // A field left at the engine value is NOT marked.
+  expect(screen.getByLabelText("save 1 total")).not.toHaveClass("ccw-diverged");
+});
+
+test("proficiencies: the four pickers always render; the legacy toolsText note only shows when non-empty", () => {
+  // Legacy card — toolsText carries old data, structured arrays are empty:
+  // BOTH the four pickers AND the legacy note render (no more either/or).
+  const { unmount } = render(
+    <CharacterCardWindow {...baseProps({ character: { ...character, toolsText: "護甲：輕甲" } })} />,
+  );
+  expect(screen.getByLabelText("tools")).toBeInTheDocument();
+  expect(screen.getByLabelText("profs armor add")).toBeInTheDocument();
+  unmount();
+
+  // Structured card — each category's seeded values render as chips; empty
+  // toolsText means no legacy note block.
+  render(
+    <CharacterCardWindow
+      {...baseProps({
+        character: { ...character, toolsText: "", armorProfs: ["輕甲", "盾牌"], weaponProfs: ["簡易武器"] },
+      })}
+    />,
+  );
+  expect(screen.getByText("輕甲")).toBeInTheDocument();
+  expect(screen.getByText("盾牌")).toBeInTheDocument();
+  expect(screen.getByText("簡易武器")).toBeInTheDocument();
+  expect(screen.queryByLabelText("tools")).toBeNull();
+});
+
+test("adding a proficiency via the picker's dropdown saves it in the dirty patch", () => {
+  const onUpdateCharacter = vi.fn();
+  render(
+    <CharacterCardWindow
+      {...baseProps({ onUpdateCharacter, character: { ...character, armorProfs: ["輕甲"] } })}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("profs armor add"), { target: { value: "中甲" } });
+  fireEvent.click(screen.getByLabelText(`save ${character.nameZh}`));
+  expect(onUpdateCharacter).toHaveBeenCalledWith(
+    character._id,
+    expect.objectContaining({ armorProfs: ["輕甲", "中甲"] }),
+  );
+});
+
+test("picking armor writes AC via SRD rules (heavy = base, no DEX)", () => {
+  render(<CharacterCardWindow {...baseProps()} />);
+  // Chain mail (heavy, base 16) ignores DEX regardless of the card's DEX mod.
+  fireEvent.change(screen.getByLabelText("ac armor"), { target: { value: "chain-mail" } });
+  expect((screen.getByLabelText("ac") as HTMLInputElement).value).toBe("16");
+  expect((screen.getByLabelText("ac formula") as HTMLInputElement).value).toContain("16");
+  // Adding a shield stacks +2 → 18, and the result stays hand-editable.
+  fireEvent.click(screen.getByLabelText("ac shield"));
+  expect((screen.getByLabelText("ac") as HTMLInputElement).value).toBe("18");
+});
 
 test("dragging the head calls onDrag with the pointer-relative position", () => {
   const onDrag = vi.fn();
@@ -308,6 +418,28 @@ test("Join battle fires when not in battle", () => {
   );
   fireEvent.click(screen.getByRole("button", { name: /加入戰鬥/ }));
   expect(onJoinBattle).toHaveBeenCalledWith("char1");
+});
+
+test("delete card requires a second click to confirm", () => {
+  const onDeleteCard = vi.fn();
+  render(<CharacterCardWindow {...baseProps({ onDeleteCard })} />);
+
+  fireEvent.click(screen.getByLabelText(`delete card ${character.nameZh}`));
+  expect(onDeleteCard).not.toHaveBeenCalled();
+  const confirm = screen.getByLabelText(`confirm delete card ${character.nameZh}`);
+
+  fireEvent.click(confirm);
+  expect(onDeleteCard).toHaveBeenCalledOnce();
+});
+
+test("a read-only (demo) card's delete button is disabled", () => {
+  const onDeleteCard = vi.fn();
+  render(<CharacterCardWindow {...baseProps({ onDeleteCard, readOnly: true })} />);
+
+  const del = screen.getByLabelText(`delete card ${character.nameZh}`);
+  expect(del).toBeDisabled();
+  fireEvent.click(del);
+  expect(onDeleteCard).not.toHaveBeenCalled();
 });
 
 test("R/V/I section renders only when linked to a combatant", () => {
