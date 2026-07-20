@@ -71,6 +71,7 @@ test("FrontstageView renders shared state, combatants, and dice; no DM-notes sur
       characters={[]}
       onSeedCharacters={noop}
       onUpdateCharacter={noop}
+      onDeleteCharacter={async () => {}}
       onAddCharacterResource={noop}
       onUpdateCharacterResource={noop}
       onRemoveCharacterResource={noop}

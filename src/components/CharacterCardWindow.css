@@ -76,6 +76,11 @@
   font-weight: 700;
   letter-spacing: 0.1em;
 }
+/* Pins delete to the footer's bottom-left regardless of the (conditional)
+ * unsaved-changes tag; every other button stays packed to the right. */
+.ccw-delete-btn {
+  margin-right: auto;
+}
 
 /* Read-only demo card (design D3). Sits between the body and the foot so it is
  * the last thing read before reaching for Save — and it points at Export,

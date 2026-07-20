@@ -132,6 +132,7 @@ function baseProps(overrides: Partial<CharacterCardWindowProps> = {}): Character
     onClose: () => {},
     onUpdateCharacter: () => {},
     onJoinBattle: () => {},
+    onDeleteCard: () => {},
     onAddResource: () => {},
     onUpdateResource: () => {},
     onRemoveResource: () => {},
@@ -201,34 +202,39 @@ test("soft warning marks an overridden derived value on engine-backed cards only
   expect(screen.getByLabelText("save 1 total")).not.toHaveClass("ccw-diverged");
 });
 
-test("proficiencies: structured blocks when present, toolsText fallback otherwise", () => {
-  // Legacy card — single toolsText string, no structured blocks.
+test("proficiencies: the four pickers always render; the legacy toolsText note only shows when non-empty", () => {
+  // Legacy card — toolsText carries old data, structured arrays are empty:
+  // BOTH the four pickers AND the legacy note render (no more either/or).
   const { unmount } = render(
     <CharacterCardWindow {...baseProps({ character: { ...character, toolsText: "護甲：輕甲" } })} />,
   );
   expect(screen.getByLabelText("tools")).toBeInTheDocument();
-  expect(screen.queryByLabelText("prof armorProfs")).toBeNull();
+  expect(screen.getByLabelText("profs armor add")).toBeInTheDocument();
   unmount();
 
-  // Structured card — per-category blocks; the legacy textarea is gone.
+  // Structured card — each category's seeded values render as chips; empty
+  // toolsText means no legacy note block.
   render(
     <CharacterCardWindow
-      {...baseProps({ character: { ...character, armorProfs: ["輕甲", "盾牌"], weaponProfs: ["簡易武器"] } })}
+      {...baseProps({
+        character: { ...character, toolsText: "", armorProfs: ["輕甲", "盾牌"], weaponProfs: ["簡易武器"] },
+      })}
     />,
   );
-  expect((screen.getByLabelText("prof armorProfs") as HTMLInputElement).value).toBe("輕甲、盾牌");
-  expect(screen.getByLabelText("prof weaponProfs")).toBeInTheDocument();
+  expect(screen.getByText("輕甲")).toBeInTheDocument();
+  expect(screen.getByText("盾牌")).toBeInTheDocument();
+  expect(screen.getByText("簡易武器")).toBeInTheDocument();
   expect(screen.queryByLabelText("tools")).toBeNull();
 });
 
-test("editing a structured proficiency saves it in the dirty patch", () => {
+test("adding a proficiency via the picker's dropdown saves it in the dirty patch", () => {
   const onUpdateCharacter = vi.fn();
   render(
     <CharacterCardWindow
       {...baseProps({ onUpdateCharacter, character: { ...character, armorProfs: ["輕甲"] } })}
     />,
   );
-  fireEvent.change(screen.getByLabelText("prof armorProfs"), { target: { value: "輕甲、中甲" } });
+  fireEvent.change(screen.getByLabelText("profs armor add"), { target: { value: "中甲" } });
   fireEvent.click(screen.getByLabelText(`save ${character.nameZh}`));
   expect(onUpdateCharacter).toHaveBeenCalledWith(
     character._id,
@@ -412,6 +418,28 @@ test("Join battle fires when not in battle", () => {
   );
   fireEvent.click(screen.getByRole("button", { name: /加入戰鬥/ }));
   expect(onJoinBattle).toHaveBeenCalledWith("char1");
+});
+
+test("delete card requires a second click to confirm", () => {
+  const onDeleteCard = vi.fn();
+  render(<CharacterCardWindow {...baseProps({ onDeleteCard })} />);
+
+  fireEvent.click(screen.getByLabelText(`delete card ${character.nameZh}`));
+  expect(onDeleteCard).not.toHaveBeenCalled();
+  const confirm = screen.getByLabelText(`confirm delete card ${character.nameZh}`);
+
+  fireEvent.click(confirm);
+  expect(onDeleteCard).toHaveBeenCalledOnce();
+});
+
+test("a read-only (demo) card's delete button is disabled", () => {
+  const onDeleteCard = vi.fn();
+  render(<CharacterCardWindow {...baseProps({ onDeleteCard, readOnly: true })} />);
+
+  const del = screen.getByLabelText(`delete card ${character.nameZh}`);
+  expect(del).toBeDisabled();
+  fireEvent.click(del);
+  expect(onDeleteCard).not.toHaveBeenCalled();
 });
 
 test("R/V/I section renders only when linked to a combatant", () => {

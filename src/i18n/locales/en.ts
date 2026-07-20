@@ -424,7 +424,7 @@ export const en: Messages = {
     attacksProfsWealth: "Attacks · Proficiencies · Wealth",
     attackNotes: "Attack notes",
     money: "Money",
-    toolProfs: "Tool proficiencies",
+    legacyProfNotes: "Proficiency notes (legacy — sort into the categories above, then clear)",
     spellsAndTraits: "Spells & Traits",
     classRules: "Class rules",
     noClassRules: "(no class rules)",
@@ -454,6 +454,9 @@ export const en: Messages = {
     readOnly: "🔒 Demo card (read-only)",
     readOnlyHint:
       "This is a demo card, so it can't be edited directly. Hit Export to save it as your own card, then Import it back and edit freely.",
+    deleteCard: "Delete card",
+    confirmDeleteCard: "Confirm delete?",
+    deleteCardTitle: "Permanently delete this card (an in-battle combatant keeps its current values and keeps fighting)",
   },
 
   builder: {

@@ -27,6 +27,9 @@ import type { RecipeConfirm } from "./ConfirmPanel";
  */
 export type CharacterHandlers = {
   onUpdateCharacter: (characterId: string, patch: CharacterCardPatch) => void;
+  /** Permanently delete a card (convex/characters.ts remove — freezes any
+   *  in-battle combatant's stats and unlinks it, never breaks a running battle). */
+  onDeleteCharacter: (characterId: string) => Promise<void>;
   /**
    * Create a card from the builder's assembled fields (or a blank card when
    * `fields` is omitted — legacy callers), resolving to its id. The id is what

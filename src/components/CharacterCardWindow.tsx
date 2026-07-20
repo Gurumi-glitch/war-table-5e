@@ -38,7 +38,15 @@ import {
   type SaveRow,
   type SkillRow,
 } from "../lib/dndCalc";
-import { SRD_ARMORS, ARMOR_CAT_ZH } from "../lib/srdContent";
+import {
+  SRD_ARMORS,
+  ARMOR_CAT_ZH,
+  ARMOR_PROF_OPTIONS,
+  WEAPON_PROF_OPTIONS,
+  TOOL_PROF_OPTIONS,
+  LANGUAGE_OPTIONS,
+} from "../lib/srdContent";
+import { ProfPicker } from "./ProfPicker";
 
 /**
  * Issue #9 step 4 — a floating parchment character-card window (gothic horror,
@@ -82,6 +90,9 @@ export type CharacterCardWindowProps = {
   onClose: () => void;
   onUpdateCharacter: (characterId: string, patch: CharacterCardPatch) => void;
   onJoinBattle: (characterId: string) => void;
+  /** Permanently delete this card (backend keeps any in-battle combatant's
+   *  current values and just unlinks it — see convex/characters.ts remove). */
+  onDeleteCard: () => void;
   // Character-owned sheet (write-through):
   onAddResource: (label: string, max: number) => void;
   onUpdateResource: (
@@ -262,6 +273,7 @@ export function CharacterCardWindow({
   onClose,
   onUpdateCharacter,
   onJoinBattle,
+  onDeleteCard,
   onAddResource,
   onUpdateResource,
   onRemoveResource,
@@ -297,6 +309,16 @@ export function CharacterCardWindow({
   // only the resulting AC is (which stays hand-overridable like every field).
   const [acArmor, setAcArmor] = useState("");
   const [acShield, setAcShield] = useState(false);
+  // Two-step delete confirm (mirrors EnemyDbPanel's confirmingDelete): first
+  // click arms it, second click within the window fires onDeleteCard. Auto-
+  // reverts so a stale confirmation never sits armed while the DM/player
+  // works elsewhere.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const timeout = window.setTimeout(() => setConfirmingDelete(false), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [confirmingDelete]);
 
   // Adopt remote changes for fields the user isn't currently editing. Scalars
   // adopt per-field; abilities/saves/skills/refs adopt only if untouched
@@ -419,12 +441,10 @@ export function CharacterCardWindow({
   const setScalar = (f: ScalarField, v: string) =>
     setDraft((d) => ({ ...d, scalars: { ...d.scalars, [f]: v } }));
 
-  /** Edit one structured proficiency category from a 、/comma-separated string. */
-  const setProf = (cat: ProfCat, raw: string) =>
-    setDraft((d) => ({
-      ...d,
-      [cat]: raw.split(/[、,]/).map((s) => s.trim()).filter(Boolean),
-    }));
+  /** Edit one structured proficiency category — same patch shape the old
+   *  free-text input used, just fed a chip list instead of a parsed string. */
+  const setProfList = (cat: ProfCat, list: string[]) =>
+    setDraft((d) => ({ ...d, [cat]: list }));
 
   // Soft "diverged from the engine" warning (character-sheet-pages). Only for
   // engine-backed cards (built by the wizard → have structured `classes`): a
@@ -990,36 +1010,33 @@ export function CharacterCardWindow({
           </div>
           </div>
 
-          {/* Page 1 — 熟練: structured per-category blocks, or the legacy
-              single toolsText string as a fallback for cards without them. */}
+          {/* Page 1 — 熟練: always the four structured proficiency pickers;
+              legacy toolsText (pre-picker cards) lists separately below when
+              non-empty, so old data stays visible instead of hidden. */}
           <div className="ccw-page" hidden={page !== 1}>
-          {PROF_CATS.some((cat) => draft[cat].length > 0) || draft.scalars.toolsText.trim() === "" ? (
-            <div className="ccw-profblocks">
-              {(
-                [
-                  ["armorProfs", t.builder.armor],
-                  ["weaponProfs", t.builder.weapons],
-                  ["toolProfs", t.builder.tools],
-                  ["languageProfs", t.builder.languages],
-                ] as const
-              ).map(([cat, label]) => (
-                <div className="ccw-ref" key={cat}>
-                  <div className="ccw-ref-head">
-                    <span className="ccw-block-title">{label}</span>
-                  </div>
-                  <input
-                    className="ccw-input"
-                    value={draft[cat].join("、")}
-                    onChange={(e) => setProf(cat, e.target.value)}
-                    aria-label={`prof ${cat}`}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
+          <div className="ccw-profblocks">
+            {(
+              [
+                ["armorProfs", "armor", t.builder.armor, ARMOR_PROF_OPTIONS],
+                ["weaponProfs", "weapon", t.builder.weapons, WEAPON_PROF_OPTIONS],
+                ["toolProfs", "tool", t.builder.tools, TOOL_PROF_OPTIONS],
+                ["languageProfs", "lang", t.builder.languages, LANGUAGE_OPTIONS],
+              ] as const
+            ).map(([cat, fieldKey, label, options]) => (
+              <ProfPicker
+                key={cat}
+                fieldKey={fieldKey}
+                label={label}
+                options={options}
+                list={draft[cat]}
+                onChange={(list) => setProfList(cat, list)}
+              />
+            ))}
+          </div>
+          {draft.scalars.toolsText.trim() !== "" && (
             <div className="ccw-ref">
               <div className="ccw-ref-head">
-                <span className="ccw-block-title">{t.card.toolProfs}</span>
+                <span className="ccw-block-title">{t.card.legacyProfNotes}</span>
               </div>
               <textarea
                 className="ccw-ref-body"
@@ -1142,6 +1159,27 @@ export function CharacterCardWindow({
       )}
       {!win.folded && (
         <div className="ccw-foot">
+          <button
+            className="ccw-btn blood ccw-delete-btn"
+            disabled={readOnly}
+            title={readOnly ? t.card.readOnly : t.card.deleteCardTitle}
+            onClick={() => {
+              if (confirmingDelete) {
+                setConfirmingDelete(false);
+                onDeleteCard();
+              } else {
+                setConfirmingDelete(true);
+              }
+            }}
+            onBlur={() => {
+              if (confirmingDelete) setConfirmingDelete(false);
+            }}
+            aria-label={
+              confirmingDelete ? `confirm delete card ${c.nameZh}` : `delete card ${c.nameZh}`
+            }
+          >
+            {confirmingDelete ? t.card.confirmDeleteCard : t.card.deleteCard}
+          </button>
           {isDirty && <span className="ccw-dirty">{t.card.unsaved}</span>}
           <button
             className="ccw-btn"

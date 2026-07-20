@@ -52,6 +52,7 @@ export function GameShell(props: GameBoardProps) {
     onUpdateCharacter,
     onCreateCharacter,
     onJoinBattle,
+    onDeleteCharacter,
     onAddCharacterResource,
     onUpdateCharacterResource,
     onRemoveCharacterResource,
@@ -254,6 +255,7 @@ export function GameShell(props: GameBoardProps) {
               onClose={() => cards.close(typedKey)}
               onUpdateCharacter={onUpdateCharacter}
               onJoinBattle={(characterId) => onJoinBattle?.(characterId)}
+              onDeleteCard={() => onDeleteCharacter(id).then(() => cards.close(typedKey))}
               onAddResource={(label, max) => onAddCharacterResource(id, label, max)}
               onUpdateResource={onUpdateCharacterResource}
               onRemoveResource={onRemoveCharacterResource}

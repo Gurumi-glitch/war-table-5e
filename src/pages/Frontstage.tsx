@@ -141,6 +141,7 @@ export function Frontstage() {
   // update/remove hooks are reused (owner-agnostic, keyed by row id); only Add
   // needs its own optimistic layer keyed on `characterId`.
   const updateCharacter = useMutation(api.characters.update);
+  const removeCharacter = useMutation(api.characters.remove);
   const createCharacter = useMutation(api.characters.create);
   const importCards = useMutation(api.characters.importCards);
   const addCharacterRecipe = useMutation(api.recipes.add).withOptimisticUpdate(
@@ -192,6 +193,9 @@ export function Frontstage() {
           patch,
         })
       }
+      onDeleteCharacter={async (characterId) => {
+        await removeCharacter({ playerToken, characterId: characterId as Id<"characters"> });
+      }}
       onCreateCharacter={async (fields) =>
         (await createCharacter({
           playerToken,

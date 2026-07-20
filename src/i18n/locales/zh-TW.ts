@@ -431,7 +431,7 @@ export const zhTW = {
     attacksProfsWealth: "攻擊 · 熟練 · 財產",
     attackNotes: "攻擊備註",
     money: "金錢",
-    toolProfs: "工具熟練",
+    legacyProfNotes: "熟練備註（舊資料——可手動搬入上方分類後清空）",
     spellsAndTraits: "法術 與 特性",
     classRules: "職業特殊規則",
     noClassRules: "（無職業特殊規則）",
@@ -460,6 +460,9 @@ export const zhTW = {
     importCardTitle: "從 .dndcard.json 檔案建立角卡",
     readOnly: "🔒 示範卡（唯讀）",
     readOnlyHint: "這是示範卡，不能直接改。按「匯出」存成自己的卡，再匯入回來就能隨意編輯。",
+    deleteCard: "刪除角卡",
+    confirmDeleteCard: "確認刪除？",
+    deleteCardTitle: "永久刪除這張角卡（戰鬥中的參戰者會保留目前數值繼續作戰）",
   },
 
   /** 創角向導（character-builder）。每步 SRD 下拉 + homebrew 自由填。 */
