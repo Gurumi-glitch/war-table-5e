@@ -151,14 +151,21 @@
   caret-color: #e0729a;
 }
 .ccw-body :where(select) {
-  background: rgba(236, 228, 245, 0.08);
-  border: 1px solid rgba(156, 52, 102, 0.35);
-  color: #d9d0e6;
+  /* Opaque, matching the builder's selects (warTable.css .wt-builder-body):
+   * a translucent bg here leaves the native option popup white while the
+   * light text color inherits — light-gray-on-white, unreadable. */
+  background: #160f20;
+  border: 1px solid #4f3a63;
+  color: #ece4f5;
   font-family: inherit;
   font-size: 0.9em;
   font-weight: 500;
   border-radius: 2px;
   max-width: 100%;
+}
+.ccw-body select option {
+  background: #160f20;
+  color: #ece4f5;
 }
 .ccw-body :where(input):focus-visible,
 .ccw-body :where(textarea):focus-visible,
