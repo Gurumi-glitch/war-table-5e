@@ -1,6 +1,6 @@
 # PLAYGROUND_MODE flag and the character portability model
 
-ADR-0014 creates a public playground deployment sharing code with private tables. This ADR fixes *how* one codebase serves both without a fork, and what the character-card data contract becomes. Implementation is specced in `openspec/changes/prep-public-release/`; decision record in `docs/grilling/2026-07-12-grilling-character-creator.md`.
+ADR-0014 creates a public playground deployment sharing code with private tables. This ADR fixes *how* one codebase serves both without a fork, and what the character-card data contract becomes. The implementation spec and the underlying decision record are both local-only working docs (2026-07-12); this ADR is the durable summary.
 
 ## Decision
 

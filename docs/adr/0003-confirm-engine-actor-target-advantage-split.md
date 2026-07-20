@@ -6,7 +6,7 @@ The Confirm engine tracks advantage/disadvantage for an attack roll as two indep
 
 Same split applies to DC (saving-throw) recipes, plus a per-target `saveMode` (`"damage"` vs `"hitOrMiss"`) for what a successful save means — damage-engine and toggle logic stay independent of it either way.
 
-The earlier design used one shared `advOverride` flag that replaced the whole combined net. This broke as soon as both sides had a real condition: setting a target's manual toggle would silently erase the actor's own condition-driven advantage (e.g. an actor Poisoned into disadvantage, wiped out because only the target's toggle was touched). Two playtest iterations ("Case 1" and "Case 1 Extend" in `docs/BattleCaseReference/Case.md`) surfaced this before the split model was adopted.
+The earlier design used one shared `advOverride` flag that replaced the whole combined net. This broke as soon as both sides had a real condition: setting a target's manual toggle would silently erase the actor's own condition-driven advantage (e.g. an actor Poisoned into disadvantage, wiped out because only the target's toggle was touched). Two playtest iterations ("Case 1" and "Case 1 Extend", recorded in local-only playtest notes) surfaced this before the split model was adopted.
 
 ## Incident — cancel-per-side loses information (#31, PR #55, 2026-07-13)
 
@@ -14,4 +14,4 @@ The split model shipped with per-side cancellation: each side resolved to an `Ad
 
 The fix is structural, not a special case: keep signals raw until every source is present, then cancel once (`advantageSignalsFor` → `combineAdvSignals`). This is the **second** time this ADR's failure mode reached the table — the first was the shared-override erase above. Both have the same root: resolving a value before all its inputs are known. That is the thing to watch for when extending this area, not the specific flag or function that carried it.
 
-Consequence: any new adv/disadv-affecting feature must decide which side (`attack` vs `attackAgainst`/`save`) it belongs to and add a spec with that `stat`, rather than reaching for a single override — see `docs/agents/combat-resolution-architecture.md` for the full wiring (including the field-by-field payload-mapping trap in `Backstage.tsx`/`Frontstage.tsx` that has separately bitten this area twice).
+Consequence: any new adv/disadv-affecting feature must decide which side (`attack` vs `attackAgainst`/`save`) it belongs to and add a spec with that `stat`, rather than reaching for a single override. The full wiring is written up in the local agent notes, including the field-by-field payload-mapping trap in `Backstage.tsx`/`Frontstage.tsx` that has separately bitten this area twice.

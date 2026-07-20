@@ -1,6 +1,6 @@
 # Localization is a display layer — storage keys never translate, and the combat log ships structured events
 
-The UI shipped bilingual (zh-TW / en) in PR #59 (`openspec/changes/add-i18n-zh-en/` holds the full proposal + task record). The acceptance criterion was set up front: **adding a third language must be adding one file** — not a migration, not a schema change, not a second rendering path. This ADR fixes the contracts that make that true, and the one data-shape change it required.
+The UI shipped bilingual (zh-TW / en) in PR #59; the full proposal and task record are local-only working docs. The acceptance criterion was set up front: **adding a third language must be adding one file** — not a migration, not a schema change, not a second rendering path. This ADR fixes the contracts that make that true, and the one data-shape change it required.
 
 Note this reverses `CLAUDE.md`'s "v2 / deferred (i18n)" listing — it shipped early because going public (ADR-0014) makes a Chinese-only UI unusable for the audience the public release exists for.
 

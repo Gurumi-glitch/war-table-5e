@@ -11,7 +11,7 @@ The full editable character card and Scene picker remain accepted. Decisions 3�
 - 戰爭桌 and 場景 share one persistent Game Shell and global window layer. Character cards and their child windows are no longer owned separately by `GameBoard` and `MapBoard`; switching workspaces preserves open/fold/position/z state.
 - The Scene picker remains the intentional character-card entry point. Map-piece pointer-down remains reserved for dragging.
 
-This amendment reverses the earlier “always in battle” assumption because inspecting a character must not silently change shared combat state. It also replaces the temporary duplicated window ownership now that cross-workspace persistence requires one authoritative owner. Implementation and acceptance scenarios are recorded in `openspec/changes/unify-game-shell-navigation/`.
+This amendment reverses the earlier “always in battle” assumption because inspecting a character must not silently change shared combat state. It also replaces the temporary duplicated window ownership now that cross-workspace persistence requires one authoritative owner. Implementation and acceptance scenarios are recorded in local-only working docs.
 
 ## Decision
 

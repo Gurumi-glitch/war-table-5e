@@ -1,6 +1,6 @@
 # Public release: self-host primary, one shared playground deployment — never a multi-tenant service
 
-Going public (the portfolio goal) means strangers can reach the code and, if we publish a URL, a live deployment. This ADR fixes *what* we operate for them. Full interview record: `docs/grilling/2026-07-12-grilling-character-creator.md` (12 questions + S1–S4 simplification review); this ADR is the durable summary.
+Going public (the portfolio goal) means strangers can reach the code and, if we publish a URL, a live deployment. This ADR fixes *what* we operate for them. It is the durable summary of a longer local-only interview record (12 questions + S1–S4 simplification review, 2026-07-12).
 
 ## Decision
 
