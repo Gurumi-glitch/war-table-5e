@@ -298,15 +298,14 @@
 /* --- main grid: ability rail | saves+skills ledger | sheet | vitals rail ---- */
 .ccw-main {
   display: grid;
-  /* ability rail | saves+skills ledger | vitals rail. The sheet column moved
-     to its own page (character-sheet-pages), so this is 3 columns now. */
-  grid-template-columns: 6.5em minmax(0, 1fr) 8em;
+  /* ability rail | saves+skills ledger | sheet | vitals rail. */
+  grid-template-columns: 6.5em minmax(0, 1fr) minmax(0, 1.5fr) 8em;
   gap: 0.4em 1.1em;
   align-items: start;
 }
 
 /* --- Paged sheet (character-sheet-pages) --------------------------------- */
-/* All 5 pages stay mounted; only the active one is visible, so unsaved edits
+/* All 4 pages stay mounted; only the active one is visible, so unsaved edits
    on another page and every aria-label test survive a switch. */
 .ccw-page[hidden] {
   display: none;

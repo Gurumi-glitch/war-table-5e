@@ -145,20 +145,21 @@ function baseProps(overrides: Partial<CharacterCardWindowProps> = {}): Character
 
 test("the sheet is paged: only the active page's fields are visible, all stay mounted", () => {
   render(<CharacterCardWindow {...baseProps()} />);
-  // Page 0 (核心) is shown by default; page 4 (故事) is mounted but hidden.
+  // Page 0 (核心) is shown by default; page 3 (故事) is mounted but hidden.
   expect(screen.getByLabelText("name zh")).toBeVisible();
   expect(screen.getByLabelText("story")).not.toBeVisible();
-  // Every field is still in the DOM regardless of page — the aria-label test
-  // contracts don't depend on navigation.
+  // Resources/recipes/attack fields live on page 0 (combat page merged back
+  // into core) — visible without switching pages.
   expect(screen.getByLabelText("ac")).toBeInTheDocument();
+  expect(screen.getByLabelText("attack")).toBeVisible();
   expect(screen.getByLabelText("attack")).toBeInTheDocument();
 
-  // Jump to 故事 (page index 4): story becomes visible, core hides.
-  fireEvent.click(screen.getByLabelText("page 4"));
+  // Jump to 故事 (page index 3): story becomes visible, core hides.
+  fireEvent.click(screen.getByLabelText("page 3"));
   expect(screen.getByLabelText("story")).toBeVisible();
   expect(screen.getByLabelText("name zh")).not.toBeVisible();
 
-  // The ← / → arrows walk pages too (4 → back to 3, 法術·特性).
+  // The ← / → arrows walk pages too (3 → back to 2, 法術·特性).
   fireEvent.click(screen.getByLabelText("prev page"));
   expect(screen.getByLabelText("ref 0 title")).toBeVisible();
   expect(screen.getByLabelText("story")).not.toBeVisible();

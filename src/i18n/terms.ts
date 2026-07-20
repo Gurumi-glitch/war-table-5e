@@ -25,6 +25,11 @@ export function skillLabel(t: Messages, key: string): string {
   return (t.terms.skills as Record<string, string>)[key] ?? key;
 }
 
+/** SRD armor/weapon proficiency term (srdContent armorProfs/weaponProfs/bonusArmorProfs). */
+export function profLabel(t: Messages, key: string): string {
+  return (t.terms.profs as Record<string, string>)[key] ?? key;
+}
+
 /** Accepts any spelling `rules.canonicalDamageType` recognizes (zh aliases included). */
 export function damageTypeLabel(t: Messages, raw: string): string {
   const key = canonicalDamageType(raw);

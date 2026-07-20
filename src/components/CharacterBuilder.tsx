@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useT } from "../i18n";
-import { abilityLabel, skillLabel } from "../i18n/terms";
+import { abilityLabel, skillLabel, profLabel } from "../i18n/terms";
 import type { CharacterFields, ClassEntry } from "../../convex/characters";
 import {
   ABILITY_KEYS,
+  SKILLS,
   type AbilityKey,
   modFor,
   pbForLevel,
@@ -71,6 +72,9 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   // Race: an SRD id, or "" = custom (with a free-text label)
   const [raceId, setRaceId] = useState<string>(SRD_RACES[0].id);
   const [customRace, setCustomRace] = useState("");
+  // Free-choice racial ASI (Half-Elf: two +1s of the player's choice), separate
+  // from the 27-point budget — race.asiChoice.count slots, "" = unpicked.
+  const [asiChoices, setAsiChoices] = useState<(AbilityKey | "")[]>([]);
 
   // Classes: structured rows. First row is the primary; multiclass adds rows.
   const [classes, setClasses] = useState<ClassEntry[]>([
@@ -100,11 +104,17 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   const primary = classes.find((c) => c.active) ?? classes[0];
   const primaryClass: SrdClass | undefined = SRD_CLASSES.find((c) => c.id === primary?.classId);
 
-  // Final ability rows = base + racial ASI (SRD race only; custom race = no auto ASI).
+  // Final ability rows = base + racial ASI (SRD race only; custom race = no auto
+  // ASI) + the race's free-choice ASI picks (Half-Elf's two +1s), if any.
   const finalAbilities: AbilityRow[] = useMemo(() => {
     const base = ABILITY_KEYS.map((k) => ({ key: k, score: baseScores[k], mod: modFor(baseScores[k]) }));
-    return race ? applyRacialAsi(base, race.asi) : base;
-  }, [baseScores, race]);
+    if (!race) return base;
+    const asi: Record<string, number> = { ...race.asi };
+    if (race.asiChoice) {
+      for (const k of asiChoices) if (k) asi[k] = (asi[k] ?? 0) + race.asiChoice.amount;
+    }
+    return applyRacialAsi(base, asi);
+  }, [baseScores, race, asiChoices]);
   const modOf = (k: AbilityKey) => finalAbilities.find((a) => a.key === k)!.mod;
 
   // AC preview
@@ -129,8 +139,10 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     if (profsSeeded || !primaryClass) return;
     const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
     const sub = primaryClass.subclasses[0];
-    setArmorProfs([...primaryClass.armorProfs, ...(sub.l1 && sub.bonusArmorProfs ? sub.bonusArmorProfs : [])]);
-    setWeaponProfs([...primaryClass.weaponProfs]);
+    setArmorProfs(
+      [...primaryClass.armorProfs, ...(sub.l1 && sub.bonusArmorProfs ? sub.bonusArmorProfs : [])].map((p) => profLabel(t, p)),
+    );
+    setWeaponProfs(primaryClass.weaponProfs.map((p) => profLabel(t, p)));
     setToolProfs([]);
     setLanguageProfs([]);
     setProfsSeeded(true);
@@ -260,6 +272,13 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
   const current: Step = STEPS[step];
   const next = () => {
     if (current === "background") seedProfs();
+    // Arriving at the background step: pre-check the current background's
+    // granted skills so they show up without the player having to touch the
+    // select first (they still get merged again in seedProfs on the way out).
+    if (current === "abilities") {
+      const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
+      if (bg) setChosenSkills((s) => Array.from(new Set([...s, ...bg.skills])));
+    }
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
@@ -280,7 +299,15 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
             <fieldset>
               <label>
                 {t.builder.raceSrd}
-                <select aria-label="race select" value={raceId} onChange={(e) => setRaceId(e.target.value)}>
+                <select
+                  aria-label="race select"
+                  value={raceId}
+                  onChange={(e) => {
+                    setRaceId(e.target.value);
+                    const newRace = SRD_RACES.find((r) => r.id === e.target.value);
+                    setAsiChoices(newRace?.asiChoice ? Array(newRace.asiChoice.count).fill("") : []);
+                  }}
+                >
                   {SRD_RACES.map((r) => (
                     <option key={r.id} value={r.id}>
                       {dn(r.nameZh, r.nameEn)}（{cc.sizes[r.size]}, {r.speedFt}{cc.ftSuffix}）
@@ -301,6 +328,12 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
 
           {current === "class" && (
             <fieldset>
+              <div className="wt-builder-classhead" aria-hidden="true">
+                <span>{t.builder.colClass}</span>
+                <span>{t.builder.colSubclass}</span>
+                <span>{t.builder.colLevel}</span>
+                <span>{t.builder.active}</span>
+              </div>
               {classes.map((c, i) => {
                 const sc = SRD_CLASSES.find((x) => x.id === c.classId);
                 return (
@@ -328,7 +361,7 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                           setClasses((rows) => rows.map((r, j) => (j === i ? { ...r, subclassId: sub?.id, subclassNameZh: sub?.nameZh } : r)));
                         }}
                       >
-                        <option value="">{sc.subclassLabel}…</option>
+                        <option value="">{dn(sc.subclassLabel, sc.subclassLabelEn)}…</option>
                         {sc.subclasses.map((s) => (
                           <option key={s.id} value={s.id}>{dn(s.nameZh, s.nameEn)}{s.l1 ? cc.l1Tag : ""}</option>
                         ))}
@@ -377,6 +410,30 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
               </div>
               {method === "array" && <p className="wt-builder-hint">{t.builder.arrayHint}：{STANDARD_ARRAY.join("、")}</p>}
               {method === "pointbuy" && <p className="wt-builder-hint">{t.builder.pointsLeft}：{pointBudget}</p>}
+              {race?.asiChoice && (
+                <div className="wt-builder-asichoice">
+                  {Array.from({ length: race.asiChoice.count }).map((_, i) => {
+                    const taken = new Set([...Object.keys(race.asi), ...asiChoices.filter((_v, j) => j !== i)]);
+                    return (
+                      <label key={i}>
+                        {t.builder.asiChoicePick} #{i + 1}
+                        <select
+                          aria-label={`asi choice ${i}`}
+                          value={asiChoices[i] ?? ""}
+                          onChange={(e) =>
+                            setAsiChoices((choices) => choices.map((c, j) => (j === i ? (e.target.value as AbilityKey | "") : c)))
+                          }
+                        >
+                          <option value="">{t.builder.asiChoosePlaceholder}</option>
+                          {ABILITY_KEYS.filter((k) => !taken.has(k)).map((k) => (
+                            <option key={k} value={k}>{abilityLabel(t, k)}</option>
+                          ))}
+                        </select>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
               <div className="wt-builder-abilities">
                 {ABILITY_KEYS.map((k) => (
                   <label key={k}>
@@ -400,7 +457,20 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
             <fieldset>
               <label>
                 {t.builder.background}
-                <select aria-label="background select" value={bgId} onChange={(e) => { setBgId(e.target.value); setProfsSeeded(false); }}>
+                <select
+                  aria-label="background select"
+                  value={bgId}
+                  onChange={(e) => {
+                    const oldBg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
+                    const newBg = SRD_BACKGROUNDS.find((b) => b.id === e.target.value);
+                    setChosenSkills((s) => {
+                      const withoutOld = oldBg ? s.filter((sk) => !oldBg.skills.includes(sk)) : s;
+                      return newBg ? Array.from(new Set([...withoutOld, ...newBg.skills])) : withoutOld;
+                    });
+                    setBgId(e.target.value);
+                    setProfsSeeded(false);
+                  }}
+                >
                   {SRD_BACKGROUNDS.map((b) => (
                     <option key={b.id} value={b.id}>{dn(b.nameZh, b.nameEn)}</option>
                   ))}
@@ -411,17 +481,30 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                 <div>
                   <p className="wt-builder-hint">{t.builder.pickSkills}（{primaryClass.skillChoose}）</p>
                   <div className="wt-builder-skills">
-                    {(primaryClass.skillFrom.length ? primaryClass.skillFrom : ABILITY_KEYS.flatMap(() => [])).map((sk) => (
-                      <label key={sk}>
-                        <input
-                          type="checkbox"
-                          aria-label={`skill ${sk}`}
-                          checked={chosenSkills.includes(sk)}
-                          onChange={(e) => setChosenSkills((s) => (e.target.checked ? [...s, sk] : s.filter((x) => x !== sk)))}
-                        />
-                        {skillLabel(t, sk)}
-                      </label>
-                    ))}
+                    {(() => {
+                      // [] skillFrom means "choose any" (Bard) — list every skill,
+                      // not zero checkboxes.
+                      const classSkills = primaryClass.skillFrom.length ? primaryClass.skillFrom : SKILLS.map((s) => s.key);
+                      const bg = SRD_BACKGROUNDS.find((b) => b.id === bgId);
+                      const skillOptions = bg
+                        ? [...classSkills, ...bg.skills.filter((sk) => !classSkills.includes(sk))]
+                        : classSkills;
+                      return skillOptions.map((sk) => {
+                        const bgGranted = !!bg?.skills.includes(sk);
+                        return (
+                          <label key={sk}>
+                            <input
+                              type="checkbox"
+                              aria-label={`skill ${sk}`}
+                              checked={bgGranted || chosenSkills.includes(sk)}
+                              disabled={bgGranted}
+                              onChange={(e) => setChosenSkills((s) => (e.target.checked ? [...s, sk] : s.filter((x) => x !== sk)))}
+                            />
+                            {skillLabel(t, sk)}{bgGranted ? t.builder.bgGrantedTag : ""}
+                          </label>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}

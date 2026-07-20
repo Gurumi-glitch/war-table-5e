@@ -1915,8 +1915,14 @@ button.wt-altar-accordion-trigger {
   padding: 0.3em 0.4em;
   font-family: inherit;
 }
+.wt-builder-classhead { display: flex; flex-wrap: wrap; gap: 0.4em; padding: 0 0 0.2em; font-size: 0.78em; color: #b9a9cf; }
+.wt-builder-classhead span:nth-child(1),
+.wt-builder-classhead span:nth-child(2) { flex: 1; }
+.wt-builder-classhead span:nth-child(3) { width: 3.5em; }
 .wt-builder-classrow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4em; padding: 0.3em 0; border-bottom: 1px dashed #3a2c4a; }
 .wt-builder-active { flex-direction: row; align-items: center; gap: 0.3em; }
+.wt-builder-asichoice { display: flex; gap: 1em; flex-wrap: wrap; }
+.wt-builder-asichoice label { flex-direction: row; align-items: center; gap: 0.4em; }
 .wt-builder-methods { display: flex; gap: 1em; flex-wrap: wrap; }
 .wt-builder-methods label { flex-direction: row; align-items: center; gap: 0.3em; }
 .wt-builder-abilities { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5em 1em; }

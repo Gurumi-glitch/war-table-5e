@@ -715,7 +715,7 @@ export function CharacterCardWindow({
             >
               ←
             </button>
-            {[t.card.pages.core, t.card.pages.skills, t.card.pages.combat, t.card.pages.spells, t.card.pages.story].map(
+            {[t.card.pages.core, t.card.pages.skills, t.card.pages.spells, t.card.pages.story].map(
               (label, i) => (
                 <button
                   key={i}
@@ -731,8 +731,8 @@ export function CharacterCardWindow({
             <button
               className="ccw-tab-arrow"
               aria-label="next page"
-              disabled={page === 4}
-              onClick={() => setPage((p) => Math.min(4, p + 1))}
+              disabled={page === 3}
+              onClick={() => setPage((p) => Math.min(3, p + 1))}
             >
               →
             </button>
@@ -858,6 +858,25 @@ export function CharacterCardWindow({
               ))}
             </div>
 
+            <div className="ccw-sheetcol">
+              <ResourcesSection
+                resources={c.resources}
+                onAdd={onAddResource}
+                onUpdate={onUpdateResource}
+                onRemove={onRemoveResource}
+              />
+              <RecipesSection
+                recipes={c.recipes}
+                resources={c.resources}
+                onAdd={onAddRecipe}
+                onUpdate={onUpdateRecipe}
+                onRemove={onRemoveRecipe}
+              />
+              {combatant && onPatchCombatant && (
+                <RVISection combatant={combatant} onPatch={onPatchCombatant} />
+              )}
+            </div>
+
             <div className="ccw-rail">
               <Plaque label={t.card.hp}>
                 <input
@@ -959,6 +978,16 @@ export function CharacterCardWindow({
               </Plaque>
             </div>
           </div>
+
+          <h4>{t.card.attacksProfsWealth}</h4>
+          <div className="ccw-misc">
+            <Field label={t.card.attackNotes}>
+              <CardInput value={draft.scalars.attackText} onChange={(v) => setScalar("attackText", v)} ariaLabel="attack" />
+            </Field>
+            <Field label={t.card.money}>
+              <CardInput value={draft.scalars.goldText} onChange={(v) => setScalar("goldText", v)} ariaLabel="gold" />
+            </Field>
+          </div>
           </div>
 
           {/* Page 1 — 熟練: structured per-category blocks, or the legacy
@@ -1035,39 +1064,8 @@ export function CharacterCardWindow({
           </div>
           </div>
 
-          {/* Page 2 — 戰鬥: resources / recipes / RVI + attack · wealth. */}
+          {/* Page 2 — 法術·特性: refs + class rules. */}
           <div className="ccw-page" hidden={page !== 2}>
-          <div className="ccw-sheetcol">
-            <ResourcesSection
-              resources={c.resources}
-              onAdd={onAddResource}
-              onUpdate={onUpdateResource}
-              onRemove={onRemoveResource}
-            />
-            <RecipesSection
-              recipes={c.recipes}
-              resources={c.resources}
-              onAdd={onAddRecipe}
-              onUpdate={onUpdateRecipe}
-              onRemove={onRemoveRecipe}
-            />
-            {combatant && onPatchCombatant && (
-              <RVISection combatant={combatant} onPatch={onPatchCombatant} />
-            )}
-          </div>
-          <h4>{t.card.attacksProfsWealth}</h4>
-          <div className="ccw-misc">
-            <Field label={t.card.attackNotes}>
-              <CardInput value={draft.scalars.attackText} onChange={(v) => setScalar("attackText", v)} ariaLabel="attack" />
-            </Field>
-            <Field label={t.card.money}>
-              <CardInput value={draft.scalars.goldText} onChange={(v) => setScalar("goldText", v)} ariaLabel="gold" />
-            </Field>
-          </div>
-          </div>
-
-          {/* Page 3 — 法術·特性: refs + class rules. */}
-          <div className="ccw-page" hidden={page !== 3}>
           <h4>{t.card.spellsAndTraits}</h4>
           <div className="ccw-refs">
             {draft.refs.map((r, i) => (
@@ -1125,8 +1123,8 @@ export function CharacterCardWindow({
           <button onClick={addClassRule}>+ section</button>
           </div>
 
-          {/* Page 4 — 故事. */}
-          <div className="ccw-page" hidden={page !== 4}>
+          {/* Page 3 — 故事. */}
+          <div className="ccw-page" hidden={page !== 3}>
           <h4>{t.card.story}</h4>
           <textarea
             className="ccw-story"

@@ -118,3 +118,72 @@ test("multiclass is recorded as rows (paladin 1 / cleric 0 inactive)", () => {
   expect(fields.classes![0]).toMatchObject({ classId: "paladin", active: true, level: 1 });
   expect(fields.classes![1]).toMatchObject({ classId: "cleric", active: false, level: 0 });
 });
+
+test("half-elf ASI choice: two free +1s, separate from the 27-point budget", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "half-elf" } });
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+
+  // Switch to point buy so the remaining-points hint is visible.
+  fireEvent.click(screen.getByLabelText("method pointbuy"));
+  const pointsBefore = screen.getByText(/剩餘點數/).textContent;
+
+  const choice0 = screen.getByLabelText("asi choice 0") as HTMLSelectElement;
+  const choice1 = screen.getByLabelText("asi choice 1") as HTMLSelectElement;
+  // Charisma is half-elf's fixed +2 — not offered as a free-choice option.
+  expect(Array.from(choice0.options).map((o) => o.value)).not.toContain("魅力");
+
+  fireEvent.change(choice0, { target: { value: "力量" } });
+  // Once 力量 is picked in slot 0, slot 1 can't also pick it.
+  expect(Array.from(choice1.options).map((o) => o.value)).not.toContain("力量");
+  fireEvent.change(choice1, { target: { value: "敏捷" } });
+
+  expect(screen.getByLabelText("final 力量")).toHaveTextContent("11");
+  expect(screen.getByLabelText("final 敏捷")).toHaveTextContent("11");
+  // The 27-point budget only tracks baseScores — the racial pick doesn't touch it.
+  expect(screen.getByText(/剩餘點數/).textContent).toBe(pointsBefore);
+});
+
+test("acolyte background: granted skills (洞悉/宗教) show pre-checked and disabled", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background (acolyte is the default)
+
+  const insight = screen.getByLabelText("skill 洞悉") as HTMLInputElement;
+  const religion = screen.getByLabelText("skill 宗教") as HTMLInputElement;
+  expect(insight.checked).toBe(true);
+  expect(insight.disabled).toBe(true);
+  expect(religion.checked).toBe(true);
+  expect(religion.disabled).toBe(true);
+});
+
+test("bard's empty skillFrom means 'choose any' — background step lists every skill, not zero", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.change(screen.getByLabelText("class select 0"), { target: { value: "bard" } });
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+
+  const skillCheckboxes = screen
+    .getAllByRole("checkbox")
+    .filter((el) => el.getAttribute("aria-label")?.startsWith("skill "));
+  expect(skillCheckboxes.length).toBeGreaterThan(0);
+});
+
+test("English locale: seeded proficiencies translate srdContent's zh terms", () => {
+  localStorage.setItem("dnd-locale", "en");
+  render(
+    <LocaleProvider>
+      <CharacterBuilder onCreate={vi.fn((_p: BuilderPayload) => Promise.resolve())} onCancel={vi.fn()} />
+    </LocaleProvider>,
+  );
+  fireEvent.click(screen.getByLabelText("builder next")); // → class (default: barbarian)
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs (seeds here)
+
+  expect((screen.getByLabelText("profs armor") as HTMLInputElement).value).toContain("Light armor");
+});
