@@ -495,6 +495,9 @@ export const en: Messages = {
     armor: "Armor proficiencies",
     weapons: "Weapon proficiencies",
     tools: "Tool proficiencies",
+    raceSkills: "Fixed skills",
+    raceSkillChoice: (n: number): string => `Choose ${n} skill${n > 1 ? "s" : ""} of your choice (on the class step)`,
+    raceToolChoice: (n: number, list: string): string => `Choose ${n} tool${n > 1 ? "s" : ""} of ${list} (on the proficiencies step)`,
     languages: "Languages",
     langHint: (fromRace: number, fromBg: number): string => {
       const total = fromRace + fromBg;

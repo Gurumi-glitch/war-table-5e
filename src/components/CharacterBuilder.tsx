@@ -159,8 +159,8 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     setArmorProfs(
       [...primaryClass.armorProfs, ...(sub.l1 && sub.bonusArmorProfs ? sub.bonusArmorProfs : [])].map((p) => profLabel(t, p)),
     );
-    setWeaponProfs(primaryClass.weaponProfs.map((p) => profLabel(t, p)));
-    setToolProfs([]);
+    setWeaponProfs([...primaryClass.weaponProfs, ...(race?.weaponProfs ?? [])].map((p) => profLabel(t, p)));
+    setToolProfs((race?.toolProfs ?? []).map((p) => profLabel(t, p)));
     // Racial fixed languages (Human/Dragonborn/…) seed as chips; SRD classes
     // grant none, so there's no class-side language list to fold in here.
     const langDn = (zh: string) => {
@@ -379,6 +379,9 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                     setAsiChoices(newRace?.asiChoice ? Array(newRace.asiChoice.count).fill("") : []);
                     // Race now feeds seeded languages too — reseed on race change.
                     setProfsSeeded(false);
+                    // Fixed racial skills (High Elf 察覺, Half-Orc 威嚇…) union-merge
+                    // in immediately, same union-merge-only rule as class skills below.
+                    if (newRace?.skills) setChosenSkills((s) => Array.from(new Set([...s, ...newRace.skills!])));
                   }}
                 >
                   {SRD_RACES.map((r) => (
@@ -396,6 +399,15 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
                 </label>
               )}
               {race && <p className="wt-builder-hint">ASI：{Object.entries(race.asi).map(([k, v]) => `${abilityLabel(t, k)}+${v}`).join("、")}{race.asiChoice ? `、${cc.asiChoose} ${race.asiChoice.count}×+${race.asiChoice.amount}` : ""}</p>}
+              {race && (race.skills || race.skillChoice || race.weaponProfs || race.toolProfs || race.toolChoice) && (
+                <p className="wt-builder-hint">
+                  {race.skills && `${t.builder.raceSkills}：${race.skills.map((sk) => skillLabel(t, sk)).join("、")} `}
+                  {race.skillChoice && `${t.builder.raceSkillChoice(race.skillChoice)} `}
+                  {race.weaponProfs && `${t.builder.weapons}：${race.weaponProfs.map((p) => profLabel(t, p)).join("、")} `}
+                  {race.toolProfs && `${t.builder.tools}：${race.toolProfs.map((p) => profLabel(t, p)).join("、")} `}
+                  {race.toolChoice && t.builder.raceToolChoice(race.toolChoice.count, race.toolChoice.from.map((p) => profLabel(t, p)).join("、"))}
+                </p>
+              )}
             </fieldset>
           )}
 

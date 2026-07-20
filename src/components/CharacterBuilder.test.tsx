@@ -354,3 +354,29 @@ test("armor-for-AC dropdown shows zh names in Chinese mode", () => {
 
   expect(screen.getByRole("option", { name: /^皮甲/ })).toBeInTheDocument();
 });
+
+test("racial grants: high-elf shows a race-step info block and pre-checks 察覺", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "high-elf" } });
+  // Fixed-skill grant shows up right on the race step (no "next" needed).
+  expect(screen.getByText(/固定技能/)).toBeInTheDocument();
+  expect(screen.getByText(/察覺/)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByLabelText("builder next")); // → class (default class: barbarian, 察覺 is in its skill list)
+  expect(screen.getByLabelText("skill 察覺")).toBeChecked();
+});
+
+test("racial grants: hill-dwarf's weapon training seeds into the profs step", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+
+  fireEvent.change(screen.getByLabelText("race select"), { target: { value: "hill-dwarf" } });
+  fireEvent.click(screen.getByLabelText("builder next")); // → class
+  fireEvent.click(screen.getByLabelText("builder next")); // → abilities
+  fireEvent.click(screen.getByLabelText("builder next")); // → background
+  fireEvent.click(screen.getByLabelText("builder next")); // → profs (seeds here)
+
+  for (const weapon of ["戰斧", "手斧", "輕錘", "戰錘"]) {
+    expect(screen.getByText(weapon)).toBeInTheDocument();
+  }
+});

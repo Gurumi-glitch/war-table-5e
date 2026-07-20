@@ -502,6 +502,9 @@ export const zhTW = {
     armor: "護甲熟練",
     weapons: "武器熟練",
     tools: "工具熟練",
+    raceSkills: "固定技能",
+    raceSkillChoice: (n: number): string => `可自選 ${n} 項技能（於職業頁勾選）`,
+    raceToolChoice: (n: number, list: string): string => `工具任選 ${n} 項（${list}，於熟練頁選擇）`,
     languages: "語言",
     langHint: (fromRace: number, fromBg: number): string => {
       const parts = [fromRace > 0 ? `種族 ${fromRace}` : "", fromBg > 0 ? `背景 ${fromBg}` : ""].filter(Boolean).join("＋");
