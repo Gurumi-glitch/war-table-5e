@@ -150,6 +150,11 @@ export function Backstage() {
   const removeCharacter = useMutation(api.characters.remove);
   const createCharacter = useMutation(api.characters.create);
   const importCards = useMutation(api.characters.importCards);
+  // Portrait medallion upload (codex-folio-card-ui): mirrors the map-piece
+  // upload flow (generateUploadUrl → PUT the file → point the row at the
+  // resulting blob) — see MapBoard's `uploadFile` helper for the precedent.
+  const generatePortraitUploadUrl = useMutation(api.characters.generateUploadUrl);
+  const setCharacterPortrait = useMutation(api.characters.setCharacterPortrait);
   const seedEnemies = useMutation(api.enemies.seedAll);
   const backfillEnemyZh = useMutation(api.enemies.backfillZhNames);
   const spawnEnemy = useMutation(api.enemies.spawn);
@@ -223,6 +228,20 @@ export function Backstage() {
       }
       onImportCards={async (envelope) => {
         await importCards({ playerToken, envelope });
+      }}
+      onUploadPortrait={async (characterId, file) => {
+        const url = await generatePortraitUploadUrl({ playerToken });
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
+        await setCharacterPortrait({
+          playerToken,
+          characterId: characterId as Id<"characters">,
+          portraitStorageId: storageId,
+        });
       }}
       onAddCharacterResource={(characterId, label, max, current) =>
         addCharacterResource({

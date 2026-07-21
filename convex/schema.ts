@@ -256,6 +256,11 @@ export default defineSchema({
     // Optional for backward compat with pre-existing cards.
     classRules: v.optional(v.array(v.string())),
     story: v.string(),
+    // Custom portrait blob (codex-folio-card-ui), set only via
+    // `setCharacterPortrait` — never through the card's field-patch Save.
+    // Optional/absent on every existing card; a missing value serves
+    // `portraitUrl: null` (additive, deploy-skew-safe, no migration).
+    portraitStorageId: v.optional(v.id("_storage")),
   })
     .index("bySeedKey", ["seedKey"])
     .index("byGameId", ["gameId"]),

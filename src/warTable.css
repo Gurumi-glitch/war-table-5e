@@ -1,12 +1,16 @@
 /* Issue #9 step 5 — the gothic "War Table" shell (prototype variant A, made
  * real). Everything scopes under `.wt` so the parchment CharacterCardWindow
  * (rendered OUTSIDE the .wt element, position:fixed) and the plain Home page
- * are untouched. Font ruling: Cinzel is allowed on PANEL TITLES ONLY — dense
- * text/numbers/controls use Noto Sans TC with bold weights, per the card's
- * legibility ruling in docs/plans/ui-design-requirement-character-card.md.
- * Element-level rules use :where() (zero specificity) so component-local
- * classes and inline styles always win. */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+ * are untouched. Font ruling for the .wt SHELL: Cinzel on PANEL TITLES ONLY —
+ * dense text/numbers/controls use Noto Sans TC with bold weights, per the
+ * card's legibility ruling in docs/plans/ui-design-requirement-character-card.md.
+ * EXCEPTION (change codex-folio-card-ui): the character card + creation wizard
+ * adopt the Prototype-I "Illuminated Folio" type system — Cinzel Decorative
+ * (titles/numbers) + Crimson Text (body) — scoped to .ccw-* / .wt-builder*.
+ * This is PROVISIONAL (pending outcome review); the shell rule above is
+ * unchanged. Element-level rules use :where() (zero specificity) so
+ * component-local classes and inline styles always win. */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 
 .wt {
   /* "Ritual Sigil" palette — violet-crimson accent on a near-black void,
@@ -1866,8 +1870,17 @@ button.wt-altar-accordion-trigger {
   }
 }
 
-/* --- Character builder wizard (character-builder) ------------------------- */
-/* Matches the card's "Sigil" violet-crimson theme; a modal over the board. */
+/* --- Character builder wizard (character-builder) — Illuminated-Folio ------ */
+/* codex-folio-card-ui §4: book chrome around the unchanged linear step flow —
+ * 230px Table-of-Contents rail (additive nav, seeding-safe jumps via goStep())
+ * + scrollable step body + Back/Next/Folio-n-of-7 footer. RitualMetal palette
+ * + Cinzel Decorative (titles/numbers/buttons) + Crimson Text (body/inputs),
+ * per SPEC.md §3/§4. Stays a centered floating modal (.wt-builder-overlay). */
+@keyframes wtbPage {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: none; }
+}
+
 .wt-builder-overlay {
   position: fixed;
   inset: 0;
@@ -1875,36 +1888,111 @@ button.wt-altar-accordion-trigger {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 6, 16, 0.72);
+  background: rgba(8, 5, 12, 0.8);
   padding: 12px;
 }
 .wt-builder {
-  width: min(680px, 100%);
-  max-height: calc(100vh - 24px);
+  /* fix-1 (2026-07-21): window enlarged ×1.2 alongside the earlier font
+   * bump so the bigger text has room and stops wrapping. */
+  width: min(1080px, 100%);
+  height: min(816px, calc(100vh - 32px));
   display: flex;
-  flex-direction: column;
   background: linear-gradient(170deg, #241a30, #1a1224 55%, #120c1a);
   color: #d9d0e6;
   border: 1px solid #4f3a63;
-  box-shadow: 0 0 0 1px rgba(156, 52, 102, 0.15), 0 14px 40px rgba(0, 0, 0, 0.75);
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
-  font-family: 'Noto Sans TC', sans-serif;
+  box-shadow: 0 0 0 1px rgba(156, 52, 102, 0.2), 0 20px 60px rgba(0, 0, 0, 0.8);
+  clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 22px);
+  font-family: 'Crimson Text', serif;
+  overflow: hidden;
+  /* fix-4b: wizard-wide font bump ×1.2. Width/height stay fixed px; the
+   * body column already scrolls vertically (.wt-builder-body
+   * overflow-y:auto), and chips/toc labels are short enough not to
+   * overflow horizontally at this scale. */
+  font-size: 1.2em;
+}
+
+/* Table of Contents rail — additive nav; goStep() seeds before jumping forward. */
+.wt-builder-toc {
+  width: 230px;
+  flex: none;
+  background: linear-gradient(180deg, #1c1526, #2a1f38);
+  border-right: 1px solid #4f3a63;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.wt-builder-toc-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1em;
+  font-weight: 700;
+  color: #ece4f5;
+  margin-bottom: 14px;
+}
+.wt-builder-tocitem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Crimson Text', serif;
+  font-size: 1em;
+  padding: 6px 2px;
+  text-align: left;
+  color: #8a7aa0;
+}
+.wt-builder-tocitem.is-done { color: #e0729a; }
+.wt-builder-tocitem.is-active { color: #ece4f5; font-weight: 700; }
+.wt-builder-tocmark { flex: none; width: 1.2em; }
+.wt-builder-toclabel { white-space: nowrap; }
+.wt-builder-tocleader { flex: 1; border-bottom: 1px dotted rgba(156, 52, 102, 0.4); margin: 0 6px 4px; }
+.wt-builder-tocnum { font-family: 'Cinzel Decorative', serif; font-variant-numeric: tabular-nums; }
+
+/* Main column: header / scrollable step body / footer nav. */
+.wt-builder-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 .wt-builder-head {
   display: flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.45em 0.8em;
+  gap: 10px;
+  padding: 14px 20px;
   background: linear-gradient(90deg, #1c1526, #4f3a63);
   color: #ece4f5;
   border-bottom: 2px solid #9c3466;
+  flex: none;
 }
-.wt-builder-head b { font-size: 1.05em; letter-spacing: 0.03em; }
-.wt-builder-progress { flex: 1; font-size: 0.82em; color: #b9a9cf; }
-.wt-builder-head button { background: none; border: 1px solid #6a4f80; color: #e0729a; padding: 0 0.5em; cursor: pointer; }
-.wt-builder-body { padding: 0.9em 1em; overflow-y: auto; }
-.wt-builder-body fieldset { border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6em; }
-.wt-builder-body label { display: flex; flex-direction: column; gap: 0.25em; font-size: 0.9em; }
+.wt-builder-head b { font-family: 'Cinzel Decorative', serif; font-size: 1.1em; letter-spacing: 0.02em; }
+.wt-builder-head button {
+  background: none;
+  border: 1px solid #6a4f80;
+  color: #e0729a;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  cursor: pointer;
+}
+
+.wt-builder-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 24px 26px;
+  animation: wtbPage 0.4s ease both;
+}
+.wt-builder-body fieldset { border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.7em; }
+.wt-builder-body label { display: flex; flex-direction: column; gap: 0.3em; font-size: 0.85em; color: #a598c0; font-style: italic; }
 .wt-builder-body select,
 .wt-builder-body input[type="text"],
 .wt-builder-body input:not([type]) ,
@@ -1912,61 +2000,110 @@ button.wt-altar-accordion-trigger {
   background: #160f20;
   border: 1px solid #4f3a63;
   color: #ece4f5;
-  padding: 0.3em 0.4em;
-  font-family: inherit;
+  padding: 0.5em 0.6em;
+  min-height: 44px;
+  box-sizing: border-box;
+  font-family: 'Crimson Text', serif;
+  font-size: 1em;
+  /* fix-4a: wizard inputs are plain rectangles — the parallelogram/hex
+   * chamfer is a card-left-column and .wt-panel/.wt-chip thing only. */
+  clip-path: none;
 }
-.wt-builder-classrow { display: flex; flex-wrap: wrap; align-items: end; gap: 0.4em; padding: 0.3em 0; border-bottom: 1px dashed #3a2c4a; }
+.wt-builder-classrow { display: flex; flex-wrap: wrap; align-items: end; gap: 0.4em; padding: 0.3em 0; border-bottom: 1px dashed rgba(79, 58, 99, 0.6); }
 .wt-builder-col { display: flex; flex-direction: column; gap: 0.15em; }
-.wt-builder-collabel { font-size: 0.78em; color: #b9a9cf; }
-.wt-builder-active { flex-direction: row; align-items: center; gap: 0.3em; }
+.wt-builder-collabel { font-size: 0.78em; color: #a598c0; }
+.wt-builder-active { flex-direction: row; align-items: center; gap: 0.4em; min-height: 44px; }
 .wt-builder-asichoice { display: flex; gap: 1em; flex-wrap: wrap; }
 .wt-builder-asichoice label { flex-direction: row; align-items: center; gap: 0.4em; }
 .wt-builder-methods { display: flex; gap: 1em; flex-wrap: wrap; }
-.wt-builder-methods label { flex-direction: row; align-items: center; gap: 0.3em; }
-.wt-builder-abilities { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5em 1em; }
-.wt-builder-abilities label { flex-direction: row; align-items: center; gap: 0.4em; }
-.wt-builder-abilities input { width: 4em; }
-.wt-builder-asi { font-size: 0.8em; color: #b9a9cf; white-space: nowrap; }
-.wt-builder-final { color: #9fd6a8; font-size: 0.9em; }
-.wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2em 0.6em; }
-.wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.3em; font-size: 0.85em; }
-.wt-builder-hint { margin: 0; font-size: 0.82em; color: #b9a9cf; }
-.wt-builder-profpicker { display: flex; flex-direction: column; gap: 0.3em; padding: 0.3em 0; border-bottom: 1px dashed #3a2c4a; }
-.wt-builder-chips { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.wt-builder-methods label { flex-direction: row; align-items: center; gap: 0.4em; min-height: 44px; }
+.wt-builder-abilities { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6em 1.2em; }
+/* fix-2 (2026-07-21): the bare ability-name text ("力量" etc) was wrapping
+ * mid-word into two lines in a narrow column (e.g. "力\n量") — two
+ * characters never need more than one line. */
+.wt-builder-abilities label { flex-direction: row; align-items: center; gap: 0.5em; font-style: normal; color: #d9d0e6; white-space: nowrap; }
+.wt-builder-abilities input { width: 4.5em; font-variant-numeric: tabular-nums; }
+.wt-builder-asi { font-size: 0.85em; color: #a598c0; white-space: nowrap; }
+/* fix-2: explicit `normal` so this longer computed tag ("→ 10（調整+0）")
+ * keeps its own ability to wrap at a word/bracket boundary instead of
+ * inheriting the bare ability-name's nowrap from the label above. */
+.wt-builder-final { color: #e0729a; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; white-space: normal; }
+.wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3em 0.8em; }
+.wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.4em; font-size: 0.9em; font-style: normal; color: #d9d0e6; min-height: 44px; }
+.wt-builder-hint { margin: 0; font-size: 0.9em; color: #c2b6d9; font-style: normal; }
+.wt-builder-profpicker { display: flex; flex-direction: column; gap: 0.4em; padding: 0.4em 0; border-bottom: 1px dashed rgba(79, 58, 99, 0.6); }
+.wt-builder-chips { display: flex; flex-wrap: wrap; gap: 0.4em; }
 .wt-builder-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3em;
-  background: #160f20;
-  border: 1px solid #3a2c4a;
-  border-radius: 1em;
-  padding: 0.15em 0.3em 0.15em 0.6em;
-  font-size: 0.85em;
+  gap: 0.4em;
+  background: rgba(236, 228, 245, 0.05);
+  border: 1px solid #4f3a63;
+  /* fix-4a: was a parallelogram (`polygon(7px 0, calc(100% - 7px) 0, 100%
+   * 100%, 0 100%)`) — that shape is card-left-only; wizard chips are plain
+   * rectangles. */
+  clip-path: none;
+  /* fix-3 (2026-07-21): chip hugs its text now — the 44px touch target
+   * moved to the inner × button below, this box just needs breathing room. */
+  padding: 0.25em 0.5em 0.25em 0.7em;
+  font-size: 0.9em;
+  color: #d9d0e6;
+  box-sizing: border-box;
 }
 .wt-builder-chip button {
   background: none;
   border: none;
   color: #e0729a;
   cursor: pointer;
-  padding: 0 0.2em;
+  padding: 0 0.3em;
   font-family: inherit;
+  min-height: 44px;
 }
-.wt-builder-custominput { display: flex; gap: 0.4em; align-items: center; }
-.wt-builder-review { margin: 0.4em 0 0; padding-left: 1.1em; font-size: 0.9em; line-height: 1.6; }
+.wt-builder-custominput { display: flex; gap: 0.5em; align-items: center; }
+.wt-builder-review { margin: 0.5em 0 0; padding-left: 1.2em; font-size: 1em; line-height: 1.8; color: #d9d0e6; }
+
 .wt-builder-foot {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.5em;
-  padding: 0.6em 0.9em;
+  gap: 0.6em;
+  padding: 14px 20px;
   border-top: 2px solid #9c3466;
   background: linear-gradient(90deg, #1c1526, #2a1f38);
+  flex: none;
+}
+.wt-builder-foliocount {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.82em;
+  color: #a598c0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .wt-builder-foot button {
-  background: #2a1f38;
+  background: transparent;
   border: 1px solid #6a4f80;
   color: #ece4f5;
-  padding: 0.35em 0.9em;
+  padding: 0.7em 1.2em;
+  min-height: 44px;
   cursor: pointer;
-  font-family: inherit;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.9em;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 100%, 0 100%);
+  white-space: nowrap;
+}
+.wt-builder-foot button[aria-label="builder next"],
+.wt-builder-foot button[aria-label="builder finish"] {
+  background: linear-gradient(160deg, #9c3466, #5c1a3a);
+  border: 1px solid #e0729a;
+  color: #f5e6ee;
+  font-weight: 700;
 }
 .wt-builder-foot button:disabled { opacity: 0.4; cursor: default; }
+
+@media (max-width: 720px) {
+  .wt-builder-toc { width: 180px; padding: 16px 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wt-builder-body { animation: none !important; }
+}

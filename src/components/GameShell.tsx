@@ -59,6 +59,7 @@ export function GameShell(props: GameBoardProps) {
     onAddCharacterRecipe,
     onUpdateCharacterRecipe,
     onRemoveCharacterRecipe,
+    onUploadPortrait,
   } = props;
 
   const t = useT();
@@ -265,6 +266,7 @@ export function GameShell(props: GameBoardProps) {
               onPatchCombatant={
                 combatant ? (patch) => onPatch(combatant._id, patch) : undefined
               }
+              onUploadPortrait={onUploadPortrait}
             />
           );
         })}

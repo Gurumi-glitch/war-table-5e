@@ -56,9 +56,13 @@ function schemaFields(table: string, exclude: string[]): string[] {
 test("every characters column is carried by the card file", () => {
   // `seedKey` is deliberately dropped (design D3: an exported card is yours,
   // not the demo's furniture); `gameId` is playground plumbing (D2).
-  expect(schemaFields("characters", ["seedKey", "gameId"])).toEqual(
-    [...CARD_FIELD_KEYS].sort(),
-  );
+  // `portraitStorageId` is a blob-storage id local to this deployment — it is
+  // set only via `setCharacterPortrait`, never through the card file
+  // (codex-folio-card-ui §1.5): a file naming another deployment's storage id
+  // could never resolve, so re-uploading on import is the only sound path.
+  expect(
+    schemaFields("characters", ["seedKey", "gameId", "portraitStorageId"]),
+  ).toEqual([...CARD_FIELD_KEYS].sort());
 });
 
 test("every recipes column is carried by the card file", () => {

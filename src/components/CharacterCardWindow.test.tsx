@@ -28,6 +28,7 @@ const character: CharacterView = {
   _id: "char1",
   _creationTime: 0,
   seedKey: "lia",
+  portraitUrl: null,
   player: "測試玩家",
   nameZh: "測試角色",
   nameEn: "TestHero",
@@ -155,10 +156,12 @@ test("the sheet is paged: only the active page's fields are visible, all stay mo
   expect(screen.getByLabelText("attack")).toBeVisible();
   expect(screen.getByLabelText("attack")).toBeInTheDocument();
 
-  // Jump to 故事 (page index 3): story becomes visible, core hides.
+  // Jump to 故事 (page index 3): story becomes visible, core (right page)
+  // hides. name zh lives on the LEFT bookplate page (codex-folio-card-ui
+  // §3.2) — it never changes with the right-page tabs, so it stays visible.
   fireEvent.click(screen.getByLabelText("page 3"));
   expect(screen.getByLabelText("story")).toBeVisible();
-  expect(screen.getByLabelText("name zh")).not.toBeVisible();
+  expect(screen.getByLabelText("name zh")).toBeVisible();
 
   // The ← / → arrows walk pages too (3 → back to 2, 法術·特性).
   fireEvent.click(screen.getByLabelText("prev page"));
@@ -603,4 +606,26 @@ test("a demo card on the playground refuses edits and points at Export", () => {
 test("an ordinary card carries no read-only hint", () => {
   render(<CharacterCardWindow {...baseProps()} />);
   expect(screen.queryByRole("note")).not.toBeInTheDocument();
+});
+
+// --- Twin-page book re-layout (codex-folio-card-ui §3.2-§3.4) --------------
+
+test("switching ribbon tabs preserves an unsaved edit on the non-active panel", () => {
+  render(<CharacterCardWindow {...baseProps()} />);
+  // Type an unsaved draft into 故事 (page 3) without saving.
+  fireEvent.click(screen.getByLabelText("page 3"));
+  fireEvent.change(screen.getByLabelText("story"), { target: { value: "未存草稿" } });
+  // Switch back to 核心 (page 0) — the 故事 panel stays mounted (hidden), so
+  // its aria-label is still queryable and the unsaved edit survives.
+  fireEvent.click(screen.getByLabelText("page 0"));
+  expect(screen.getByLabelText("story")).not.toBeVisible();
+  expect(screen.getByLabelText("story")).toHaveValue("未存草稿");
+  // The left "bookplate" page (name) never moved — still visible throughout.
+  expect(screen.getByLabelText("name zh")).toBeVisible();
+});
+
+test("portrait placeholder shows the name initial when portraitUrl is null", () => {
+  render(<CharacterCardWindow {...baseProps()} />);
+  const slot = screen.getByRole("button", { name: "upload portrait" });
+  expect(slot).toHaveTextContent("測");
 });

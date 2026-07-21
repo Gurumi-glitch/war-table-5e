@@ -39,6 +39,20 @@ export type AbilityView = { key: string; score: number; mod: number };
 /** One long-form reference section (法術/特性/裝備 … — displayed, never computed). */
 export type RefSection = { title: string; body: string };
 
+/**
+ * Delete a stored blob, tolerating an already-missing one (mirrors
+ * `pieces.ts`'s helper of the same name — replicated rather than imported so
+ * this file's loosely-typed generic `ctx` never has to match pieces.ts's
+ * codegen-bound `MutationCtx`). A missing blob must never block a DB write.
+ */
+async function deleteBlobIfPresent(ctx: any, storageId: string): Promise<void> {
+  try {
+    await ctx.storage.delete(storageId);
+  } catch {
+    // Blob already gone — the DB write must still proceed.
+  }
+}
+
 /** Skill proficiency state (none / proficient / expertise = 2×PB). */
 export type SkillProf = "none" | "proficient" | "expertise";
 
@@ -131,6 +145,11 @@ export type CharacterView = {
    * schema calls that a feature, so an export that dropped these would quietly
    * cure the party on restore. */
   effects: EffectView[];
+  /** Custom portrait (codex-folio-card-ui), resolved from `portraitStorageId`
+   * via `ctx.storage.getUrl` — null when unset (every pre-existing card).
+   * Set ONLY via `setCharacterPortrait`, never through the card's field-patch
+   * Save (mirrors pieces.ts's portrait pattern). */
+  portraitUrl: string | null;
 };
 
 const abilityValidator = v.object({
@@ -261,6 +280,7 @@ export function toCharacterView(
     resources?: ResourceView[];
     recipes?: RecipeView[];
     effects?: EffectView[];
+    portraitUrl?: string | null;
   },
 ): CharacterView {
   return {
@@ -310,6 +330,7 @@ export function toCharacterView(
     resources: kids?.resources ?? [],
     recipes: kids?.recipes ?? [],
     effects: kids?.effects ?? [],
+    portraitUrl: kids?.portraitUrl ?? null,
   };
 }
 
@@ -326,6 +347,7 @@ export type CharacterFields = Omit<
   | "recipes"
   | "effects"
   | "tempHp"
+  | "portraitUrl"
 > & { tempHp?: number };
 
 /**
@@ -498,11 +520,19 @@ export const list = query({
             .collect(),
         ),
       );
-    const [resourcesByChar, recipesByChar, effectsByChar] = await Promise.all([
-      fetchKids("resources"),
-      fetchKids("recipes"),
-      fetchKids("effects"),
-    ]);
+    const [resourcesByChar, recipesByChar, effectsByChar, portraitUrlByChar] =
+      await Promise.all([
+        fetchKids("resources"),
+        fetchKids("recipes"),
+        fetchKids("effects"),
+        Promise.all(
+          chars.map((c: any) =>
+            c.portraitStorageId !== undefined
+              ? ctx.storage.getUrl(c.portraitStorageId)
+              : Promise.resolve(null),
+          ),
+        ),
+      ]);
     return chars.map((c: any, i: number) =>
       toCharacterView(c, {
         resources: resourcesByChar[i].map((r: any) => ({
@@ -546,6 +576,7 @@ export const list = query({
           specs: e.specs,
           active: e.active,
         })),
+        portraitUrl: portraitUrlByChar[i],
       }),
     );
   },
@@ -846,6 +877,49 @@ export const update = mutation({
 });
 
 /**
+ * Generate a one-shot upload URL for a card portrait (codex-folio-card-ui).
+ * Same open playerToken gate as every other character mutation — the client
+ * PUTs the image, then calls `setCharacterPortrait` with the resulting id.
+ */
+export const generateUploadUrl = mutation({
+  args: { playerToken: v.string() },
+  handler: async (ctx, args) => {
+    await resolveGame(ctx.db, args.playerToken);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Set (or clear, when `portraitStorageId` is omitted) a card's custom
+ * portrait. Set ONLY here — never through `update`'s field-patch Save.
+ * Frees the superseded blob when the portrait is replaced or cleared (skipped
+ * when the id is unchanged); a missing blob is tolerated and never blocks the
+ * DB patch (mirrors `pieces.updatePortrait`).
+ */
+export const setCharacterPortrait = mutation({
+  args: {
+    playerToken: v.string(),
+    characterId: v.id("characters"),
+    portraitStorageId: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    const character = await resolveCharacter(
+      ctx.db,
+      args.playerToken,
+      args.characterId,
+    );
+    assertCardWritable(character);
+    const previous = character.portraitStorageId;
+    if (previous !== undefined && previous !== args.portraitStorageId) {
+      await deleteBlobIfPresent(ctx, previous);
+    }
+    await ctx.db.patch(character._id, {
+      portraitStorageId: args.portraitStorageId,
+    });
+  },
+});
+
+/**
  * Delete a card entirely, with its character-owned recipes/resources/effects,
  * unlinking (not deleting) any combatants that point at it — they keep
  * fighting with their join-time stat snapshot. Either role.
@@ -862,6 +936,9 @@ export const remove = mutation({
       args.characterId,
     );
     assertCardWritable(character);
+    if (character.portraitStorageId !== undefined) {
+      await deleteBlobIfPresent(ctx, character.portraitStorageId);
+    }
     for (const table of ["recipes", "resources", "effects"] as const) {
       const rows = await ctx.db
         .query(table)

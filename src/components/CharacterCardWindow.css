@@ -1,16 +1,19 @@
-/* Issue #9 — floating character-card window. Structure per
- * docs/plans/ui-design-requirement-character-card.md is unchanged: abilities
- * = left vertical rail, vitals = right vertical rail, saves+skills one
- * vertical ledger with Resources/Recipes beside it, Noto Sans TC with bold
- * weights for flavor. Palette re-themed to match warTable.css's "Ritual
- * Sigil" violet-crimson identity (was parchment/leather) — every color below
- * moved, no layout/grid/spacing property did.
+/* codex-folio-card-ui — twin-page "Illuminated Folio" book: fixed left
+ * bookplate identity page (portrait, name, meta, abilities, vitals) + right
+ * ribbon-tabbed flipping page (核心/熟練/法術·特性/故事), joined by a shadowed
+ * spine. RitualMetal palette (scoped to `.ccw-*` only — see design D6, does
+ * NOT touch warTable.css): base #0e0a14, card gradient #241a30→#1a1224→
+ * #120c1a, border #4f3a63, accent #9c3466/#e0729a, bright text #ece4f5, muted
+ * #a598c0/#c2b6d9/#c8bcd9, AC green #9fd6a8, input bg #160f20. Fonts: Cinzel
+ * Decorative (titles/section headers/numbers/buttons/ribbon labels), Crimson
+ * Text (body/meta/lists/inputs) — both loaded here since this stylesheet owns
+ * its own scoped theme (see proposal.md D6).
  * Text-role accent (`#e0729a`) vs background-role accent (`#9c3466`) are
  * deliberately two different shades of the same violet-crimson family: the
  * brighter one is used wherever a color has to double as legible body text
  * on the dark card (contrast would fail at the medium shade), the medium one
  * wherever it only needs to read as a border/glow/fill. */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap');
 
 .ccw-card {
   position: fixed;
@@ -20,11 +23,13 @@
   border: 1px solid #4f3a63;
   box-shadow:
     0 0 0 1px rgba(156, 52, 102, 0.15),
-    0 0 0 5px rgba(156, 52, 102, 0.07),
+    0 0 0 2px rgba(156, 52, 102, 0.07),
     0 14px 40px rgba(0, 0, 0, 0.75);
   border-radius: 0;
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
-  font-family: 'Noto Sans TC', sans-serif;
+  /* Book chamfer (SPEC §4): bigger cut at the top than the bottom (top
+   * halved from 26px per fix-1 — still a book chamfer, just thinner). */
+  clip-path: polygon(13px 0, calc(100% - 13px) 0, 100% 13px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 13px);
+  font-family: 'Crimson Text', serif;
   font-size: 0.88em;
 }
 /* The read-only 職業特殊規則 pop-out (ClassRulesWindow) — a narrow single-column
@@ -38,7 +43,9 @@
   display: flex;
   align-items: center;
   gap: 0.4em;
-  padding: 0.3em 0.7em;
+  /* fix-4 (2026-07-21): trimmed vertical padding — the band should hug
+   * {title, buttons} + slight breathing room, not a thick strip. */
+  padding: 0.15em 0.7em;
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -52,6 +59,7 @@
 }
 .ccw-title {
   flex: 1;
+  font-family: 'Cinzel Decorative', serif;
   font-weight: 700;
   letter-spacing: 0.08em;
   font-size: 0.95em;
@@ -99,9 +107,16 @@
   letter-spacing: 0.06em;
 }
 
-/* --- parchment body ------------------------------------------------------- */
+/* --- body wrapper (ResizableWindow's bodyClassName) -----------------------
+ * Shared by CharacterCardWindow (book: flex:1/min-height:0 so ccw-book fills
+ * it and the RIGHT page scrolls internally) and ClassRulesWindow (which
+ * overrides flex/min-height/max-height inline and keeps this rule's
+ * overflow-y:auto as ITS OWN scroll — do not remove that fallback). */
 .ccw-body {
-  max-height: 70vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   padding: 0.7em 1em 0.9em;
   background:
@@ -130,6 +145,7 @@
   font-family: inherit;
   font-size: 0.95em;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
   padding: 0 0.15em 0.05em;
   caret-color: #e0729a;
   min-width: 0;
@@ -193,7 +209,7 @@
 .ccw-body :where(button) {
   background: transparent;
   border: 1px solid rgba(156, 52, 102, 0.4);
-  color: #8f7fa8;
+  color: #a598c0;
   border-radius: 2px;
   cursor: pointer;
   font-family: inherit;
@@ -224,58 +240,58 @@
   width: 100%;
 }
 
-/* --- section heads: fleuron + fading rule --------------------------------- */
+/* --- section heads: fleuron + double rule (SPEC §6 "printed book" divider) */
 .ccw-body h4 {
   display: flex;
   align-items: center;
-  gap: 0.55em;
-  margin: 1em 0 0.45em;
+  gap: 0.5em;
+  margin: 1em 0 0.5em;
+  padding-bottom: 0.3em;
   border: none;
+  border-bottom: 3px double rgba(156, 52, 102, 0.5);
+  font-family: 'Cinzel Decorative', serif;
   font-size: 0.8em;
-  font-weight: 900;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   color: #ece4f5;
 }
 .ccw-body h4::before {
   content: '❖';
   font-size: 0.9em;
 }
-.ccw-body h4::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(156, 52, 102, 0.5), rgba(156, 52, 102, 0));
-}
 
-/* --- masthead (identity) --------------------------------------------------- */
+/* --- bookplate identity block (left page — always visible) ---------------- */
 .ccw-masthead {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr);
-  gap: 0.3em 1.4em;
-  align-items: start;
-  padding: 0.2em 0 0.65em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0 0 0.65em;
   border-bottom: 3px double rgba(156, 52, 102, 0.5);
-  margin-bottom: 0.7em;
 }
 .ccw-names {
   display: flex;
   flex-direction: column;
-  gap: 0.2em;
-  padding-top: 0.35em;
+  align-items: center;
+  gap: 0.15em;
+  text-align: center;
 }
 .ccw-body .ccw-name-zh {
+  font-family: 'Cinzel Decorative', serif;
   font-size: 1.45em;
   font-weight: 900;
   width: 100%;
+  text-align: center;
   border-bottom-color: transparent;
 }
 .ccw-body .ccw-name-en {
   font-size: 0.85em;
   font-weight: 500;
-  color: #8f7fa8;
+  color: #a598c0;
   width: 100%;
+  text-align: center;
   border-bottom-color: transparent;
   letter-spacing: 0.04em;
+  font-style: italic;
 }
 .ccw-body .ccw-name-zh:hover,
 .ccw-body .ccw-name-en:hover {
@@ -283,7 +299,7 @@
 }
 .ccw-idgrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35em 1em;
 }
 .ccw-field {
@@ -296,67 +312,248 @@
   font-size: 0.68em;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: #8f7fa8;
+  color: #a598c0;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 .ccw-field.span3 {
-  grid-column: span 3;
+  /* Full-width regardless of the idgrid's actual column count. */
+  grid-column: 1 / -1;
 }
 .ccw-field :where(textarea) {
   font-size: 0.88em;
   line-height: 1.4;
 }
 
-/* --- main grid: ability rail | saves+skills ledger | sheet | vitals rail ---- */
+/* --- 核心 right panel: saves+skills ledger | sheet column ------------------ */
 .ccw-main {
   display: grid;
-  /* ability rail | saves+skills ledger | sheet | vitals rail. */
-  grid-template-columns: 6.5em minmax(0, 1fr) minmax(0, 1.5fr) 8em;
-  gap: 0.4em 1.1em;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 0.4em 1.4em;
   align-items: start;
 }
 
-/* --- Paged sheet (character-sheet-pages) --------------------------------- */
-/* All 4 pages stay mounted; only the active one is visible, so unsaved edits
-   on another page and every aria-label test survive a switch. */
-.ccw-page[hidden] {
-  display: none;
+/* --- Twin-page book frame (codex-folio-card-ui §3.2/§3.3) ------------------
+ * .ccw-book: the open-book row. .ccw-left: fixed bookplate identity page,
+ * never changes with the tabs, does not scroll. .ccw-spine: shadowed gutter.
+ * .ccw-right: the flipping page — ribbon tabs (fixed) + .ccw-right-scroll
+ * (the only part of the card that scrolls internally on overflow). */
+.ccw-book {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
 }
-.ccw-tabs {
+.ccw-left {
+  flex: 1 1 44%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  padding: 0 0.9em 0 0;
+  overflow: hidden;
+  /* fix-4b: card left bookplate ×1.2 (relative to the card's 0.88em base). */
+  font-size: 1.2em;
+}
+.ccw-spine {
+  width: 1.1em;
+  flex: none;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.4) 45%, rgba(0, 0, 0, 0.4) 55%, transparent);
+}
+.ccw-right {
+  flex: 1 1 56%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.ccw-eyebrow {
+  font-family: 'Crimson Text', serif;
+  font-size: 0.62em;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #a598c0;
+  text-align: center;
+}
+
+/* --- Ribbon-bookmark tabs (SPEC §5: V-notch hanging cloth ribbon) ---------- */
+.ccw-ribbons {
   display: flex;
   align-items: stretch;
-  gap: 0.2em;
-  padding: 0.35em 0.5em 0;
+  gap: 0.3em;
+  padding: 0.5em 0.6em 0;
+  flex: none;
   flex-wrap: wrap;
 }
-.ccw-tab,
-.ccw-tab-arrow {
-  background: #160f20;
+.ccw-ribbon {
+  box-sizing: border-box;
+  min-height: 44px;
+  flex: none;
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 50% 100%, 0 68%);
   border: 1px solid #4f3a63;
-  color: #b9a9cf;
-  padding: 0.25em 0.7em;
+  padding: 0.5em 0.9em 0.9em;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.7em;
+  letter-spacing: 0.02em;
+  color: #a598c0;
+  background: linear-gradient(160deg, #3a2c4a, #241a30);
   cursor: pointer;
-  font-family: inherit;
-  font-size: 0.86em;
+  white-space: nowrap;
 }
-.ccw-tab.is-active {
-  background: linear-gradient(180deg, #4f3a63, #2a1f38);
-  color: #ece4f5;
-  border-color: #9c3466;
+.ccw-ribbon.is-active {
+  background: linear-gradient(160deg, #9c3466, #5c1a3a);
+  border-color: #e0729a;
+  color: #f5e6ee;
   font-weight: 700;
 }
 .ccw-tab-arrow {
+  min-height: 44px;
   flex: none;
+  background: #160f20;
+  border: 1px solid #4f3a63;
   color: #e0729a;
+  padding: 0.25em 0.7em;
+  cursor: pointer;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.86em;
 }
 .ccw-tab-arrow:disabled {
   opacity: 0.35;
   cursor: default;
 }
+
+/* Right page's own scroll wrapper + the 4 mounted panels
+ * (.ccw-page[hidden] toggling — never conditional unmount). */
+.ccw-right-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.9em 1em 1em 0.9em;
+  position: relative;
+  /* fix-4b: card right tab content ×1.1 (relative to the card's 0.88em base). */
+  font-size: 1.1em;
+}
+.ccw-page[hidden] {
+  display: none;
+}
+/* Clip layer (fix-3): overflow:hidden lives HERE, not on `.ccw-right-scroll`
+ * (which must stay overflow-y:auto for real content) or `.ccw-page` (which
+ * must not clip wide tables). This is the only element the sweep's
+ * translateX overshoot can escape into, so containing it here is what stops
+ * `.ccw-right-scroll`'s computed overflow-x from ever picking up a
+ * horizontal scrollbar. `overflow: hidden` (not `clip`) for old-browser
+ * (TTS tablet) support. */
+.ccw-sweep-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ccw-sweep {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(224, 114, 154, 0.14), transparent);
+  pointer-events: none;
+}
+/* Switch-tab entrance animation (§3.5): decorative only — `ccw-sweep` is a
+ * keyed, input-free overlay (safe to remount); `.ccw-entering` is toggled off
+ * then back on via rAF on the panel that HOLDS the fields, never remounting
+ * it, so unsaved edits/aria-labels on other (hidden, still-mounted) panels
+ * are untouched. Both no-op under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .ccw-page.ccw-entering {
+    animation: wtbPage 0.45s ease both;
+  }
+  .ccw-sweep {
+    animation: wtbSweep 0.6s ease-out both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ccw-sweep {
+    display: none;
+  }
+}
+@keyframes wtbPage {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wtbSweep {
+  0% {
+    transform: translateX(-140%) skewX(-12deg);
+  }
+  100% {
+    /* Pushed further right than the old 240% (fix-3) so the glow fully
+     * exits past `.ccw-sweep-clip` even on a long/stretched card, instead
+     * of visibly clipping mid-animation. */
+    transform: translateX(320%) skewX(-12deg);
+  }
+}
+
+/* --- Portrait medallion (SPEC §5: 150px circle, 3px double border) --------- */
+.ccw-portrait-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+}
+.ccw-portrait {
+  width: 150px;
+  height: 150px;
+  flex: none;
+  align-self: center;
+  border: 3px double #9c3466;
+  border-radius: 50%;
+  padding: 4px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+.ccw-portrait[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.7;
+}
+.ccw-portrait-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.ccw-portrait-initial {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 2.6em;
+  font-weight: 700;
+  color: #e0729a;
+}
+
+/* --- ability tablets / vitals plaques: 3-col grids on the left page -------- */
 .ccw-rail {
   display: flex;
   flex-direction: column;
   gap: 0.35em;
+}
+.ccw-rail-abilities {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4em;
+}
+.ccw-rail-vitals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35em;
+  margin-top: auto;
 }
 
 /* stat blocks (abilities left, vitals right) — small, bold, no big plaques */
@@ -377,11 +574,15 @@
   font-size: 0.62em;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #8f7fa8;
-  white-space: nowrap;
+  color: #a598c0;
+  /* fix-2 (2026-07-21): shared by every vitals plaque (HP/AC/Speed… and the
+   * longer EN ones like "Spellcasting ability"/"Passive Perception"). A
+   * fixed nowrap+ellipsis truncated the long ones to unreadable "…"; short
+   * labels never need more than one line anyway, so drop the nowrap/clip
+   * and let text wrap cleanly at a word boundary instead. */
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 1.15;
 }
 .ccw-plaque-value {
   display: flex;
@@ -391,7 +592,8 @@
   width: 100%;
   font-weight: 900;
   font-size: 1.05em;
-  color: #d9d0e6;
+  color: #ece4f5;
+  font-variant-numeric: tabular-nums;
 }
 .ccw-body .ccw-plaque-value input {
   font-weight: 900;
@@ -421,7 +623,7 @@
 .ccw-plaque-plus {
   font-size: 0.75em;
   font-weight: 700;
-  color: #8f7fa8;
+  color: #a598c0;
 }
 .ccw-plaque-cap {
   display: flex;
@@ -430,13 +632,13 @@
   gap: 0.1em;
   width: 100%;
   font-size: 0.66em;
-  color: #8f7fa8;
+  color: #a598c0;
 }
 .ccw-body .ccw-plaque-cap input {
   font-size: 1em;
   text-align: center;
   width: 100%;
-  color: #8f7fa8;
+  color: #a598c0;
   border-bottom-color: rgba(156, 52, 102, 0.25);
 }
 .ccw-eff {
@@ -447,7 +649,7 @@
   font-size: 0.62em;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #8f7fa8;
+  color: #a598c0;
   text-align: center;
   border-bottom-color: transparent;
   width: 100%;
@@ -459,18 +661,19 @@
   width: 100%;
 }
 .ccw-body .ccw-ab-score {
+  font-family: 'Cinzel Decorative', serif;
   font-weight: 900;
   font-size: 1.05em;
   text-align: center;
   border-bottom-color: transparent;
   width: 1.9em;
-  color: #d9d0e6;
+  color: #ece4f5;
   padding: 0;
 }
 .ccw-body .ccw-ab-mod {
   font-size: 0.85em;
   font-weight: 700;
-  color: #ece4f5;
+  color: #e0729a;
   text-align: center;
   border-bottom-color: transparent;
   width: 1.9em;
@@ -484,13 +687,14 @@
   gap: 0.22em;
 }
 .ccw-prof-head {
+  font-family: 'Cinzel Decorative', serif;
   font-size: 0.7em;
-  font-weight: 900;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   color: #ece4f5;
-  border-bottom: 1px solid rgba(156, 52, 102, 0.35);
-  padding-bottom: 0.2em;
-  margin-bottom: 0.15em;
+  border-bottom: 3px double rgba(156, 52, 102, 0.5);
+  padding-bottom: 0.25em;
+  margin-bottom: 0.2em;
 }
 .ccw-profcol .ccw-prof-head:not(:first-child) {
   margin-top: 0.7em;
@@ -533,7 +737,7 @@
   border-radius: 50%;
   cursor: pointer;
   font-size: 0.75em;
-  color: #8f7fa8;
+  color: #a598c0;
   line-height: 1;
 }
 .ccw-body .ccw-prof-toggle.prof-proficient {
@@ -660,10 +864,10 @@
 
 /* --- Markdown preview toggle + rendered view (法術/特性 refs, 職業特殊規則) -- */
 .ccw-md-toggle {
-  font-family: 'Noto Sans TC', sans-serif;
+  font-family: 'Crimson Text', serif;
   font-size: 0.78em;
   font-weight: 700;
-  color: #8f7fa8;
+  color: #a598c0;
   background: transparent;
   border: 1px solid rgba(156, 52, 102, 0.3);
   border-radius: 2px;
@@ -726,7 +930,7 @@
   margin: 0.3em 0;
   padding-left: 0.6em;
   border-left: 2px solid rgba(156, 52, 102, 0.3);
-  color: #8f7fa8;
+  color: #a598c0;
 }
 .ccw-md table {
   border-collapse: collapse;
@@ -744,12 +948,16 @@
 
 /* --- buttons (head + foot) --------------------------------------------------- */
 .ccw-btn {
-  font-family: 'Noto Sans TC', sans-serif;
+  font-family: 'Cinzel Decorative', serif;
   font-weight: 700;
   background: #251b32;
   color: #ece4f5;
   border: 1px solid #4f3a63;
   padding: 0.25em 0.8em;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   letter-spacing: 0.08em;
   border-radius: 0;
@@ -772,6 +980,20 @@
 .ccw-btn.blood:hover:not(:disabled) {
   border-color: #c22a3a;
   box-shadow: 0 0 10px rgba(184, 53, 92, 0.4);
+}
+
+/* Header fold/close buttons only (SPEC fix-2): bigger than the shared
+ * .ccw-btn size so ▴/× are easy to tell apart at a glance. Scoped to
+ * `.ccw-head .ccw-btn` — the footer buttons (Delete/Save/etc, same .ccw-btn
+ * class) are untouched since they live outside .ccw-head.
+ * fix-4 (2026-07-21): the previous 2.6em overshot and dragged the whole
+ * header band into a thick strip (screenshot 165740) — dialed back to
+ * ~1.8em, still clearly bigger than the original tiny glyphs. */
+.ccw-head .ccw-btn {
+  font-size: 1.8em;
+  min-width: 1.3em;
+  min-height: 1.3em;
+  line-height: 1;
 }
 
 /* Breathe room between a row's last text/input and its × remove button

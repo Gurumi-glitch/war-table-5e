@@ -365,19 +365,51 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
+  // TOC rail jump (additive nav, doesn't replace Back/Next). A forward jump
+  // can skip past the class/background steps that normally trigger seeding on
+  // `next()`, so run both idempotent seeds first — same guards as above make
+  // this a no-op if they already ran. A backward jump never needs seeding.
+  const goStep = (i: number) => {
+    if (i > step) {
+      seedSkills();
+      seedProfs();
+    }
+    setStep(i);
+  };
 
   return (
     <div className="wt-builder-overlay" role="dialog" aria-label="character builder" aria-modal="true">
       <div className="wt-builder">
-        <header className="wt-builder-head">
-          <b>{t.builder.title}</b>
-          <span className="wt-builder-progress">
-            {step + 1} / {STEPS.length} · {t.builder.steps[current]}
-          </span>
-          <button onClick={onCancel} aria-label="cancel builder">✕</button>
-        </header>
+        <aside className="wt-builder-toc">
+          <div className="wt-builder-toc-title">{t.builder.title}</div>
+          {STEPS.map((s, i) => {
+            const done = i < step;
+            const active = i === step;
+            return (
+              <button
+                key={s}
+                className={`wt-builder-tocitem${active ? " is-active" : done ? " is-done" : ""}`}
+                onClick={() => goStep(i)}
+                aria-label={`toc ${s}`}
+                aria-current={active ? "step" : undefined}
+              >
+                <span className="wt-builder-tocmark">{done ? "✦" : "·"}</span>
+                <span className="wt-builder-toclabel">{t.builder.steps[s]}</span>
+                <span className="wt-builder-tocleader" />
+                <span className="wt-builder-tocnum">{String(i + 1).padStart(2, "0")}</span>
+              </button>
+            );
+          })}
+        </aside>
 
-        <div className="wt-builder-body">
+        <div className="wt-builder-main">
+          <header className="wt-builder-head">
+            <b>{t.builder.title}</b>
+            <span style={{ flex: 1 }} />
+            <button onClick={onCancel} aria-label="cancel builder">✕</button>
+          </header>
+
+          <div className="wt-builder-body" key={step}>
           {current === "race" && (
             <fieldset>
               <label>
@@ -652,16 +684,18 @@ export function CharacterBuilder({ onCreate, onCancel }: CharacterBuilderProps) 
               </ul>
             </fieldset>
           )}
-        </div>
+          </div>
 
-        <footer className="wt-builder-foot">
-          <button onClick={back} disabled={step === 0} aria-label="builder back">← {t.builder.back}</button>
-          {current === "review" ? (
-            <button onClick={() => void finish()} disabled={busy} aria-label="builder finish">{busy ? t.builder.creating : t.builder.finish}</button>
-          ) : (
-            <button onClick={next} aria-label="builder next">{t.builder.nextStep} →</button>
-          )}
-        </footer>
+          <footer className="wt-builder-foot">
+            <button onClick={back} disabled={step === 0} aria-label="builder back">← {t.builder.back}</button>
+            <span className="wt-builder-foliocount">Folio {step + 1} of {STEPS.length}</span>
+            {current === "review" ? (
+              <button onClick={() => void finish()} disabled={busy} aria-label="builder finish">{busy ? t.builder.creating : t.builder.finish}</button>
+            ) : (
+              <button onClick={next} aria-label="builder next">{t.builder.nextStep} →</button>
+            )}
+          </footer>
+        </div>
       </div>
     </div>
   );
