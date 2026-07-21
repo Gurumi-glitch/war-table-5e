@@ -30,6 +30,7 @@ vi.mock("./MapBoard", () => ({
 const character: CharacterView = {
   _id: "char1",
   _creationTime: 0,
+  portraitUrl: null,
   seedKey: "lia",
   player: "測試玩家",
   nameZh: "測試角色",

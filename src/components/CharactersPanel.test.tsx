@@ -14,6 +14,7 @@ function card(overrides: Partial<CharacterView> = {}): CharacterView {
   return {
     _id: "ch1",
     _creationTime: 1,
+    portraitUrl: null,
     seedKey: null,
     player: "測試玩家",
     nameZh: "測試角色",

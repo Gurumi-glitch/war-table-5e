@@ -20,6 +20,7 @@ function card(overrides: Partial<CharacterView> = {}): CharacterView {
   return {
     _id: "ch1",
     _creationTime: 1700000000,
+    portraitUrl: null,
     seedKey: "some_seeded_card",
     player: "測試玩家",
     nameZh: "測試角色",
