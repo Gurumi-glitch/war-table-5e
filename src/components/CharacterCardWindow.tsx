@@ -920,7 +920,7 @@ export function CharacterCardWindow({
               >
                 <option value="">{t.card.noneOption}</option>
                 {ABILITY_KEYS.map((k) => (
-                  <option key={k} value={k}>{k}</option>
+                  <option key={k} value={k}>{abilityLabel(t, k)}</option>
                 ))}
               </select>
             </Plaque>
