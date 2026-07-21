@@ -433,6 +433,27 @@ test("racial grants: high-elf shows a race-step info block and pre-checks 察覺
   expect(screen.getByLabelText("skill 察覺")).toBeChecked();
 });
 
+test("TOC forward-jump seeds profs/skills before landing on the target step (Race -> Profs)", () => {
+  render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
+
+  // Still on the Race step (default class: barbarian). Jump straight to Profs
+  // via the TOC rail — this skips the Class/Background steps whose `next()`
+  // clicks normally trigger seedSkills/seedProfs, so goStep() must run both
+  // idempotent seeds itself before setStep.
+  fireEvent.click(screen.getByLabelText("toc profs"));
+
+  // Barbarian's 3 seeded armor chips (輕甲/中甲/盾牌) prove seedProfs ran.
+  expect(screen.getByLabelText("remove armor 2")).toBeInTheDocument();
+
+  // Jump onward to Class via the TOC (a backward-relative-to-nothing jump is
+  // forward here too) — no, jump BACK to Class to confirm seedSkills already
+  // ran: barbarian's default skill picks (馴獸/運動) are pre-checked even
+  // though we never visited Class via Back/Next.
+  fireEvent.click(screen.getByLabelText("toc class"));
+  expect((screen.getByLabelText("skill 馴獸") as HTMLInputElement).checked).toBe(true);
+  expect((screen.getByLabelText("skill 運動") as HTMLInputElement).checked).toBe(true);
+});
+
 test("racial grants: hill-dwarf's weapon training seeds into the profs step", () => {
   render(<CharacterBuilder onCreate={vi.fn()} onCancel={vi.fn()} />);
 
