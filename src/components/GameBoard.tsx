@@ -51,6 +51,10 @@ export type CharacterHandlers = {
   onAddCharacterRecipe: (characterId: string, recipe: RecipeDraft) => void;
   onUpdateCharacterRecipe: (recipeId: string, recipe: RecipeDraft) => void;
   onRemoveCharacterRecipe: (recipeId: string) => void;
+  /** Portrait medallion upload (codex-folio-card-ui): generateUploadUrl → PUT
+   *  → setCharacterPortrait, bound with playerToken at the page level (same
+   *  pattern as every other handler above) — role-open like the rest. */
+  onUploadPortrait?: (characterId: string, file: File) => void;
 };
 
 export type NewCombatant = {

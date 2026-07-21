@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SafeMarkdown } from "./SafeMarkdown";
 import { useT } from "../i18n";
 import { abilityLabel, skillLabel, profLabel } from "../i18n/terms";
-import { clampedDragPos } from "./windowState";
 import { downloadCard } from "../lib/cardFile";
+import { ResizableWindow } from "./ResizableWindow";
 import "./CharacterCardWindow.css";
 import type {
   AbilityView,
@@ -107,6 +107,11 @@ export type CharacterCardWindowProps = {
   onPatchCombatant?: (
     patch: Partial<{ resist: string[]; vuln: string[]; immune: string[] }>,
   ) => void;
+  /** Portrait medallion upload (codex-folio-card-ui): generateUploadUrl → PUT
+   *  → setCharacterPortrait, wired by GameShell. Omitted on surfaces that
+   *  never show the card editable (none today, but kept optional so every
+   *  existing test/call site building props by hand doesn't need updating). */
+  onUploadPortrait?: (characterId: string, file: File) => void;
 };
 
 /** Editable scalar card fields held as strings (uniform input binding). */
@@ -281,6 +286,7 @@ export function CharacterCardWindow({
   onUpdateRecipe,
   onRemoveRecipe,
   onPatchCombatant,
+  onUploadPortrait,
 }: CharacterCardWindowProps) {
   const t = useT();
   const [draft, setDraft] = useState<Draft>(() => snapshot(c));
@@ -319,6 +325,27 @@ export function CharacterCardWindow({
     const timeout = window.setTimeout(() => setConfirmingDelete(false), 5000);
     return () => window.clearTimeout(timeout);
   }, [confirmingDelete]);
+
+  // Ribbon-tab switch entrance animation (codex-folio-card-ui §3.5): decorative
+  // only, never a remount of the field-bearing panel (that would lose unsaved
+  // edits — a hard test contract). Flipping the class off then back on across
+  // two commits (via rAF) forces the `wtbPage` CSS animation to restart on the
+  // now-active panel without touching its children/inputs.
+  const [entering, setEntering] = useState(true);
+  useEffect(() => {
+    setEntering(false);
+    const raf = requestAnimationFrame(() => setEntering(true));
+    return () => cancelAnimationFrame(raf);
+  }, [page]);
+
+  // Portrait medallion upload (codex-folio-card-ui §3.6): GameShell wires
+  // `onUploadPortrait` to generateUploadUrl → PUT → setCharacterPortrait,
+  // mirroring the map-piece upload flow. Disabled on read-only demo cards.
+  const portraitInputRef = useRef<HTMLInputElement>(null);
+  const handlePortraitFile = (file: File | null) => {
+    if (file === null || readOnly || !onUploadPortrait) return;
+    onUploadPortrait(c._id, file);
+  };
 
   // Adopt remote changes for fields the user isn't currently editing. Scalars
   // adopt per-field; abilities/saves/skills/refs adopt only if untouched
@@ -693,74 +720,71 @@ export function CharacterCardWindow({
     onUpdateCharacter(c._id, patch);
   };
 
-  const drag = useRef<{ dx: number; dy: number } | null>(null);
+  const pageClass = (i: number) =>
+    `ccw-page${entering && page === i ? " ccw-entering" : ""}`;
 
   return (
-    <div
+    <ResizableWindow
+      win={win}
+      onDrag={onDrag}
+      onFocus={onFocus}
+      onFold={onFold}
+      onClose={onClose}
+      minWidth={560}
+      minHeight={460}
+      defaultSize={{ w: 920, h: 780 }}
       className="ccw-card"
-      style={{ left: win.x, top: win.y, zIndex: win.z }}
-      onPointerDown={onFocus}
+      headClassName="ccw-head"
+      titleClassName="ccw-title"
+      title={`📜 ${c.nameZh}`}
+      buttonClassName="ccw-btn"
+      foldLabel="fold card"
+      closeLabel="close card"
+      bodyClassName="ccw-body"
     >
-      <div
-        className="ccw-head"
-        onPointerDown={(e) => {
-          if ((e.target as HTMLElement).closest("button")) return;
-          drag.current = { dx: e.clientX - win.x, dy: e.clientY - win.y };
-          (e.target as HTMLElement).setPointerCapture(e.pointerId);
-        }}
-        onPointerMove={(e) => {
-          if (drag.current) {
-            const { x, y } = clampedDragPos(e, drag.current);
-            onDrag(x, y);
-          }
-        }}
-        onPointerUp={() => (drag.current = null)}
-        onPointerCancel={() => (drag.current = null)}
-      >
-        <span className="ccw-title">📜 {c.nameZh}</span>
-        <button className="ccw-btn" style={{ padding: "0 .5em" }} onClick={() => onFold()} aria-label="fold card">
-          {win.folded ? "▾" : "▴"}
-        </button>
-        <button className="ccw-btn" style={{ padding: "0 .5em" }} onClick={() => onClose()} aria-label="close card">
-          ×
-        </button>
-      </div>
-      {!win.folded && (
-        <div className="ccw-body">
-          <nav className="ccw-tabs" aria-label="card pages">
-            <button
-              className="ccw-tab-arrow"
-              aria-label="prev page"
-              disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
+      {/* Twin-page book: left "bookplate" (identity, never changes with the
+          tabs) — spine — right "flipping" page (ribbon tabs over 4 mounted
+          panels). codex-folio-card-ui §3.2. */}
+      <div className="ccw-book">
+        <div className="ccw-left">
+          <div className="ccw-portrait-wrap">
+            <span className="ccw-eyebrow">Ex Libris</span>
+            <div
+              className="ccw-portrait"
+              role="button"
+              tabIndex={readOnly ? -1 : 0}
+              aria-label="upload portrait"
+              aria-disabled={readOnly}
+              onClick={() => {
+                if (!readOnly) portraitInputRef.current?.click();
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handlePortraitFile(e.dataTransfer.files?.[0] ?? null);
+              }}
             >
-              ←
-            </button>
-            {[t.card.pages.core, t.card.pages.skills, t.card.pages.spells, t.card.pages.story].map(
-              (label, i) => (
-                <button
-                  key={i}
-                  className={`ccw-tab${page === i ? " is-active" : ""}`}
-                  aria-label={`page ${i}`}
-                  aria-current={page === i}
-                  onClick={() => setPage(i)}
-                >
-                  {label}
-                </button>
-              ),
-            )}
-            <button
-              className="ccw-tab-arrow"
-              aria-label="next page"
-              disabled={page === 3}
-              onClick={() => setPage((p) => Math.min(3, p + 1))}
-            >
-              →
-            </button>
-          </nav>
+              {c.portraitUrl ? (
+                <img className="ccw-portrait-img" src={c.portraitUrl} alt="" />
+              ) : (
+                <span className="ccw-portrait-initial">
+                  {(c.nameZh || c.nameEn || "?").charAt(0)}
+                </span>
+              )}
+              <input
+                ref={portraitInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                disabled={readOnly}
+                onChange={(e) => {
+                  handlePortraitFile(e.target.files?.[0] ?? null);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          </div>
 
-          {/* Page 0 — 核心: masthead + ability rail | saves | vitals rail. */}
-          <div className="ccw-page" hidden={page !== 0}>
           {/* Masthead — the document's identity line. */}
           <div className="ccw-masthead">
             <div className="ccw-names">
@@ -799,424 +823,464 @@ export function CharacterCardWindow({
             </div>
           </div>
 
-          {/* Main grid — ability rail | saves+skills ledger | sheet | vitals rail
-              (layout per docs/plans/ui-design-requirement-character-card.md). */}
-          <div className="ccw-main">
-            <div className="ccw-rail">
-              {draft.abilities.map((a, i) => (
-                <div key={i} className="ccw-ab-block">
-                  <AbilityKeyInput
-                    value={a.key}
-                    onChange={(v) => setAbilityKey(i, v)}
-                    ariaLabel={`ability ${i} key`}
-                  />
-                  <div className="ccw-ab-nums">
-                    <input
-                      className="ccw-ab-score"
-                      type="number"
-                      value={a.score}
-                      onChange={(e) => setAbilityScore(i, Number(e.target.value))}
-                      aria-label={`ability ${i} score`}
-                    />
-                    <input
-                      className="ccw-ab-mod"
-                      type="number"
-                      value={a.mod}
-                      onChange={(e) => setAbilityMod(i, Number(e.target.value))}
-                      aria-label={`ability ${i} mod`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="ccw-profcol">
-              <div className="ccw-prof-head">{t.card.saves}</div>
-              {draft.saves.map((s, i) => (
-                <div className="ccw-prof-row" key={i}>
-                  <label className="ccw-prof-name">
-                    <input
-                      type="checkbox"
-                      checked={s.prof}
-                      onChange={() => toggleSave(i)}
-                      aria-label={`save ${i} prof`}
-                    />{" "}
-                    {abilityLabel(t, s.key)}
-                  </label>
-                  <span className="ccw-leader" />
+          <div className="ccw-rail ccw-rail-abilities">
+            {draft.abilities.map((a, i) => (
+              <div key={i} className="ccw-ab-block">
+                <AbilityKeyInput
+                  value={a.key}
+                  onChange={(v) => setAbilityKey(i, v)}
+                  ariaLabel={`ability ${i} key`}
+                />
+                <div className="ccw-ab-nums">
                   <input
-                    className={`ccw-prof-total${diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
+                    className="ccw-ab-score"
                     type="number"
-                    value={s.total}
-                    onChange={(e) => setSaveTotal(i, Number(e.target.value))}
-                    aria-label={`save ${i} total`}
-                    title={diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
+                    value={a.score}
+                    onChange={(e) => setAbilityScore(i, Number(e.target.value))}
+                    aria-label={`ability ${i} score`}
                   />
-                </div>
-              ))}
-              <div className="ccw-prof-head">{t.card.skills}</div>
-              {draft.skills.map((s, i) => (
-                <div className="ccw-prof-row" key={i}>
-                  <button
-                    className={`ccw-prof-toggle prof-${s.prof}`}
-                    onClick={() => cycleSkill(i)}
-                    aria-label={`skill ${i} prof`}
-                    title={s.prof === "none" ? t.card.profNone : s.prof === "proficient" ? t.card.profProficient : t.card.profExpert}
-                  >
-                    {s.prof === "none" ? "○" : s.prof === "proficient" ? "●" : "★"}
-                  </button>
-                  <span className="ccw-prof-name">{skillLabel(t, s.key)}</span>
-                  <span className="ccw-leader" />
                   <input
-                    className={`ccw-prof-total${diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
+                    className="ccw-ab-mod"
                     type="number"
-                    value={s.total}
-                    onChange={(e) => setSkillTotal(i, Number(e.target.value))}
-                    aria-label={`skill ${i} total`}
-                    title={diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
+                    value={a.mod}
+                    onChange={(e) => setAbilityMod(i, Number(e.target.value))}
+                    aria-label={`ability ${i} mod`}
                   />
                 </div>
-              ))}
-            </div>
-
-            <div className="ccw-sheetcol">
-              <ResourcesSection
-                resources={c.resources}
-                onAdd={onAddResource}
-                onUpdate={onUpdateResource}
-                onRemove={onRemoveResource}
-              />
-              <RecipesSection
-                recipes={c.recipes}
-                resources={c.resources}
-                onAdd={onAddRecipe}
-                onUpdate={onUpdateRecipe}
-                onRemove={onRemoveRecipe}
-              />
-              {combatant && onPatchCombatant && (
-                <RVISection combatant={combatant} onPatch={onPatchCombatant} />
-              )}
-            </div>
-
-            <div className="ccw-rail">
-              <Plaque label={t.card.hp}>
-                <input
-                  value={draft.scalars.hp}
-                  onChange={(e) => setScalar("hp", e.target.value)}
-                  aria-label="hp"
-                />
-                <span className="ccw-plaque-plus">/</span>
-                <input
-                  value={draft.scalars.maxHp}
-                  onChange={(e) => setScalar("maxHp", e.target.value)}
-                  aria-label="max hp"
-                />
-              </Plaque>
-              <Plaque
-                label={t.card.ac}
-                cap={
-                  <>
-                    <input
-                      value={draft.scalars.acFormula}
-                      onChange={(e) => setScalar("acFormula", e.target.value)}
-                      aria-label="ac formula"
-                      title={draft.scalars.acFormula}
-                    />
-                    {combatant && <span className="ccw-eff">{t.card.effective} {combatant.effectiveAc?.value}</span>}
-                  </>
-                }
-              >
-                <input
-                  value={draft.scalars.ac}
-                  onChange={(e) => setScalar("ac", e.target.value)}
-                  aria-label="ac"
-                />
-              </Plaque>
-              <Plaque label={t.card.speed}>
-                <input
-                  className="wide"
-                  value={draft.scalars.speedText}
-                  onChange={(e) => setScalar("speedText", e.target.value)}
-                  aria-label="speed"
-                />
-              </Plaque>
-              <Plaque label={t.card.initiative}>
-                <span className="ccw-plaque-plus">+</span>
-                <input
-                  className={diverged(draft.scalars.initBonus, expected.initBonus) ? "ccw-diverged" : undefined}
-                  value={draft.scalars.initBonus}
-                  onChange={(e) => setScalar("initBonus", e.target.value)}
-                  aria-label="init bonus"
-                  title={diverged(draft.scalars.initBonus, expected.initBonus) ? t.card.divergedTitle : t.card.initAutoTitle}
-                />
-              </Plaque>
-              <Plaque label={t.card.pb}>
-                <span className="ccw-plaque-plus">+</span>
-                <input
-                  value={draft.scalars.pb}
-                  onChange={(e) => setPb(Number(e.target.value) || 0)}
-                  aria-label="pb"
-                  title={t.card.pbAutoTitle}
-                />
-              </Plaque>
-              <Plaque label={t.card.spellAbility}>
-                <select
-                  value={draft.scalars.spellcastingAbility}
-                  onChange={(e) => setSpellcastingAbility(e.target.value)}
-                  aria-label="spellcasting ability"
-                >
-                  <option value="">{t.card.noneOption}</option>
-                  {ABILITY_KEYS.map((k) => (
-                    <option key={k} value={k}>{k}</option>
-                  ))}
-                </select>
-              </Plaque>
-              <Plaque label={t.card.spellAttack}>
-                <span className="ccw-plaque-plus">+</span>
-                <input
-                  {...divAttrs(diverged(draft.scalars.spellAttack, expected.spellAttack))}
-                  value={draft.scalars.spellAttack}
-                  onChange={(e) => setScalar("spellAttack", e.target.value)}
-                  aria-label="spell attack"
-                />
-              </Plaque>
-              <Plaque label={t.card.spellDc}>
-                <input
-                  {...divAttrs(diverged(draft.scalars.spellDc, expected.spellDc))}
-                  value={draft.scalars.spellDc}
-                  onChange={(e) => setScalar("spellDc", e.target.value)}
-                  aria-label="spell dc"
-                />
-              </Plaque>
-              <Plaque label={t.card.passivePerception}>
-                <input
-                  className={diverged(draft.scalars.passivePerception, expected.passivePerception) ? "ccw-diverged" : undefined}
-                  value={draft.scalars.passivePerception}
-                  onChange={(e) => setScalar("passivePerception", e.target.value)}
-                  aria-label="passive perception"
-                  title={diverged(draft.scalars.passivePerception, expected.passivePerception) ? t.card.divergedTitle : t.card.passiveAutoTitle}
-                />
-              </Plaque>
-            </div>
-          </div>
-
-          <h4>{t.card.attacksProfsWealth}</h4>
-          <div className="ccw-misc">
-            <Field label={t.card.attackNotes}>
-              <CardInput value={draft.scalars.attackText} onChange={(v) => setScalar("attackText", v)} ariaLabel="attack" />
-            </Field>
-            <Field label={t.card.money}>
-              <CardInput value={draft.scalars.goldText} onChange={(v) => setScalar("goldText", v)} ariaLabel="gold" />
-            </Field>
-          </div>
-          </div>
-
-          {/* Page 1 — 熟練: always the four structured proficiency pickers;
-              legacy toolsText (pre-picker cards) lists separately below when
-              non-empty, so old data stays visible instead of hidden. */}
-          <div className="ccw-page" hidden={page !== 1}>
-          <div className="ccw-profblocks">
-            {(
-              [
-                ["armorProfs", "armor", t.builder.armor, ARMOR_PROF_OPTIONS],
-                ["weaponProfs", "weapon", t.builder.weapons, WEAPON_PROF_OPTIONS],
-                ["toolProfs", "tool", t.builder.tools, TOOL_PROF_OPTIONS],
-                ["languageProfs", "lang", t.builder.languages, LANGUAGE_OPTIONS],
-              ] as const
-            ).map(([cat, fieldKey, label, options]) => (
-              <ProfPicker
-                key={cat}
-                fieldKey={fieldKey}
-                label={label}
-                options={options}
-                list={draft[cat]}
-                onChange={(list) => setProfList(cat, list)}
-              />
+              </div>
             ))}
           </div>
-          {draft.scalars.toolsText.trim() !== "" && (
-            <div className="ccw-ref">
-              <div className="ccw-ref-head">
-                <span className="ccw-block-title">{t.card.legacyProfNotes}</span>
-              </div>
-              <textarea
-                className="ccw-ref-body"
-                value={draft.scalars.toolsText}
-                onChange={(e) => setScalar("toolsText", e.target.value)}
-                aria-label="tools"
+
+          <div className="ccw-rail ccw-rail-vitals">
+            <Plaque label={t.card.hp}>
+              <input
+                value={draft.scalars.hp}
+                onChange={(e) => setScalar("hp", e.target.value)}
+                aria-label="hp"
               />
-            </div>
-          )}
-          <div className="ccw-ac-armor">
-            <label>
-              {t.builder.armorForAc}
+              <span className="ccw-plaque-plus">/</span>
+              <input
+                value={draft.scalars.maxHp}
+                onChange={(e) => setScalar("maxHp", e.target.value)}
+                aria-label="max hp"
+              />
+            </Plaque>
+            <Plaque
+              label={t.card.ac}
+              cap={
+                <>
+                  <input
+                    value={draft.scalars.acFormula}
+                    onChange={(e) => setScalar("acFormula", e.target.value)}
+                    aria-label="ac formula"
+                    title={draft.scalars.acFormula}
+                  />
+                  {combatant && <span className="ccw-eff">{t.card.effective} {combatant.effectiveAc?.value}</span>}
+                </>
+              }
+            >
+              <input
+                value={draft.scalars.ac}
+                onChange={(e) => setScalar("ac", e.target.value)}
+                aria-label="ac"
+              />
+            </Plaque>
+            <Plaque label={t.card.speed}>
+              <input
+                className="wide"
+                value={draft.scalars.speedText}
+                onChange={(e) => setScalar("speedText", e.target.value)}
+                aria-label="speed"
+              />
+            </Plaque>
+            <Plaque label={t.card.initiative}>
+              <span className="ccw-plaque-plus">+</span>
+              <input
+                className={diverged(draft.scalars.initBonus, expected.initBonus) ? "ccw-diverged" : undefined}
+                value={draft.scalars.initBonus}
+                onChange={(e) => setScalar("initBonus", e.target.value)}
+                aria-label="init bonus"
+                title={diverged(draft.scalars.initBonus, expected.initBonus) ? t.card.divergedTitle : t.card.initAutoTitle}
+              />
+            </Plaque>
+            <Plaque label={t.card.pb}>
+              <span className="ccw-plaque-plus">+</span>
+              <input
+                value={draft.scalars.pb}
+                onChange={(e) => setPb(Number(e.target.value) || 0)}
+                aria-label="pb"
+                title={t.card.pbAutoTitle}
+              />
+            </Plaque>
+            <Plaque label={t.card.spellAbility}>
               <select
-                aria-label="ac armor"
-                value={acArmor}
-                onChange={(e) => {
-                  setAcArmor(e.target.value);
-                  applyAc(e.target.value, acShield);
-                }}
+                value={draft.scalars.spellcastingAbility}
+                onChange={(e) => setSpellcastingAbility(e.target.value)}
+                aria-label="spellcasting ability"
               >
-                <option value="">{t.builder.unarmored}</option>
-                {SRD_ARMORS.filter((a) => a.cat !== "shield").map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {t.terms.displayName(a.nameZh, a.name)}（{profLabel(t, ARMOR_CAT_ZH[a.cat])}, {a.base}）
-                  </option>
+                <option value="">{t.card.noneOption}</option>
+                {ABILITY_KEYS.map((k) => (
+                  <option key={k} value={k}>{k}</option>
                 ))}
               </select>
-            </label>
-            <label className="ccw-ac-shield">
+            </Plaque>
+            <Plaque label={t.card.spellAttack}>
+              <span className="ccw-plaque-plus">+</span>
               <input
-                type="checkbox"
-                aria-label="ac shield"
-                checked={acShield}
-                onChange={(e) => {
-                  setAcShield(e.target.checked);
-                  applyAc(acArmor, e.target.checked);
-                }}
+                {...divAttrs(diverged(draft.scalars.spellAttack, expected.spellAttack))}
+                value={draft.scalars.spellAttack}
+                onChange={(e) => setScalar("spellAttack", e.target.value)}
+                aria-label="spell attack"
               />
-              {t.builder.shield}
-            </label>
-            <span className="ccw-ac-hint">→ AC {draft.scalars.ac}</span>
-          </div>
-          </div>
-
-          {/* Page 2 — 法術·特性: refs + class rules. */}
-          <div className="ccw-page" hidden={page !== 2}>
-          <h4>{t.card.spellsAndTraits}</h4>
-          <div className="ccw-refs">
-            {draft.refs.map((r, i) => (
-              <div key={i} className="ccw-ref">
-                <div className="ccw-ref-head">
-                  <input
-                    className="ccw-ref-title"
-                    value={r.title}
-                    onChange={(e) => setRef(i, { title: e.target.value })}
-                    aria-label={`ref ${i} title`}
-                  />
-                  <PreviewToggle
-                    previewing={!!refPreview[i]}
-                    onToggle={() => toggleRefPreview(i)}
-                    ariaLabel={`toggle ref ${i} preview`}
-                  />
-                  <button onClick={() => removeRef(i)} aria-label={`remove ref ${i}`}>
-                    ×
-                  </button>
-                </div>
-                <MarkdownBody
-                  value={r.body}
-                  onChange={(v) => setRef(i, { body: v })}
-                  bodyAriaLabel={`ref ${i} body`}
-                  previewing={!!refPreview[i]}
-                />
-              </div>
-            ))}
-          </div>
-          <button onClick={addRef}>+ section</button>
-
-          <h4>{t.card.classRules}</h4>
-          <div className="ccw-class-rules">
-            {draft.classRules.map((body, i) => (
-              <div key={i} className="ccw-class-rule">
-                <div className="ccw-ref-head">
-                  <PreviewToggle
-                    previewing={!!classRulePreview[i]}
-                    onToggle={() => toggleClassRulePreview(i)}
-                    ariaLabel={`toggle class rule ${i} preview`}
-                  />
-                  <button onClick={() => removeClassRule(i)} aria-label={`remove class rule ${i}`}>
-                    ×
-                  </button>
-                </div>
-                <MarkdownBody
-                  value={body}
-                  onChange={(v) => setClassRule(i, v)}
-                  bodyAriaLabel={`class rule ${i} body`}
-                  previewing={!!classRulePreview[i]}
-                />
-              </div>
-            ))}
-          </div>
-          <button onClick={addClassRule}>+ section</button>
-          </div>
-
-          {/* Page 3 — 故事. */}
-          <div className="ccw-page" hidden={page !== 3}>
-          <h4>{t.card.story}</h4>
-          <textarea
-            className="ccw-story"
-            value={draft.scalars.story}
-            onChange={(e) => setScalar("story", e.target.value)}
-            aria-label="story"
-          />
+            </Plaque>
+            <Plaque label={t.card.spellDc}>
+              <input
+                {...divAttrs(diverged(draft.scalars.spellDc, expected.spellDc))}
+                value={draft.scalars.spellDc}
+                onChange={(e) => setScalar("spellDc", e.target.value)}
+                aria-label="spell dc"
+              />
+            </Plaque>
+            <Plaque label={t.card.passivePerception}>
+              <input
+                className={diverged(draft.scalars.passivePerception, expected.passivePerception) ? "ccw-diverged" : undefined}
+                value={draft.scalars.passivePerception}
+                onChange={(e) => setScalar("passivePerception", e.target.value)}
+                aria-label="passive perception"
+                title={diverged(draft.scalars.passivePerception, expected.passivePerception) ? t.card.divergedTitle : t.card.passiveAutoTitle}
+              />
+            </Plaque>
           </div>
         </div>
-      )}
-      {!win.folded && readOnly && (
+
+        <div className="ccw-spine" aria-hidden="true" />
+
+        <div className="ccw-right">
+          <nav className="ccw-ribbons" aria-label="card pages">
+            <button
+              className="ccw-tab-arrow"
+              aria-label="prev page"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              ←
+            </button>
+            {[t.card.pages.core, t.card.pages.skills, t.card.pages.spells, t.card.pages.story].map(
+              (label, i) => (
+                <button
+                  key={i}
+                  className={`ccw-ribbon${page === i ? " is-active" : ""}`}
+                  aria-label={`page ${i}`}
+                  aria-current={page === i}
+                  onClick={() => setPage(i)}
+                >
+                  {label}
+                </button>
+              ),
+            )}
+            <button
+              className="ccw-tab-arrow"
+              aria-label="next page"
+              disabled={page === 3}
+              onClick={() => setPage((p) => Math.min(3, p + 1))}
+            >
+              →
+            </button>
+          </nav>
+
+          <div className="ccw-right-scroll">
+            <span key={page} className="ccw-sweep" aria-hidden="true" />
+
+            {/* Page 0 — 核心: saves+skills ledger | Resources/Recipes/RVI sheet,
+                attack notes + gold below. */}
+            <div className={pageClass(0)} hidden={page !== 0}>
+            <div className="ccw-main">
+              <div className="ccw-profcol">
+                <div className="ccw-prof-head">{t.card.saves}</div>
+                {draft.saves.map((s, i) => (
+                  <div className="ccw-prof-row" key={i}>
+                    <label className="ccw-prof-name">
+                      <input
+                        type="checkbox"
+                        checked={s.prof}
+                        onChange={() => toggleSave(i)}
+                        aria-label={`save ${i} prof`}
+                      />{" "}
+                      {abilityLabel(t, s.key)}
+                    </label>
+                    <span className="ccw-leader" />
+                    <input
+                      className={`ccw-prof-total${diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
+                      type="number"
+                      value={s.total}
+                      onChange={(e) => setSaveTotal(i, Number(e.target.value))}
+                      aria-label={`save ${i} total`}
+                      title={diverged(String(s.total), expected.saves[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
+                    />
+                  </div>
+                ))}
+                <div className="ccw-prof-head">{t.card.skills}</div>
+                {draft.skills.map((s, i) => (
+                  <div className="ccw-prof-row" key={i}>
+                    <button
+                      className={`ccw-prof-toggle prof-${s.prof}`}
+                      onClick={() => cycleSkill(i)}
+                      aria-label={`skill ${i} prof`}
+                      title={s.prof === "none" ? t.card.profNone : s.prof === "proficient" ? t.card.profProficient : t.card.profExpert}
+                    >
+                      {s.prof === "none" ? "○" : s.prof === "proficient" ? "●" : "★"}
+                    </button>
+                    <span className="ccw-prof-name">{skillLabel(t, s.key)}</span>
+                    <span className="ccw-leader" />
+                    <input
+                      className={`ccw-prof-total${diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? " ccw-diverged" : ""}`}
+                      type="number"
+                      value={s.total}
+                      onChange={(e) => setSkillTotal(i, Number(e.target.value))}
+                      aria-label={`skill ${i} total`}
+                      title={diverged(String(s.total), expected.skills[i]?.total ?? s.total) ? t.card.divergedTitle : undefined}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="ccw-sheetcol">
+                <ResourcesSection
+                  resources={c.resources}
+                  onAdd={onAddResource}
+                  onUpdate={onUpdateResource}
+                  onRemove={onRemoveResource}
+                />
+                <RecipesSection
+                  recipes={c.recipes}
+                  resources={c.resources}
+                  onAdd={onAddRecipe}
+                  onUpdate={onUpdateRecipe}
+                  onRemove={onRemoveRecipe}
+                />
+                {combatant && onPatchCombatant && (
+                  <RVISection combatant={combatant} onPatch={onPatchCombatant} />
+                )}
+              </div>
+            </div>
+
+            <h4>{t.card.attacksProfsWealth}</h4>
+            <div className="ccw-misc">
+              <Field label={t.card.attackNotes}>
+                <CardInput value={draft.scalars.attackText} onChange={(v) => setScalar("attackText", v)} ariaLabel="attack" />
+              </Field>
+              <Field label={t.card.money}>
+                <CardInput value={draft.scalars.goldText} onChange={(v) => setScalar("goldText", v)} ariaLabel="gold" />
+              </Field>
+            </div>
+            </div>
+
+            {/* Page 1 — 熟練: always the four structured proficiency pickers;
+                legacy toolsText (pre-picker cards) lists separately below when
+                non-empty, so old data stays visible instead of hidden. */}
+            <div className={pageClass(1)} hidden={page !== 1}>
+            <div className="ccw-profblocks">
+              {(
+                [
+                  ["armorProfs", "armor", t.builder.armor, ARMOR_PROF_OPTIONS],
+                  ["weaponProfs", "weapon", t.builder.weapons, WEAPON_PROF_OPTIONS],
+                  ["toolProfs", "tool", t.builder.tools, TOOL_PROF_OPTIONS],
+                  ["languageProfs", "lang", t.builder.languages, LANGUAGE_OPTIONS],
+                ] as const
+              ).map(([cat, fieldKey, label, options]) => (
+                <ProfPicker
+                  key={cat}
+                  fieldKey={fieldKey}
+                  label={label}
+                  options={options}
+                  list={draft[cat]}
+                  onChange={(list) => setProfList(cat, list)}
+                />
+              ))}
+            </div>
+            {draft.scalars.toolsText.trim() !== "" && (
+              <div className="ccw-ref">
+                <div className="ccw-ref-head">
+                  <span className="ccw-block-title">{t.card.legacyProfNotes}</span>
+                </div>
+                <textarea
+                  className="ccw-ref-body"
+                  value={draft.scalars.toolsText}
+                  onChange={(e) => setScalar("toolsText", e.target.value)}
+                  aria-label="tools"
+                />
+              </div>
+            )}
+            <div className="ccw-ac-armor">
+              <label>
+                {t.builder.armorForAc}
+                <select
+                  aria-label="ac armor"
+                  value={acArmor}
+                  onChange={(e) => {
+                    setAcArmor(e.target.value);
+                    applyAc(e.target.value, acShield);
+                  }}
+                >
+                  <option value="">{t.builder.unarmored}</option>
+                  {SRD_ARMORS.filter((a) => a.cat !== "shield").map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {t.terms.displayName(a.nameZh, a.name)}（{profLabel(t, ARMOR_CAT_ZH[a.cat])}, {a.base}）
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="ccw-ac-shield">
+                <input
+                  type="checkbox"
+                  aria-label="ac shield"
+                  checked={acShield}
+                  onChange={(e) => {
+                    setAcShield(e.target.checked);
+                    applyAc(acArmor, e.target.checked);
+                  }}
+                />
+                {t.builder.shield}
+              </label>
+              <span className="ccw-ac-hint">→ AC {draft.scalars.ac}</span>
+            </div>
+            </div>
+
+            {/* Page 2 — 法術·特性: refs + class rules. */}
+            <div className={pageClass(2)} hidden={page !== 2}>
+            <h4>{t.card.spellsAndTraits}</h4>
+            <div className="ccw-refs">
+              {draft.refs.map((r, i) => (
+                <div key={i} className="ccw-ref">
+                  <div className="ccw-ref-head">
+                    <input
+                      className="ccw-ref-title"
+                      value={r.title}
+                      onChange={(e) => setRef(i, { title: e.target.value })}
+                      aria-label={`ref ${i} title`}
+                    />
+                    <PreviewToggle
+                      previewing={!!refPreview[i]}
+                      onToggle={() => toggleRefPreview(i)}
+                      ariaLabel={`toggle ref ${i} preview`}
+                    />
+                    <button onClick={() => removeRef(i)} aria-label={`remove ref ${i}`}>
+                      ×
+                    </button>
+                  </div>
+                  <MarkdownBody
+                    value={r.body}
+                    onChange={(v) => setRef(i, { body: v })}
+                    bodyAriaLabel={`ref ${i} body`}
+                    previewing={!!refPreview[i]}
+                  />
+                </div>
+              ))}
+            </div>
+            <button onClick={addRef}>+ section</button>
+
+            <h4>{t.card.classRules}</h4>
+            <div className="ccw-class-rules">
+              {draft.classRules.map((body, i) => (
+                <div key={i} className="ccw-class-rule">
+                  <div className="ccw-ref-head">
+                    <PreviewToggle
+                      previewing={!!classRulePreview[i]}
+                      onToggle={() => toggleClassRulePreview(i)}
+                      ariaLabel={`toggle class rule ${i} preview`}
+                    />
+                    <button onClick={() => removeClassRule(i)} aria-label={`remove class rule ${i}`}>
+                      ×
+                    </button>
+                  </div>
+                  <MarkdownBody
+                    value={body}
+                    onChange={(v) => setClassRule(i, v)}
+                    bodyAriaLabel={`class rule ${i} body`}
+                    previewing={!!classRulePreview[i]}
+                  />
+                </div>
+              ))}
+            </div>
+            <button onClick={addClassRule}>+ section</button>
+            </div>
+
+            {/* Page 3 — 故事. */}
+            <div className={pageClass(3)} hidden={page !== 3}>
+            <h4>{t.card.story}</h4>
+            <textarea
+              className="ccw-story"
+              value={draft.scalars.story}
+              onChange={(e) => setScalar("story", e.target.value)}
+              aria-label="story"
+            />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {readOnly && (
         <p className="ccw-readonly" role="note">
           <strong>{t.card.readOnly}</strong> {t.card.readOnlyHint}
         </p>
       )}
-      {!win.folded && (
-        <div className="ccw-foot">
-          <button
-            className="ccw-btn blood ccw-delete-btn"
-            disabled={readOnly}
-            title={readOnly ? t.card.readOnly : t.card.deleteCardTitle}
-            onClick={() => {
-              if (confirmingDelete) {
-                setConfirmingDelete(false);
-                onDeleteCard();
-              } else {
-                setConfirmingDelete(true);
-              }
-            }}
-            onBlur={() => {
-              if (confirmingDelete) setConfirmingDelete(false);
-            }}
-            aria-label={
-              confirmingDelete ? `confirm delete card ${c.nameZh}` : `delete card ${c.nameZh}`
+      <div className="ccw-foot">
+        <button
+          className="ccw-btn blood ccw-delete-btn"
+          disabled={readOnly}
+          title={readOnly ? t.card.readOnly : t.card.deleteCardTitle}
+          onClick={() => {
+            if (confirmingDelete) {
+              setConfirmingDelete(false);
+              onDeleteCard();
+            } else {
+              setConfirmingDelete(true);
             }
-          >
-            {confirmingDelete ? t.card.confirmDeleteCard : t.card.deleteCard}
-          </button>
-          {isDirty && <span className="ccw-dirty">{t.card.unsaved}</span>}
-          <button
-            className="ccw-btn"
-            onClick={() => downloadCard(c)}
-            title={t.card.exportCardTitle}
-            aria-label={`export ${c.nameZh}`}
-          >
-            {t.card.exportCard}
-          </button>
-          <button
-            className="ccw-btn blood"
-            onClick={() => onJoinBattle(c._id)}
-            disabled={inBattle}
-            title={inBattle ? t.card.inBattleTitle : t.card.joinBattleTitle}
-          >
-            {inBattle ? t.card.inBattle : t.card.joinBattle}
-          </button>
-          <button
-            className="ccw-btn"
-            onClick={recalcAll}
-            title={t.card.recalcTitle}
-            aria-label="recalc"
-          >
-            {t.card.recalc}
-          </button>
-          <button
-            className="ccw-btn"
-            onClick={save}
-            disabled={!isDirty || readOnly}
-            aria-label={`save ${c.nameZh}`}
-          >
-            {t.card.save}{isDirty ? " ●" : ""}
-          </button>
-        </div>
-      )}
-    </div>
+          }}
+          onBlur={() => {
+            if (confirmingDelete) setConfirmingDelete(false);
+          }}
+          aria-label={
+            confirmingDelete ? `confirm delete card ${c.nameZh}` : `delete card ${c.nameZh}`
+          }
+        >
+          {confirmingDelete ? t.card.confirmDeleteCard : t.card.deleteCard}
+        </button>
+        {isDirty && <span className="ccw-dirty">{t.card.unsaved}</span>}
+        <button
+          className="ccw-btn"
+          onClick={() => downloadCard(c)}
+          title={t.card.exportCardTitle}
+          aria-label={`export ${c.nameZh}`}
+        >
+          {t.card.exportCard}
+        </button>
+        <button
+          className="ccw-btn blood"
+          onClick={() => onJoinBattle(c._id)}
+          disabled={inBattle}
+          title={inBattle ? t.card.inBattleTitle : t.card.joinBattleTitle}
+        >
+          {inBattle ? t.card.inBattle : t.card.joinBattle}
+        </button>
+        <button
+          className="ccw-btn"
+          onClick={recalcAll}
+          title={t.card.recalcTitle}
+          aria-label="recalc"
+        >
+          {t.card.recalc}
+        </button>
+        <button
+          className="ccw-btn"
+          onClick={save}
+          disabled={!isDirty || readOnly}
+          aria-label={`save ${c.nameZh}`}
+        >
+          {t.card.save}{isDirty ? " ●" : ""}
+        </button>
+      </div>
+    </ResizableWindow>
   );
 }
 
