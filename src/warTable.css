@@ -1902,6 +1902,11 @@ button.wt-altar-accordion-trigger {
   clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 22px);
   font-family: 'Crimson Text', serif;
   overflow: hidden;
+  /* fix-4b: wizard-wide font bump ×1.2. Width/height stay fixed px; the
+   * body column already scrolls vertically (.wt-builder-body
+   * overflow-y:auto), and chips/toc labels are short enough not to
+   * overflow horizontally at this scale. */
+  font-size: 1.2em;
 }
 
 /* Table of Contents rail — additive nav; goStep() seeds before jumping forward. */
@@ -1998,6 +2003,9 @@ button.wt-altar-accordion-trigger {
   box-sizing: border-box;
   font-family: 'Crimson Text', serif;
   font-size: 1em;
+  /* fix-4a: wizard inputs are plain rectangles — the parallelogram/hex
+   * chamfer is a card-left-column and .wt-panel/.wt-chip thing only. */
+  clip-path: none;
 }
 .wt-builder-classrow { display: flex; flex-wrap: wrap; align-items: end; gap: 0.4em; padding: 0.3em 0; border-bottom: 1px dashed rgba(79, 58, 99, 0.6); }
 .wt-builder-col { display: flex; flex-direction: column; gap: 0.15em; }
@@ -2023,7 +2031,10 @@ button.wt-altar-accordion-trigger {
   gap: 0.4em;
   background: rgba(236, 228, 245, 0.05);
   border: 1px solid #4f3a63;
-  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 100%, 0 100%);
+  /* fix-4a: was a parallelogram (`polygon(7px 0, calc(100% - 7px) 0, 100%
+   * 100%, 0 100%)`) — that shape is card-left-only; wizard chips are plain
+   * rectangles. */
+  clip-path: none;
   padding: 0.4em 0.5em 0.4em 0.8em;
   font-size: 0.9em;
   color: #d9d0e6;

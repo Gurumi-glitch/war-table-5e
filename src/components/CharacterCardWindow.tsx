@@ -989,7 +989,16 @@ export function CharacterCardWindow({
           </nav>
 
           <div className="ccw-right-scroll">
-            <span key={page} className="ccw-sweep" aria-hidden="true" />
+            {/* Clip layer (fix-3): the sweep glow's own translateX overshoots
+                the page bounds by design (so it fully exits rather than
+                clipping abruptly) — wrap it, not `.ccw-right-scroll`, in
+                overflow:hidden so that overshoot never registers as
+                scrollable content and never triggers a horizontal
+                scrollbar. Wide tab content (e.g. the spell-slot table)
+                renders outside this span and keeps its own scrolling. */}
+            <span className="ccw-sweep-clip" aria-hidden="true">
+              <span key={page} className="ccw-sweep" />
+            </span>
 
             {/* Page 0 — 核心: saves+skills ledger | Resources/Recipes/RVI sheet,
                 attack notes + gold below. */}
