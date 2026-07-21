@@ -1892,8 +1892,10 @@ button.wt-altar-accordion-trigger {
   padding: 12px;
 }
 .wt-builder {
-  width: min(900px, 100%);
-  height: min(680px, calc(100vh - 32px));
+  /* fix-1 (2026-07-21): window enlarged ×1.2 alongside the earlier font
+   * bump so the bigger text has room and stops wrapping. */
+  width: min(1080px, 100%);
+  height: min(816px, calc(100vh - 32px));
   display: flex;
   background: linear-gradient(170deg, #241a30, #1a1224 55%, #120c1a);
   color: #d9d0e6;
@@ -2016,10 +2018,16 @@ button.wt-altar-accordion-trigger {
 .wt-builder-methods { display: flex; gap: 1em; flex-wrap: wrap; }
 .wt-builder-methods label { flex-direction: row; align-items: center; gap: 0.4em; min-height: 44px; }
 .wt-builder-abilities { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6em 1.2em; }
-.wt-builder-abilities label { flex-direction: row; align-items: center; gap: 0.5em; font-style: normal; color: #d9d0e6; }
+/* fix-2 (2026-07-21): the bare ability-name text ("力量" etc) was wrapping
+ * mid-word into two lines in a narrow column (e.g. "力\n量") — two
+ * characters never need more than one line. */
+.wt-builder-abilities label { flex-direction: row; align-items: center; gap: 0.5em; font-style: normal; color: #d9d0e6; white-space: nowrap; }
 .wt-builder-abilities input { width: 4.5em; font-variant-numeric: tabular-nums; }
 .wt-builder-asi { font-size: 0.85em; color: #a598c0; white-space: nowrap; }
-.wt-builder-final { color: #e0729a; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; }
+/* fix-2: explicit `normal` so this longer computed tag ("→ 10（調整+0）")
+ * keeps its own ability to wrap at a word/bracket boundary instead of
+ * inheriting the bare ability-name's nowrap from the label above. */
+.wt-builder-final { color: #e0729a; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; white-space: normal; }
 .wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3em 0.8em; }
 .wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.4em; font-size: 0.9em; font-style: normal; color: #d9d0e6; min-height: 44px; }
 .wt-builder-hint { margin: 0; font-size: 0.9em; color: #c2b6d9; font-style: normal; }
@@ -2035,10 +2043,11 @@ button.wt-altar-accordion-trigger {
    * 100%, 0 100%)`) — that shape is card-left-only; wizard chips are plain
    * rectangles. */
   clip-path: none;
-  padding: 0.4em 0.5em 0.4em 0.8em;
+  /* fix-3 (2026-07-21): chip hugs its text now — the 44px touch target
+   * moved to the inner × button below, this box just needs breathing room. */
+  padding: 0.25em 0.5em 0.25em 0.7em;
   font-size: 0.9em;
   color: #d9d0e6;
-  min-height: 44px;
   box-sizing: border-box;
 }
 .wt-builder-chip button {

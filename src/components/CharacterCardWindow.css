@@ -43,7 +43,9 @@
   display: flex;
   align-items: center;
   gap: 0.4em;
-  padding: 0.3em 0.7em;
+  /* fix-4 (2026-07-21): trimmed vertical padding — the band should hug
+   * {title, buttons} + slight breathing room, not a thick strip. */
+  padding: 0.15em 0.7em;
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -573,10 +575,14 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   color: #a598c0;
-  white-space: nowrap;
+  /* fix-2 (2026-07-21): shared by every vitals plaque (HP/AC/Speed… and the
+   * longer EN ones like "Spellcasting ability"/"Passive Perception"). A
+   * fixed nowrap+ellipsis truncated the long ones to unreadable "…"; short
+   * labels never need more than one line anyway, so drop the nowrap/clip
+   * and let text wrap cleanly at a word boundary instead. */
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 1.15;
 }
 .ccw-plaque-value {
   display: flex;
@@ -976,14 +982,17 @@
   box-shadow: 0 0 10px rgba(184, 53, 92, 0.4);
 }
 
-/* Header fold/close buttons only (SPEC fix-2): ~3x the shared .ccw-btn size
- * so ▴/× are easy to tell apart at a glance. Scoped to `.ccw-head .ccw-btn`
- * — the footer buttons (Delete/Save/etc, same .ccw-btn class) are untouched
- * since they live outside .ccw-head. */
+/* Header fold/close buttons only (SPEC fix-2): bigger than the shared
+ * .ccw-btn size so ▴/× are easy to tell apart at a glance. Scoped to
+ * `.ccw-head .ccw-btn` — the footer buttons (Delete/Save/etc, same .ccw-btn
+ * class) are untouched since they live outside .ccw-head.
+ * fix-4 (2026-07-21): the previous 2.6em overshot and dragged the whole
+ * header band into a thick strip (screenshot 165740) — dialed back to
+ * ~1.8em, still clearly bigger than the original tiny glyphs. */
 .ccw-head .ccw-btn {
-  font-size: 2.6em;
-  min-width: 1.5em;
-  min-height: 1.5em;
+  font-size: 1.8em;
+  min-width: 1.3em;
+  min-height: 1.3em;
   line-height: 1;
 }
 
