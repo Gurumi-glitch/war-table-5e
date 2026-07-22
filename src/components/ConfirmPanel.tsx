@@ -1288,14 +1288,11 @@ function AdvToggle({
   const btn = (dir: "advantage" | "disadvantage", label: string, color: string) => (
     <button
       onClick={() => click(dir)}
+      className={value === dir ? "wt-adv-btn wt-adv-btn--on" : "wt-adv-btn"}
       aria-label={`${dir} toggle ${scope}`}
       aria-pressed={value === dir}
       title={manual ? msg.confirm.advManualTitle : msg.confirm.advAutoTitle}
-      style={{
-        fontWeight: value === dir ? "bold" : "normal",
-        color: value === dir ? color : undefined,
-        outline: value === dir ? `1px solid ${color}` : undefined,
-      }}
+      style={{ ["--adv-color" as string]: color }}
     >
       {label}
     </button>

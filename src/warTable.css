@@ -256,6 +256,10 @@ button.wt-topnav-active {
   font-size: 0.8em;
   white-space: nowrap;
   color: var(--dim);
+  transition: border-color var(--wt-dur-state) ease,
+              background var(--wt-dur-state) ease,
+              box-shadow var(--wt-dur-state) ease,
+              opacity var(--wt-dur-state) ease;
 }
 .wt-initiative-pill {
   flex: 0 1 12em;
@@ -295,6 +299,10 @@ button.wt-topnav-active {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
   padding: 0.4em 0.55em;
   font-size: 0.92em;
+  transition: border-color var(--wt-dur-state) ease,
+              background var(--wt-dur-state) ease,
+              box-shadow var(--wt-dur-state) ease,
+              opacity var(--wt-dur-state) ease;
 }
 .wt-frame.current {
   border-color: var(--ember);
@@ -339,7 +347,12 @@ button.wt-topnav-active {
 }
 .wt-hpbar > div {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transition: transform var(--wt-dur-state) var(--wt-ease-out);
   background: linear-gradient(90deg, #4a0f1e, var(--blood2));
   box-shadow: 0 0 8px rgba(184, 53, 92, 0.6);
 }
@@ -428,6 +441,9 @@ button.wt-topnav-active {
   border-left-color: var(--dim);
   text-decoration: line-through;
   text-decoration-color: var(--dim);
+  transition: filter var(--wt-dur-hover) ease,
+              opacity var(--wt-dur-hover) ease,
+              border-left-color var(--wt-dur-hover) ease;
 }
 /* button.foo specificity (1,1,0) — beats .wt :where(button) (0,1,0) tie.
  * clip-path: none keeps the round ghost icon (no chamfer). */
@@ -451,6 +467,35 @@ button.wt-chip-remove:hover {
   background: rgba(122, 24, 48, 0.5);
   border-color: transparent;
   box-shadow: none;
+}
+.wt-econ {
+  display: inline-flex;
+  gap: 0.5em;
+}
+.wt-econ-flag {
+  transition: color var(--wt-dur-hover) ease, opacity var(--wt-dur-hover) ease;
+}
+.wt-econ-flag:active {
+  transform: scale(0.95);
+}
+.wt-econ-used {
+  color: var(--dim);
+  opacity: 0.6;
+  text-decoration: line-through;
+  text-decoration-color: var(--dim);
+}
+button.wt-adv-btn {
+  transition: color var(--wt-dur-hover) ease,
+              border-color var(--wt-dur-hover) ease,
+              transform var(--wt-dur-press) var(--wt-ease-out);
+}
+button.wt-adv-btn--on {
+  color: var(--adv-color);
+  border-color: var(--adv-color);
+  font-weight: bold;
+}
+button.wt-adv-btn:active {
+  transform: scale(0.97);
 }
 
 /* ---- effects "+ add" panel -------------------------------------------------- */
@@ -782,6 +827,7 @@ button.wt-claim-dice {
   background: var(--edge2);
   display: flex;
   align-items: center;
+  transition: background var(--wt-dur-state) ease, filter var(--wt-dur-state) ease;
 }
 /* Inner face inset 2px behind the value → the outer background reads as a rim. */
 .wt-die::before {
@@ -1904,6 +1950,13 @@ button.wt-altar-accordion-trigger {
  * + scrollable step body + Back/Next/Folio-n-of-7 footer. RitualMetal palette
  * + Cinzel Decorative (titles/numbers/buttons) + Crimson Text (body/inputs),
  * per SPEC.md §3/§4. Stays a centered floating modal (.wt-builder-overlay). */
+@keyframes wtLogIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.wt-log li {
+  animation: wtLogIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
 @keyframes wtbPage {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: none; }
