@@ -332,9 +332,12 @@ test("fold hides the body, unfold restores it", () => {
   expect(onFold).toHaveBeenCalled();
 });
 
-test("folded card hides the body", () => {
+test("folded card collapses the body", () => {
   render(<CharacterCardWindow {...baseProps({ win: { x: 0, y: 0, z: 1, folded: true } })} />);
-  expect(screen.queryByLabelText("story")).toBeNull();
+  // Body stays in the DOM inside a zero-height fold wrapper so it can animate.
+  const fold = document.querySelector(".wt-window-fold") as HTMLElement;
+  expect(fold).not.toBeNull();
+  expect(fold.classList.contains("is-open")).toBe(false);
   // Title still visible so the user can re-open.
   expect(screen.getByText(/測試角色/)).toBeInTheDocument();
 });

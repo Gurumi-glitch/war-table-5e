@@ -631,3 +631,19 @@
   font-size: 0.82em;
   color: var(--mb-dim);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-root .mb-btn,
+  .mb-root .mb-die,
+  .mb-root .mb-panel-toggle,
+  .mb-root .mb-charpick-btn,
+  .mb-root .mb-tab,
+  .mb-token,
+  .mb-die-val {
+    transition-duration: 1ms !important;
+  }
+  .mb-token,
+  .mb-die-val.tumbling {
+    animation: none !important;
+  }
+}

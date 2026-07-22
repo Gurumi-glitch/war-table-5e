@@ -1959,6 +1959,14 @@ button.wt-altar-accordion-trigger {
     opacity: 1 !important;
     transform: none !important;
   }
+  .wt :where(button),
+  .wt-die, .wt-pill, .wt-frame, .wt-hpbar > div {
+    transition-duration: 1ms !important;
+  }
+  .wt-log li, .wt-scene, .wt-window,
+  .wt-die.tumbling, .wt-gameboard > * {
+    animation: none !important;
+  }
 }
 
 @media (max-width: 980px) {

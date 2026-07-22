@@ -29,6 +29,11 @@ if (typeof window.matchMedia === "undefined") {
     } as unknown as MediaQueryList);
 }
 
+// jsdom has no scrollIntoView; TurnRibbon scrolls the current turn pill.
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 // jsdom also has no PointerEvent constructor at all (jsdom/jsdom#2527), so
 // Testing Library's fireEvent.pointerDown/Move/Up/Cancel silently fall back
 // to a bare `Event` that drops clientX/clientY/pointerId. Polyfill it as a

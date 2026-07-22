@@ -100,7 +100,7 @@ test("fold and close fire their handlers", () => {
   expect(onClose).toHaveBeenCalledOnce();
 });
 
-test("folded hides the body", () => {
+test("folded collapses the body", () => {
   render(
     <ClassRulesWindow
       character={character}
@@ -111,5 +111,8 @@ test("folded hides the body", () => {
       onClose={noop}
     />,
   );
-  expect(screen.queryByText("神聖打擊")).toBeNull();
+  // Body stays in the DOM inside a zero-height fold wrapper so it can animate.
+  const fold = document.querySelector(".wt-window-fold") as HTMLElement;
+  expect(fold).not.toBeNull();
+  expect(fold.classList.contains("is-open")).toBe(false);
 });
