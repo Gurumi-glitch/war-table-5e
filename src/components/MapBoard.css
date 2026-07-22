@@ -227,6 +227,23 @@
 .mb-panel-caret {
   color: var(--mb-dim);
   font-size: 0.85em;
+  display: inline-block;
+  transition: transform var(--mb-dur-hover) ease;
+}
+.mb-panel-toggle[aria-expanded="true"] .mb-panel-caret {
+  transform: rotate(90deg);
+}
+.mb-fold-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--mb-dur-enter) var(--mb-ease-out);
+}
+.mb-fold-body.mb-fold-open {
+  grid-template-rows: 1fr;
+}
+.mb-fold-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* Zoom toolbar (improve-scene-ux D4). Sits above the board stage. */
@@ -292,6 +309,16 @@
   cursor: grab;
   touch-action: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  transition: opacity var(--mb-dur-hover) ease;
+  animation: mbSpawn var(--mb-dur-enter) var(--mb-ease-out) both;
+}
+@keyframes mbSpawn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.mb-token-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
 }
 .mb-bs-piece .mb-token,
 .mb-ghost .mb-token {
@@ -359,6 +386,15 @@
   font-size: 2em;
   color: var(--mb-bone);
   line-height: 1;
+  display: inline-block;
+}
+@keyframes mbSettle {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.mb-die-val.tumbling {
+  animation: mbSettle 0.6s ease-in-out 1;
 }
 
 /* Forms / buttons. */

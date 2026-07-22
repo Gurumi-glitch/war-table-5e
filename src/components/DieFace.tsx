@@ -50,6 +50,33 @@ export function useTumble(
   return { shown, tumbling };
 }
 
+type TumbleNumberProps = {
+  value: number | null;
+  sides: number;
+  className?: string;
+  fallback?: string;
+};
+
+/**
+ * A plain numeric display that tumbles when its value changes. Used by the
+ * Scene flavor-dice panel; absent an input, there is no "manual edit" path to
+ * skip the roll.
+ */
+export function TumbleNumber({
+  value,
+  sides,
+  className,
+  fallback = "—",
+}: TumbleNumberProps) {
+  const { shown, tumbling } = useTumble(value ?? 0, sides);
+  if (value === null) return <span className={className}>{fallback}</span>;
+  return (
+    <span className={`${className ?? ""}${tumbling ? " tumbling" : ""}`}>
+      {shown}
+    </span>
+  );
+}
+
 type Props = {
   value: number;
   type: DieType;
