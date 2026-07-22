@@ -104,6 +104,18 @@
 /* The box-shadow pulse paints a near-fullscreen blur every frame — too
  * expensive as an always-on backdrop (esp. the TTS tablet). Rotation only. */
 .wt-sigil .wt-altar-ring-outer { animation: wtSpin 30s linear infinite; }
+/* Center glyph — the altar's ❖, text-glow only (cheap: text-shadow, not
+ * box-shadow), sized with the circle. */
+.wt-sigil-glyph {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--blood2);
+  font-size: 6vmin;
+  line-height: 1;
+  animation: wtGlow 5s ease-in-out infinite;
+}
 .wt *,
 .wt *::before,
 .wt *::after {

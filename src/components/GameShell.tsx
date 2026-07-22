@@ -127,6 +127,7 @@ export function GameShell(props: GameBoardProps) {
               ))}
             </div>
             <div className="wt-altar-ring-inner-dashed" />
+            <div className="wt-sigil-glyph">❖</div>
           </div>
         </div>
         <GlobalHeader
