@@ -733,6 +733,25 @@ button.wt-claim-dice {
   clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
   color: var(--ink);
   font-size: 0.95em;
+  animation: wtWindowIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
+@keyframes wtWindowIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.wt-window-fold {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--wt-dur-enter) var(--wt-ease-out);
+}
+.wt-window-fold.is-open {
+  grid-template-rows: 1fr;
+}
+.wt-window-fold-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 .wt-window-head {
   display: flex;
@@ -786,6 +805,25 @@ button.wt-claim-dice {
   margin-left: auto;
   color: var(--dim);
   font-size: 0.85em;
+  display: inline-block;
+  transition: transform var(--wt-dur-hover) ease;
+}
+.wt-panel-title[data-folded="true"] .wt-fold-mark {
+  transform: rotate(90deg);
+}
+.wt-fold-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--wt-dur-enter) var(--wt-ease-out);
+}
+.wt-fold-body.is-open {
+  grid-template-rows: 1fr;
+}
+.wt-fold-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ---- column-slot classes -------------------------------------------------- */
@@ -1964,6 +2002,14 @@ button.wt-altar-accordion-trigger {
 }
 .wt-log li {
   animation: wtLogIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
+@keyframes wtWorkspaceIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.wt-gameboard > *,
+.wt-scene {
+  animation: wtWorkspaceIn var(--wt-dur-enter) var(--wt-ease-out) both;
 }
 @keyframes wtbPage {
   0% { opacity: 0; transform: translateY(6px); }

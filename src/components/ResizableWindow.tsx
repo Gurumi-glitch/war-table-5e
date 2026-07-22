@@ -233,11 +233,13 @@ export function ResizableWindow({
           ×
         </button>
       </div>
-      {!win.folded && (
-        <div className={bodyClassName} style={bodyStyle}>
-          {children}
+      <div className={`wt-window-fold${win.folded ? "" : " is-open"}`}>
+        <div className="wt-window-fold-inner">
+          <div className={bodyClassName} style={bodyStyle}>
+            {children}
+          </div>
         </div>
-      )}
+      </div>
       {!win.folded &&
         EDGES.map((edge, i) => (
           <div

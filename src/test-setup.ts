@@ -16,15 +16,17 @@ if (!HTMLElement.prototype.hasPointerCapture) {
 
 // jsdom has no matchMedia; motion code reads prefers-reduced-motion.
 if (typeof window.matchMedia === "undefined") {
-  window.matchMedia = (query: string) => ({
-    matches: false,
-    media: query,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-  } as MediaQueryList);
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+      onchange: null,
+    } as unknown as MediaQueryList);
 }
 
 // jsdom also has no PointerEvent constructor at all (jsdom/jsdom#2527), so

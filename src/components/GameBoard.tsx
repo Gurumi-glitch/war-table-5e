@@ -233,7 +233,7 @@ export function GameBoard({
     new URLSearchParams(window.location.search).has("Tablet");
 
   return (
-    <>
+    <div className="wt-gameboard" style={{ display: "contents" }}>
         {/* Left: the party column + characters bar + compact log. */}
         <div className="wt-col">
           <CombatantList
@@ -353,7 +353,7 @@ export function GameBoard({
             {latest ? logLine(latest, t) : t.board.noLog}
           </span>
         </div>
-    </>
+    </div>
   );
 }
 
