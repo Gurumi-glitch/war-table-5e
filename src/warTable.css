@@ -126,7 +126,10 @@
   height: 8px;
 }
 .wt *::-webkit-scrollbar-thumb {
-  background: var(--edge2);
+  /* Wine mid-tone, matching .ccw-card's already-recolored scrollbar thumb
+   * (CharacterCardWindow.css) — --edge2 stays violet on purpose (panel
+   * edges), a scrollbar isn't a panel edge. */
+  background: #5a2440;
   border-radius: 4px;
 }
 .wt *::-webkit-scrollbar-track {
@@ -866,6 +869,14 @@ button.wt-claim-dice {
   grid-template-rows: 1fr;
 }
 .wt-fold-inner {
+  /* Must be a flex container: DiceBoard/CombatLog/ConfirmPanel's direct
+   * children rely on `flex: none` / `flex: 1 1 auto; min-height: 0` to
+   * shrink to available space and become the internal scroll region
+   * (e.g. .wt-dice-cols) — without `display: flex` here those properties
+   * are no-ops, so the tall child just renders at full content height and
+   * gets silently clipped by `overflow: hidden` below, with no scrollbar. */
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   min-height: 0;
 }
