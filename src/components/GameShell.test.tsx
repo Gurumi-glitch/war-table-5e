@@ -187,12 +187,10 @@ test("character windows survive workspace switches and repeated opens focus one 
   expect(screen.getByLabelText("story")).toHaveValue("示範用的角色故事。");
 
   fireEvent.click(screen.getByLabelText("fold card"));
-  // The body stays in the DOM inside a zero-height fold wrapper so it can animate.
-  const fold = document.querySelector(".wt-window-fold") as HTMLElement;
-  expect(fold.classList.contains("is-open")).toBe(false);
+  expect(screen.queryByLabelText("story")).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: /場景/ }));
-  expect(fold.classList.contains("is-open")).toBe(false);
+  expect(screen.queryByLabelText("story")).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: /Scene card 測試角色/ }));
   expect(screen.getByLabelText("story")).toHaveValue("示範用的角色故事。");

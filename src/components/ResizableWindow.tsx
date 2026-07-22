@@ -50,6 +50,13 @@ export type ResizableWindowProps = {
   /** Body wrapper hooks (rendered only when not folded). */
   bodyClassName?: string;
   bodyStyle?: CSSProperties;
+  /**
+   * When false, folding unmounts the body (legacy behavior). Default true:
+   * the body stays mounted inside a collapsible wrapper so the fold animates.
+   * The character-card-family windows (ccw-*) opt out — their fold is out of
+   * scope for the motion system (docs/plans/motion-system-war-table-scene.md).
+   */
+  animatedFold?: boolean;
   children: ReactNode;
 };
 
@@ -99,6 +106,7 @@ export function ResizableWindow({
   closeLabel,
   bodyClassName,
   bodyStyle,
+  animatedFold = true,
   children,
 }: ResizableWindowProps) {
   const drag = useRef<{ dx: number; dy: number } | null>(null);
@@ -233,13 +241,21 @@ export function ResizableWindow({
           ×
         </button>
       </div>
-      <div className={`wt-window-fold${win.folded ? "" : " is-open"}`}>
-        <div className="wt-window-fold-inner">
+      {animatedFold ? (
+        <div className={`wt-window-fold${win.folded ? "" : " is-open"}`}>
+          <div className="wt-window-fold-inner">
+            <div className={bodyClassName} style={bodyStyle}>
+              {children}
+            </div>
+          </div>
+        </div>
+      ) : (
+        !win.folded && (
           <div className={bodyClassName} style={bodyStyle}>
             {children}
           </div>
-        </div>
-      </div>
+        )
+      )}
       {!win.folded &&
         EDGES.map((edge, i) => (
           <div
