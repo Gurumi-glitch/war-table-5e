@@ -2,9 +2,9 @@
  * board renders identically whether mounted full-page (outside `.wt`) or inside
  * the floating map window (inside `.wt`). */
 .mb-root {
-  --mb-void: #0e0a14;
-  --mb-panel: #1c1526;
-  --mb-panel2: #251b32;
+  --mb-void: #0a0710;
+  --mb-panel: #140e1e;
+  --mb-panel2: #1a1226;
   --mb-edge: #3a2a4a;
   --mb-ink: #c9bcd6;
   --mb-dim: #9a8ab0;
