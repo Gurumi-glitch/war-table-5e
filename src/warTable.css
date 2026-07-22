@@ -829,6 +829,14 @@ button.wt-claim-dice {
   align-items: center;
   transition: background var(--wt-dur-state) ease, filter var(--wt-dur-state) ease;
 }
+@keyframes wtSettle {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.wt-die.tumbling {
+  animation: wtSettle 0.6s ease-in-out 1;
+}
 /* Inner face inset 2px behind the value → the outer background reads as a rim. */
 .wt-die::before {
   content: '';

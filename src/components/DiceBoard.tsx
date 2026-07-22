@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { CombatantView, DiceView } from "../../convex/games";
 import { DICE_TYPES, type DieType } from "../../convex/diceHelpers";
 import { useT } from "../i18n";
+import { DieFace } from "./DieFace";
 
 type Props = {
   dice: DiceView[];
@@ -154,18 +155,13 @@ export function DiceBoard({
                     style={{ ["--dcolor" as string]: claimColor }}
                   >
                     {/* The die IS the value input — hex face, editable in place. */}
-                    <span className="wt-die" title={d.claimedBy ? t.dice.claimed : undefined}>
-                      <input
-                        type="number"
-                        value={d.value}
-                        onChange={(e) => {
-                          if (e.target.value === "") return;
-                          const n = Number(e.target.value);
-                          if (!Number.isNaN(n)) onSetValue(d._id, n);
-                        }}
-                        aria-label={`${type} #${pos} value`}
-                      />
-                    </span>
+                    <DieFace
+                      value={d.value}
+                      type={type}
+                      onChange={(n) => onSetValue(d._id, n)}
+                      ariaLabel={`${type} #${pos} value`}
+                      title={d.claimedBy ? t.dice.claimed : undefined}
+                    />
                     <button
                       onClick={() => toggleClaim(d)}
                       title={
