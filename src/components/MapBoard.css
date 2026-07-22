@@ -13,6 +13,14 @@
   --mb-accent-hover: #e47796;
   --mb-accent2: #9c3466;
 
+  /* Motion tokens — see docs/plans/motion-system-war-table-scene.md */
+  --mb-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --mb-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --mb-dur-press: 120ms;
+  --mb-dur-hover: 150ms;
+  --mb-dur-state: 220ms;
+  --mb-dur-enter: 250ms;
+
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -207,9 +215,14 @@
   font-size: 1em;
   letter-spacing: 0.04em;
   clip-path: none;
+  transition: color var(--mb-dur-hover) ease,
+              transform var(--mb-dur-press) var(--mb-ease-out);
 }
 .mb-root .mb-panel-toggle:hover {
   color: var(--mb-accent-hover);
+}
+.mb-root .mb-panel-toggle:active {
+  transform: scale(0.97);
 }
 .mb-panel-caret {
   color: var(--mb-dim);
@@ -327,9 +340,15 @@
   color: var(--mb-ink);
   cursor: pointer;
   clip-path: none;
+  transition: border-color var(--mb-dur-hover) ease,
+              background var(--mb-dur-hover) ease,
+              transform var(--mb-dur-press) var(--mb-ease-out);
 }
 .mb-root .mb-die:hover {
   border-color: var(--mb-accent);
+}
+.mb-root .mb-die:active {
+  transform: scale(0.97);
 }
 .mb-die-type {
   font-size: 1.1em;
@@ -360,6 +379,13 @@
   color: var(--mb-dim);
   cursor: pointer;
   clip-path: none;
+  transition: color var(--mb-dur-hover) ease,
+              border-color var(--mb-dur-hover) ease,
+              background var(--mb-dur-hover) ease,
+              transform var(--mb-dur-press) var(--mb-ease-out);
+}
+.mb-root .mb-tab:active {
+  transform: scale(0.97);
 }
 .mb-root .mb-tab-on {
   color: var(--mb-bone);
@@ -386,9 +412,16 @@
   color: var(--mb-ink);
   cursor: pointer;
   clip-path: none;
+  transition: border-color var(--mb-dur-hover) ease,
+              background var(--mb-dur-hover) ease,
+              color var(--mb-dur-hover) ease,
+              transform var(--mb-dur-press) var(--mb-ease-out);
 }
 .mb-root .mb-btn:not(:disabled):hover {
   border-color: var(--mb-accent);
+}
+.mb-root .mb-btn:not(:disabled):active {
+  transform: scale(0.97);
 }
 .mb-file-input {
   position: relative;
@@ -505,9 +538,16 @@
   cursor: pointer;
   font-size: 0.95em;
   clip-path: none;
+  transition: border-color var(--mb-dur-hover) ease,
+              background var(--mb-dur-hover) ease,
+              color var(--mb-dur-hover) ease,
+              transform var(--mb-dur-press) var(--mb-ease-out);
 }
 .mb-root .mb-charpick-btn:hover {
   border-color: var(--mb-accent);
+}
+.mb-root .mb-charpick-btn:active {
+  transform: scale(0.97);
 }
 .mb-root .mb-charpick-btn-on {
   border-color: #4e6e4e;

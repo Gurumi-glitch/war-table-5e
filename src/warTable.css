@@ -32,6 +32,14 @@
   --blood2: #b8355c;
   --ember: #e0688f;
 
+  /* Motion tokens — see docs/plans/motion-system-war-table-scene.md */
+  --wt-ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* 進場/出場,預設 */
+  --wt-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* 畫面上移動/形變 */
+  --wt-dur-press: 120ms;   /* 按壓回饋 (100–160ms) */
+  --wt-dur-hover: 150ms;   /* hover/顏色變化 */
+  --wt-dur-state: 220ms;   /* 狀態過渡 (claim/turn/HP) */
+  --wt-dur-enter: 250ms;   /* 進場 (log/視窗),上限 300ms */
+
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -198,6 +206,10 @@ button.wt-topnav {
   /* Slightly fatter padding so the typographic weight has room to breathe
    * against the title's own vertical metrics. */
   padding: 0.25em 0.7em;
+  transition: border-color var(--wt-dur-hover) ease,
+              background var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease,
+              color var(--wt-dur-hover) ease;
 }
 button.wt-topnav-active {
   border-color: var(--ember);
@@ -401,6 +413,8 @@ button.wt-topnav-active {
 }
 .wt-chip-editable {
   cursor: pointer;
+  transition: border-color var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease;
 }
 .wt-chip-editable:hover {
   border-color: var(--ember);
@@ -427,6 +441,10 @@ button.wt-chip-remove {
   font-size: 1em;
   line-height: 1;
   cursor: pointer;
+  transition: color var(--wt-dur-hover) ease,
+              background var(--wt-dur-hover) ease,
+              border-color var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease;
 }
 button.wt-chip-remove:hover {
   color: #fff;
@@ -551,10 +569,18 @@ button.wt-chip-remove:hover {
   clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
   padding: 0.15em 0.7em;
   cursor: pointer;
+  transition: transform var(--wt-dur-press) var(--wt-ease-out),
+              border-color var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease,
+              background var(--wt-dur-hover) ease,
+              color var(--wt-dur-hover) ease;
 }
 .wt :where(button:hover:not(:disabled)) {
   border-color: var(--ember);
   box-shadow: 0 0 8px rgba(156, 52, 102, 0.3);
+}
+.wt :where(button:active:not(:disabled)) {
+  transform: scale(0.97);
 }
 .wt :where(button:disabled) {
   opacity: 0.45;
@@ -622,6 +648,7 @@ button.wt-claim-dice {
 .wt :where(summary) {
   cursor: pointer;
   color: var(--ink);
+  transition: color var(--wt-dur-hover) ease;
 }
 .wt :where(summary:hover) {
   color: var(--bone);
@@ -705,6 +732,7 @@ button.wt-claim-dice {
 .wt-clickable {
   cursor: pointer;
   user-select: none;
+  transition: color var(--wt-dur-hover) ease;
 }
 .wt-clickable:hover {
   color: var(--bone);
