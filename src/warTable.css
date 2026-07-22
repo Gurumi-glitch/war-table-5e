@@ -473,7 +473,8 @@ button.wt-chip-remove:hover {
   gap: 0.5em;
 }
 .wt-econ-flag {
-  transition: color var(--wt-dur-hover) ease, opacity var(--wt-dur-hover) ease;
+  transition: color var(--wt-dur-hover) ease, opacity var(--wt-dur-hover) ease,
+              transform var(--wt-dur-press) var(--wt-ease-out);
 }
 .wt-econ-flag:active {
   transform: scale(0.95);
@@ -581,6 +582,11 @@ button.wt-adv-btn:active {
 .wt-ticker b {
   color: var(--bone);
   font-weight: 700;
+}
+/* Keyed remount on each new log entry (GameBoard) → re-runs the entry rise. */
+.wt-ticker > span {
+  display: inline-block;
+  animation: wtLogIn var(--wt-dur-enter) var(--wt-ease-out) both;
 }
 
 /* ---- generic element theming (zero specificity — locals always win) ------- */
@@ -1960,10 +1966,11 @@ button.wt-altar-accordion-trigger {
     transform: none !important;
   }
   .wt :where(button),
-  .wt-die, .wt-pill, .wt-frame, .wt-hpbar > div {
+  .wt-die, .wt-pill, .wt-frame, .wt-hpbar > div,
+  .wt-fold-body, .wt-window-fold, .wt-fold-mark {
     transition-duration: 1ms !important;
   }
-  .wt-log li, .wt-scene, .wt-window,
+  .wt-log li, .wt-scene, .wt-window, .wt-ticker > span,
   .wt-die.tumbling, .wt-gameboard > * {
     animation: none !important;
   }
