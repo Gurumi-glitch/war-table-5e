@@ -2085,10 +2085,10 @@ button.wt-altar-accordion-trigger {
   width: min(1080px, 100%);
   height: min(816px, calc(100vh - 32px));
   display: flex;
-  background: linear-gradient(170deg, #241a30, #1a1224 55%, #120c1a);
+  background: linear-gradient(170deg, #1e0f1c, #130a16 55%, #0a050e);
   color: #d9d0e6;
-  border: 1px solid #4f3a63;
-  box-shadow: 0 0 0 1px rgba(156, 52, 102, 0.2), 0 20px 60px rgba(0, 0, 0, 0.8);
+  border: 1px solid #93284a;
+  box-shadow: inset 0 0 32px rgba(94, 18, 36, 0.3), 0 0 28px rgba(147, 40, 74, 0.16), 0 20px 60px rgba(0, 0, 0, 0.8);
   clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 22px);
   font-family: 'Crimson Text', serif;
   overflow: hidden;
@@ -2103,8 +2103,8 @@ button.wt-altar-accordion-trigger {
 .wt-builder-toc {
   width: 230px;
   flex: none;
-  background: linear-gradient(180deg, #1c1526, #2a1f38);
-  border-right: 1px solid #4f3a63;
+  background: linear-gradient(180deg, #160c18, #1c1020);
+  border-right: 1px solid #93284a;
   padding: 22px 18px;
   display: flex;
   flex-direction: column;
@@ -2131,7 +2131,7 @@ button.wt-altar-accordion-trigger {
   text-align: left;
   color: #8a7aa0;
 }
-.wt-builder-tocitem.is-done { color: #e0729a; }
+.wt-builder-tocitem.is-done { color: #e0688f; }
 .wt-builder-tocitem.is-active { color: #ece4f5; font-weight: 700; }
 .wt-builder-tocmark { flex: none; width: 1.2em; }
 .wt-builder-toclabel { white-space: nowrap; }
@@ -2151,16 +2151,16 @@ button.wt-altar-accordion-trigger {
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
-  background: linear-gradient(90deg, #1c1526, #4f3a63);
+  background: linear-gradient(90deg, #160c18, #471327);
   color: #ece4f5;
-  border-bottom: 2px solid #9c3466;
+  border-bottom: 2px solid #93284a;
   flex: none;
 }
 .wt-builder-head b { font-family: 'Cinzel Decorative', serif; font-size: 1.1em; letter-spacing: 0.02em; }
 .wt-builder-head button {
   background: none;
-  border: 1px solid #6a4f80;
-  color: #e0729a;
+  border: 1px solid #5a2440;
+  color: #e0688f;
   width: 44px;
   height: 44px;
   min-height: 44px;
@@ -2185,8 +2185,8 @@ button.wt-altar-accordion-trigger {
 .wt-builder-body input[type="text"],
 .wt-builder-body input:not([type]) ,
 .wt-builder-body input[type="number"] {
-  background: #160f20;
-  border: 1px solid #4f3a63;
+  background: #120913;
+  border: 1px solid #93284a;
   color: #ece4f5;
   padding: 0.5em 0.6em;
   min-height: 44px;
@@ -2215,7 +2215,7 @@ button.wt-altar-accordion-trigger {
 /* fix-2: explicit `normal` so this longer computed tag ("→ 10（調整+0）")
  * keeps its own ability to wrap at a word/bracket boundary instead of
  * inheriting the bare ability-name's nowrap from the label above. */
-.wt-builder-final { color: #e0729a; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; white-space: normal; }
+.wt-builder-final { color: #e0688f; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; white-space: normal; }
 .wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3em 0.8em; }
 .wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.4em; font-size: 0.9em; font-style: normal; color: #d9d0e6; min-height: 44px; }
 .wt-builder-hint { margin: 0; font-size: 0.9em; color: #c2b6d9; font-style: normal; }
@@ -2226,7 +2226,7 @@ button.wt-altar-accordion-trigger {
   align-items: center;
   gap: 0.4em;
   background: rgba(236, 228, 245, 0.05);
-  border: 1px solid #4f3a63;
+  border: 1px solid #93284a;
   /* fix-4a: was a parallelogram (`polygon(7px 0, calc(100% - 7px) 0, 100%
    * 100%, 0 100%)`) — that shape is card-left-only; wizard chips are plain
    * rectangles. */
@@ -2241,7 +2241,7 @@ button.wt-altar-accordion-trigger {
 .wt-builder-chip button {
   background: none;
   border: none;
-  color: #e0729a;
+  color: #e0688f;
   cursor: pointer;
   padding: 0 0.3em;
   font-family: inherit;
@@ -2256,8 +2256,8 @@ button.wt-altar-accordion-trigger {
   justify-content: space-between;
   gap: 0.6em;
   padding: 14px 20px;
-  border-top: 2px solid #9c3466;
-  background: linear-gradient(90deg, #1c1526, #2a1f38);
+  border-top: 2px solid #93284a;
+  background: linear-gradient(90deg, #160c18, #1c1020);
   flex: none;
 }
 .wt-builder-foliocount {
@@ -2269,7 +2269,7 @@ button.wt-altar-accordion-trigger {
 }
 .wt-builder-foot button {
   background: transparent;
-  border: 1px solid #6a4f80;
+  border: 1px solid #5a2440;
   color: #ece4f5;
   padding: 0.7em 1.2em;
   min-height: 44px;
@@ -2281,8 +2281,8 @@ button.wt-altar-accordion-trigger {
 }
 .wt-builder-foot button[aria-label="builder next"],
 .wt-builder-foot button[aria-label="builder finish"] {
-  background: linear-gradient(160deg, #9c3466, #5c1a3a);
-  border: 1px solid #e0729a;
+  background: linear-gradient(160deg, #93284a, #5e1224);
+  border: 1px solid #e0688f;
   color: #f5e6ee;
   font-weight: 700;
 }
