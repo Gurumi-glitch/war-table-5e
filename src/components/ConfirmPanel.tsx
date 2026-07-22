@@ -334,41 +334,44 @@ export function ConfirmPanel({ dice, combatants, onConfirm, onConfirmRecipe, onS
     <section aria-label="confirm" className="wt-panel wt-confirm">
       <h2
         className="wt-panel-title wt-clickable"
+        data-folded={folded ? "true" : undefined}
         onClick={() => setFolded((f) => !f)}
         title={folded ? msg.combat.unfold : msg.combat.fold}
       >
         {msg.confirm.battleTitle}
-        <span className="wt-fold-mark">{folded ? "▸" : "▾"}</span>
+        <span className="wt-fold-mark">▸</span>
       </h2>
-      {!folded && (
-        <div className="wt-panel-body">
-          <label>
-            {msg.confirm.acting}{" "}
-            <select value={acting} onChange={(e) => {
-              setActingId(e.target.value);
-              onSelectActor?.(e.target.value);
-            }} aria-label="acting combatant">
-              <option value="">{msg.confirm.noneDmForced}</option>
-              {combatants.map((c) => (
-                <option key={c._id} value={c._id}>{c.name}</option>
-              ))}
-            </select>
-          </label>
-          {/* Keyed by actor so switching actors resets the session draft. */}
-          <ConfirmSession
-            key={acting}
-            actorId={acting}
-            dice={dice}
-            combatants={combatants}
-            onConfirm={onConfirm}
-            onConfirmRecipe={onConfirmRecipe}
-            onSetClaim={onSetClaim}
-            onUpdateResource={onUpdateResource}
-            draft={draft}
-            onPatchDraft={onPatchDraft}
-          />
+      <div className={`wt-fold-body${folded ? "" : " is-open"}`}>
+        <div className="wt-fold-inner">
+          <div className="wt-panel-body">
+            <label>
+              {msg.confirm.acting}{" "}
+              <select value={acting} onChange={(e) => {
+                setActingId(e.target.value);
+                onSelectActor?.(e.target.value);
+              }} aria-label="acting combatant">
+                <option value="">{msg.confirm.noneDmForced}</option>
+                {combatants.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+            {/* Keyed by actor so switching actors resets the session draft. */}
+            <ConfirmSession
+              key={acting}
+              actorId={acting}
+              dice={dice}
+              combatants={combatants}
+              onConfirm={onConfirm}
+              onConfirmRecipe={onConfirmRecipe}
+              onSetClaim={onSetClaim}
+              onUpdateResource={onUpdateResource}
+              draft={draft}
+              onPatchDraft={onPatchDraft}
+            />
+          </div>
         </div>
-      )}
+      </div>
     </section>
   );
 }
@@ -1288,14 +1291,11 @@ function AdvToggle({
   const btn = (dir: "advantage" | "disadvantage", label: string, color: string) => (
     <button
       onClick={() => click(dir)}
+      className={value === dir ? "wt-adv-btn wt-adv-btn--on" : "wt-adv-btn"}
       aria-label={`${dir} toggle ${scope}`}
       aria-pressed={value === dir}
       title={manual ? msg.confirm.advManualTitle : msg.confirm.advAutoTitle}
-      style={{
-        fontWeight: value === dir ? "bold" : "normal",
-        color: value === dir ? color : undefined,
-        outline: value === dir ? `1px solid ${color}` : undefined,
-      }}
+      style={{ ["--adv-color" as string]: color }}
     >
       {label}
     </button>

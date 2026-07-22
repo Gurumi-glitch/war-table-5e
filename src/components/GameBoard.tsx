@@ -233,7 +233,7 @@ export function GameBoard({
     new URLSearchParams(window.location.search).has("Tablet");
 
   return (
-    <>
+    <div className="wt-gameboard" style={{ display: "contents" }}>
         {/* Left: the party column + characters bar + compact log. */}
         <div className="wt-col">
           <CombatantList
@@ -348,9 +348,12 @@ export function GameBoard({
 
         {/* Bottom ticker: the latest committed result at a glance. */}
         <div className="wt-ticker">
-          <b>{t.board.latest}</b> — {latest ? logLine(latest, t) : t.board.noLog}
+          <b>{t.board.latest}</b> —{" "}
+          <span key={latest?._id ?? "none"}>
+            {latest ? logLine(latest, t) : t.board.noLog}
+          </span>
         </div>
-    </>
+    </div>
   );
 }
 

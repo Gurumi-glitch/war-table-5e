@@ -15,10 +15,11 @@ import type { FlavorDieView } from "../../convex/flavorDice";
 import type { CharacterView } from "../../convex/characters";
 import type { GameState } from "../../convex/games";
 import type { EnemyView } from "../../convex/enemies";
-import type { DieType } from "../../convex/diceHelpers";
+import { DICE_SIDES, type DieType } from "../../convex/diceHelpers";
 import { pickNextColor } from "../../convex/colors";
 import { FEET_PER_SQUARE, gridSteps } from "../lib/mapGrid";
 import { enemyMatchesQuery } from "../lib/enemySearch";
+import { TumbleNumber } from "./DieFace";
 import "./MapBoard.css";
 
 /**
@@ -109,6 +110,7 @@ export function MapBoard({
     x: number;
     y: number;
   } | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const zoomBy = (delta: number) =>
     setZoom((z) => clamp(Math.round((z + delta) * 10) / 10, ZOOM_MIN, ZOOM_MAX));
@@ -189,6 +191,7 @@ export function MapBoard({
     // (never torn down by the unmount effect, which only runs the LAST
     // assigned cleanup) — tear down any drag still in flight first.
     dragCleanupRef.current?.();
+    setDraggingId(piece._id as string);
     setGhost({ piece, x: e.clientX, y: e.clientY });
     const move = (ev: PointerEvent) =>
       setGhost({ piece, x: ev.clientX, y: ev.clientY });
@@ -197,6 +200,7 @@ export function MapBoard({
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", cancel);
       dragCleanupRef.current = null;
+      setDraggingId(null);
       setGhost(null);
     };
     const up = (ev: PointerEvent) => {
@@ -335,6 +339,7 @@ export function MapBoard({
                       <PieceToken
                         piece={p}
                         onPointerDown={(e) => beginDrag(p, e)}
+                        isDragging={draggingId === (p._id as string)}
                       />
                     </div>
                   );
@@ -405,6 +410,7 @@ export function MapBoard({
                     <PieceToken
                       piece={p}
                       onPointerDown={(e) => beginDrag(p, e)}
+                      isDragging={draggingId === (p._id as string)}
                     />
                   </div>
                 );
@@ -457,13 +463,15 @@ export function MapBoard({
 function PieceToken({
   piece,
   onPointerDown,
+  isDragging,
 }: {
   piece: PieceView;
   onPointerDown?: (e: ReactPointerEvent) => void;
+  isDragging?: boolean;
 }) {
   return (
     <div
-      className="mb-token"
+      className={`mb-token${isDragging ? " mb-token-dragging" : ""}`}
       style={{ borderColor: piece.color, background: piece.color }}
       title={piece.label}
       onPointerDown={onPointerDown}
@@ -500,7 +508,7 @@ function PanelHeader({
       onClick={onToggle}
     >
       <span className="mb-panel-caret" aria-hidden>
-        {open ? "▾" : "▸"}
+        ▸
       </span>
       {label}
     </button>
@@ -532,7 +540,12 @@ function FlavorDiceBar({
             title={msg.map.rollDie(t)}
           >
             <span className="mb-die-type">{t === "d100" ? "d%" : t}</span>
-            <span className="mb-die-val">{valueOf(t) ?? "—"}</span>
+            <TumbleNumber
+              value={valueOf(t)}
+              sides={DICE_SIDES[t]}
+              className="mb-die-val"
+              fallback="—"
+            />
           </button>
         ))}
       </div>
@@ -796,79 +809,81 @@ function PieceManager({
         open={open}
         onToggle={() => setOpen((v) => !v)}
       />
-      {open && (
-      <ul className="mb-maplist">
-        {pieces.map((p) => (
-          <li key={p._id} className="mb-maprow">
-            <div className="mb-maprow-head">
-              <PieceDraftInput
-                value={p.label}
-                ariaLabel={`rename ${p.label}`}
-                className="mb-input"
-                style={{ flex: 1 }}
-                onCommit={(label) =>
-                  void updateLabel({
-                    playerToken,
-                    pieceId: p._id as Id<"pieces">,
-                    label,
-                  })
-                }
-              />
-              <PieceDraftInput
-                type="color"
-                value={p.color}
-                ariaLabel={`recolor ${p.label}`}
-                onCommit={(color) =>
-                  void updateLabel({
-                    playerToken,
-                    pieceId: p._id as Id<"pieces">,
-                    color,
-                  })
-                }
-              />
-            </div>
-            <div className="mb-maprow-actions">
-              <label className="mb-btn">
-                {t.map.changeAvatar}
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  aria-label={`portrait ${p.label}`}
-                  onChange={(e) =>
-                    void onPortrait(p._id, e.target.files?.[0] ?? null)
-                  }
-                />
-              </label>
-              {p.portraitUrl && (
-                <button
-                  className="mb-btn"
-                  onClick={() =>
-                    void updatePortrait({
-                      playerToken,
-                      pieceId: p._id as Id<"pieces">,
-                    })
-                  }
-                >
-                  {t.map.clearAvatar}
-                </button>
-              )}
-              <button
-                className="mb-btn mb-btn-danger"
-                onClick={() =>
-                  void removePiece({
-                    playerToken,
-                    pieceId: p._id as Id<"pieces">,
-                  })
-                }
-              >
-                {t.common.delete}
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-      )}
+      <div className={`mb-fold-body${open ? " mb-fold-open" : ""}`}>
+        <div className="mb-fold-inner">
+          <ul className="mb-maplist">
+            {pieces.map((p) => (
+              <li key={p._id} className="mb-maprow">
+                <div className="mb-maprow-head">
+                  <PieceDraftInput
+                    value={p.label}
+                    ariaLabel={`rename ${p.label}`}
+                    className="mb-input"
+                    style={{ flex: 1 }}
+                    onCommit={(label) =>
+                      void updateLabel({
+                        playerToken,
+                        pieceId: p._id as Id<"pieces">,
+                        label,
+                      })
+                    }
+                  />
+                  <PieceDraftInput
+                    type="color"
+                    value={p.color}
+                    ariaLabel={`recolor ${p.label}`}
+                    onCommit={(color) =>
+                      void updateLabel({
+                        playerToken,
+                        pieceId: p._id as Id<"pieces">,
+                        color,
+                      })
+                    }
+                  />
+                </div>
+                <div className="mb-maprow-actions">
+                  <label className="mb-btn">
+                    {t.map.changeAvatar}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      aria-label={`portrait ${p.label}`}
+                      onChange={(e) =>
+                        void onPortrait(p._id, e.target.files?.[0] ?? null)
+                      }
+                    />
+                  </label>
+                  {p.portraitUrl && (
+                    <button
+                      className="mb-btn"
+                      onClick={() =>
+                        void updatePortrait({
+                          playerToken,
+                          pieceId: p._id as Id<"pieces">,
+                        })
+                      }
+                    >
+                      {t.map.clearAvatar}
+                    </button>
+                  )}
+                  <button
+                    className="mb-btn mb-btn-danger"
+                    onClick={() =>
+                      void removePiece({
+                        playerToken,
+                        pieceId: p._id as Id<"pieces">,
+                      })
+                    }
+                  >
+                    {t.common.delete}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
@@ -995,88 +1010,88 @@ function MapLibraryPanel({
         open={open}
         onToggle={() => setOpen((v) => !v)}
       />
-      {open && (
-      <>
-      <div className="mb-form">
-        <label className="mb-btn mb-file-input">
-          <span>{t.map.chooseImage}</span>
-          <input
-            className="mb-file-input-native"
-            type="file"
-            accept="image/*"
-            aria-label="map image"
-            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        <span className="mb-file-name">{file?.name ?? t.map.noFile}</span>
-        {file && (
-          <>
-            <input
-              className="mb-input"
-              placeholder={t.map.mapName}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              aria-label="map name"
-            />
-            {dims && steps.length > 0 && (
+      <div className={`mb-fold-body${open ? " mb-fold-open" : ""}`}>
+        <div className="mb-fold-inner">
+          <div className="mb-form">
+            <label className="mb-btn mb-file-input">
+              <span>{t.map.chooseImage}</span>
+              <input
+                className="mb-file-input-native"
+                type="file"
+                accept="image/*"
+                aria-label="map image"
+                onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <span className="mb-file-name">{file?.name ?? t.map.noFile}</span>
+            {file && (
               <>
                 <input
-                  type="range"
-                  min={0}
-                  max={steps.length - 1}
-                  value={Math.min(stepIdx, steps.length - 1)}
-                  onChange={(e) => setStepIdx(Number(e.target.value))}
-                  aria-label="grid density"
+                  className="mb-input"
+                  placeholder={t.map.mapName}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-label="map name"
                 />
-                <div className="mb-step-label">{step?.label}</div>
+                {dims && steps.length > 0 && (
+                  <>
+                    <input
+                      type="range"
+                      min={0}
+                      max={steps.length - 1}
+                      value={Math.min(stepIdx, steps.length - 1)}
+                      onChange={(e) => setStepIdx(Number(e.target.value))}
+                      aria-label="grid density"
+                    />
+                    <div className="mb-step-label">{step?.label}</div>
+                  </>
+                )}
+                <button
+                  className="mb-btn mb-btn-primary"
+                  onClick={() => void create()}
+                  disabled={busy || dims === null}
+                >
+                  {busy ? t.map.uploading : t.map.createMap}
+                </button>
               </>
             )}
-            <button
-              className="mb-btn mb-btn-primary"
-              onClick={() => void create()}
-              disabled={busy || dims === null}
-            >
-              {busy ? t.map.uploading : t.map.createMap}
-            </button>
-          </>
-        )}
-      </div>
+          </div>
 
-      <ul className="mb-maplist">
-        {maps.map((m) => (
-          <MapRow
-            key={m._id}
-            map={m}
-            active={m._id === activeMapId}
-            onSetActive={() =>
-              void setActive({
-                playerToken,
-                dmToken,
-                mapId: m._id as Id<"maps">,
-              })
-            }
-            onRemove={() =>
-              void removeMap({
-                playerToken,
-                dmToken,
-                mapId: m._id as Id<"maps">,
-              })
-            }
-            onRegrid={(cols, rows) =>
-              void updateGrid({
-                playerToken,
-                dmToken,
-                mapId: m._id as Id<"maps">,
-                cols,
-                rows,
-              })
-            }
-          />
-        ))}
-        {maps.length === 0 && <li className="mb-list-empty">{t.map.noMaps}</li>}
-      </ul>
-      </>
-      )}
+          <ul className="mb-maplist">
+            {maps.map((m) => (
+              <MapRow
+                key={m._id}
+                map={m}
+                active={m._id === activeMapId}
+                onSetActive={() =>
+                  void setActive({
+                    playerToken,
+                    dmToken,
+                    mapId: m._id as Id<"maps">,
+                  })
+                }
+                onRemove={() =>
+                  void removeMap({
+                    playerToken,
+                    dmToken,
+                    mapId: m._id as Id<"maps">,
+                  })
+                }
+                onRegrid={(cols, rows) =>
+                  void updateGrid({
+                    playerToken,
+                    dmToken,
+                    mapId: m._id as Id<"maps">,
+                    cols,
+                    rows,
+                  })
+                }
+              />
+            ))}
+            {maps.length === 0 && <li className="mb-list-empty">{t.map.noMaps}</li>}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
