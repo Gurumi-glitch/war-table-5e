@@ -19,10 +19,10 @@
    * values moved) so every existing usage site below still resolves
    * correctly without a rename pass — --ember/--blood/--blood2 now hold the
    * violet/crimson accent family, not literal ember/blood tones. */
-  --void: #0e0a14;
-  --deep: #140f1c;
-  --panel: #1c1526;
-  --panel2: #251b32;
+  --void: #0a0710;
+  --deep: #0e0a14;
+  --panel: #140e1e;
+  --panel2: #1a1226;
   --edge: #3a2a4a;
   --edge2: #4f3a63;
   --ink: #c9bcd6;
@@ -31,6 +31,14 @@
   --blood: #7a1830;
   --blood2: #b8355c;
   --ember: #e0688f;
+
+  /* Motion tokens — see docs/plans/motion-system-war-table-scene.md */
+  --wt-ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* 進場/出場,預設 */
+  --wt-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* 畫面上移動/形變 */
+  --wt-dur-press: 120ms;   /* 按壓回饋 (100–160ms) */
+  --wt-dur-hover: 150ms;   /* hover/顏色變化 */
+  --wt-dur-state: 220ms;   /* 狀態過渡 (claim/turn/HP) */
+  --wt-dur-enter: 250ms;   /* 進場 (log/視窗),上限 300ms */
 
   position: fixed;
   inset: 0;
@@ -44,17 +52,16 @@
   overflow: hidden;
   background-color: var(--void);
   /* Layers, back to front: base void color < violet vignette glow < faint
-   * crossed chalk-line texture < a distant Ravenloft-style castle skyline
-   * pinned to the bottom edge. Pure CSS/SVG — no external image request
-   * (this is inline, so it works offline and isn't blocked by any CSP). */
+   * crossed chalk-line texture. Pure CSS — no external image request. The
+   * old castle-skyline SVG layer was removed in favor of the centered
+   * sigil backdrop (`.wt-sigil`). */
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300'%3E%3Cg fill='%2305030b'%3E%3Crect x='0' y='250' width='1200' height='50'/%3E%3Crect x='0' y='215' width='150' height='45'/%3E%3Crect x='15' y='195' width='18' height='20'/%3E%3Crect x='45' y='195' width='18' height='20'/%3E%3Crect x='75' y='195' width='18' height='20'/%3E%3Crect x='105' y='195' width='18' height='20'/%3E%3Crect x='150' y='140' width='65' height='120'/%3E%3Cpolygon points='150,140 182,80 215,140'/%3E%3Crect x='215' y='205' width='95' height='55'/%3E%3Crect x='225' y='188' width='16' height='18'/%3E%3Crect x='255' y='188' width='16' height='18'/%3E%3Crect x='285' y='188' width='16' height='18'/%3E%3Crect x='310' y='80' width='95' height='180'/%3E%3Cpolygon points='310,80 357,15 405,80'/%3E%3Crect x='354' y='8' width='6' height='24'/%3E%3Cpolygon points='360,10 384,18 360,26'/%3E%3Crect x='405' y='198' width='120' height='62'/%3E%3Crect x='418' y='180' width='16' height='18'/%3E%3Crect x='450' y='180' width='16' height='18'/%3E%3Crect x='482' y='180' width='16' height='18'/%3E%3Crect x='525' y='150' width='75' height='110'/%3E%3Cpolygon points='525,150 562,105 600,150'/%3E%3Crect x='600' y='222' width='180' height='38'/%3E%3Crect x='612' y='205' width='16' height='17'/%3E%3Crect x='644' y='205' width='16' height='17'/%3E%3Crect x='676' y='205' width='16' height='17'/%3E%3Crect x='708' y='205' width='16' height='17'/%3E%3Crect x='740' y='205' width='16' height='17'/%3E%3Crect x='780' y='238' width='160' height='22'/%3E%3Crect x='792' y='225' width='14' height='13'/%3E%3Crect x='820' y='225' width='14' height='13'/%3E%3Crect x='848' y='225' width='14' height='13'/%3E%3Crect x='876' y='225' width='14' height='13'/%3E%3Crect x='940' y='245' width='260' height='15'/%3E%3C/g%3E%3C/svg%3E"),
     repeating-linear-gradient(35deg, rgba(236, 228, 245, 0.03) 0 1px, transparent 1px 34px),
     repeating-linear-gradient(-35deg, rgba(236, 228, 245, 0.025) 0 1px, transparent 1px 34px),
     radial-gradient(60% 45% at 50% 38%, rgba(156, 52, 102, 0.1), transparent 65%);
-  background-position: bottom center, 0 0, 0 0, 0 0;
-  background-size: 100% 34vh, auto, auto, auto;
-  background-repeat: no-repeat, repeat, repeat, no-repeat;
+  background-position: 0 0, 0 0, 0 0;
+  background-size: auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat;
   color: var(--ink);
   font-family: 'Noto Sans TC', sans-serif;
   /* 18px = the original 14px × ~1.3 (user-requested global bump). */
@@ -70,6 +77,45 @@
 .wt.wt-float-layer {
   display: contents;
 }
+/* ---- shell backdrop: the home altar's magic circle, centered + scaled ----
+ * Reuses the .wt-altar-ring-* layers verbatim (same keyframes); the wrapper
+ * only re-sizes, centers and dims. z-index:-1 paints it above `.wt`'s own
+ * background but below every grid child. */
+.wt-sigil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.65;
+}
+.wt-sigil .wt-altar-circle {
+  width: 95vmin;
+  height: 95vmin;
+}
+/* Rune ring: the home version positions runes with an em-based translateY
+ * sized for its 23em circle; re-derive for the vmin-sized backdrop
+ * (95vmin × inset 8% → half-height 39.9vmin). */
+.wt-sigil .wt-altar-ring-runes span {
+  transform: translate(-50%, -50%) rotate(var(--a)) translateY(-39.9vmin);
+}
+/* The box-shadow pulse paints a near-fullscreen blur every frame — too
+ * expensive as an always-on backdrop (esp. the TTS tablet). Rotation only. */
+.wt-sigil .wt-altar-ring-outer { animation: wtSpin 30s linear infinite; }
+/* Center glyph — the altar's ❖, text-glow only (cheap: text-shadow, not
+ * box-shadow), sized with the circle. */
+.wt-sigil-glyph {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--blood2);
+  font-size: 6vmin;
+  line-height: 1;
+  animation: wtGlow 5s ease-in-out infinite;
+}
 .wt *,
 .wt *::before,
 .wt *::after {
@@ -80,7 +126,10 @@
   height: 8px;
 }
 .wt *::-webkit-scrollbar-thumb {
-  background: var(--edge2);
+  /* Wine mid-tone, matching .ccw-card's already-recolored scrollbar thumb
+   * (CharacterCardWindow.css) — --edge2 stays violet on purpose (panel
+   * edges), a scrollbar isn't a panel edge. */
+  background: #5a2440;
   border-radius: 4px;
 }
 .wt *::-webkit-scrollbar-track {
@@ -198,6 +247,10 @@ button.wt-topnav {
   /* Slightly fatter padding so the typographic weight has room to breathe
    * against the title's own vertical metrics. */
   padding: 0.25em 0.7em;
+  transition: border-color var(--wt-dur-hover) ease,
+              background var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease,
+              color var(--wt-dur-hover) ease;
 }
 button.wt-topnav-active {
   border-color: var(--ember);
@@ -244,6 +297,10 @@ button.wt-topnav-active {
   font-size: 0.8em;
   white-space: nowrap;
   color: var(--dim);
+  transition: border-color var(--wt-dur-state) ease,
+              background var(--wt-dur-state) ease,
+              box-shadow var(--wt-dur-state) ease,
+              opacity var(--wt-dur-state) ease;
 }
 .wt-initiative-pill {
   flex: 0 1 12em;
@@ -283,6 +340,10 @@ button.wt-topnav-active {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
   padding: 0.4em 0.55em;
   font-size: 0.92em;
+  transition: border-color var(--wt-dur-state) ease,
+              background var(--wt-dur-state) ease,
+              box-shadow var(--wt-dur-state) ease,
+              opacity var(--wt-dur-state) ease;
 }
 .wt-frame.current {
   border-color: var(--ember);
@@ -327,7 +388,12 @@ button.wt-topnav-active {
 }
 .wt-hpbar > div {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transition: transform var(--wt-dur-state) var(--wt-ease-out);
   background: linear-gradient(90deg, #4a0f1e, var(--blood2));
   box-shadow: 0 0 8px rgba(184, 53, 92, 0.6);
 }
@@ -401,6 +467,8 @@ button.wt-topnav-active {
 }
 .wt-chip-editable {
   cursor: pointer;
+  transition: border-color var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease;
 }
 .wt-chip-editable:hover {
   border-color: var(--ember);
@@ -414,6 +482,9 @@ button.wt-topnav-active {
   border-left-color: var(--dim);
   text-decoration: line-through;
   text-decoration-color: var(--dim);
+  transition: filter var(--wt-dur-hover) ease,
+              opacity var(--wt-dur-hover) ease,
+              border-left-color var(--wt-dur-hover) ease;
 }
 /* button.foo specificity (1,1,0) — beats .wt :where(button) (0,1,0) tie.
  * clip-path: none keeps the round ghost icon (no chamfer). */
@@ -427,12 +498,46 @@ button.wt-chip-remove {
   font-size: 1em;
   line-height: 1;
   cursor: pointer;
+  transition: color var(--wt-dur-hover) ease,
+              background var(--wt-dur-hover) ease,
+              border-color var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease;
 }
 button.wt-chip-remove:hover {
   color: #fff;
   background: rgba(122, 24, 48, 0.5);
   border-color: transparent;
   box-shadow: none;
+}
+.wt-econ {
+  display: inline-flex;
+  gap: 0.5em;
+}
+.wt-econ-flag {
+  transition: color var(--wt-dur-hover) ease, opacity var(--wt-dur-hover) ease,
+              transform var(--wt-dur-press) var(--wt-ease-out);
+}
+.wt-econ-flag:active {
+  transform: scale(0.95);
+}
+.wt-econ-used {
+  color: var(--dim);
+  opacity: 0.6;
+  text-decoration: line-through;
+  text-decoration-color: var(--dim);
+}
+button.wt-adv-btn {
+  transition: color var(--wt-dur-hover) ease,
+              border-color var(--wt-dur-hover) ease,
+              transform var(--wt-dur-press) var(--wt-ease-out);
+}
+button.wt-adv-btn--on {
+  color: var(--adv-color);
+  border-color: var(--adv-color);
+  font-weight: bold;
+}
+button.wt-adv-btn:active {
+  transform: scale(0.97);
 }
 
 /* ---- effects "+ add" panel -------------------------------------------------- */
@@ -519,6 +624,11 @@ button.wt-chip-remove:hover {
   color: var(--bone);
   font-weight: 700;
 }
+/* Keyed remount on each new log entry (GameBoard) → re-runs the entry rise. */
+.wt-ticker > span {
+  display: inline-block;
+  animation: wtLogIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
 
 /* ---- generic element theming (zero specificity — locals always win) ------- */
 .wt :where(h1, h2, h3, h4) {
@@ -551,10 +661,18 @@ button.wt-chip-remove:hover {
   clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
   padding: 0.15em 0.7em;
   cursor: pointer;
+  transition: transform var(--wt-dur-press) var(--wt-ease-out),
+              border-color var(--wt-dur-hover) ease,
+              box-shadow var(--wt-dur-hover) ease,
+              background var(--wt-dur-hover) ease,
+              color var(--wt-dur-hover) ease;
 }
 .wt :where(button:hover:not(:disabled)) {
   border-color: var(--ember);
   box-shadow: 0 0 8px rgba(156, 52, 102, 0.3);
+}
+.wt :where(button:active:not(:disabled)) {
+  transform: scale(0.97);
 }
 .wt :where(button:disabled) {
   opacity: 0.45;
@@ -622,6 +740,7 @@ button.wt-claim-dice {
 .wt :where(summary) {
   cursor: pointer;
   color: var(--ink);
+  transition: color var(--wt-dur-hover) ease;
 }
 .wt :where(summary:hover) {
   color: var(--bone);
@@ -654,13 +773,32 @@ button.wt-claim-dice {
   background: linear-gradient(160deg, var(--panel2), var(--panel));
   border: 1px solid var(--edge2);
   box-shadow:
-    0 0 0 1px rgba(156, 52, 102, 0.15),
-    0 0 0 5px rgba(156, 52, 102, 0.07),
+    inset 0 0 32px rgba(94, 18, 36, 0.3),
+    0 0 28px rgba(147, 40, 74, 0.16),
     0 14px 40px rgba(0, 0, 0, 0.75);
   border-radius: 0;
   clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
   color: var(--ink);
   font-size: 0.95em;
+  animation: wtWindowIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
+@keyframes wtWindowIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.wt-window-fold {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--wt-dur-enter) var(--wt-ease-out);
+}
+.wt-window-fold.is-open {
+  grid-template-rows: 1fr;
+}
+.wt-window-fold-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 .wt-window-head {
   display: flex;
@@ -670,7 +808,7 @@ button.wt-claim-dice {
   cursor: grab;
   user-select: none;
   touch-action: none;
-  background: linear-gradient(90deg, #251b32, #4f3a63);
+  background: linear-gradient(90deg, #22101e, #471327);
   color: var(--bone);
   border-bottom: 1px solid var(--edge2);
   border-radius: 0;
@@ -705,6 +843,7 @@ button.wt-claim-dice {
 .wt-clickable {
   cursor: pointer;
   user-select: none;
+  transition: color var(--wt-dur-hover) ease;
 }
 .wt-clickable:hover {
   color: var(--bone);
@@ -713,6 +852,33 @@ button.wt-claim-dice {
   margin-left: auto;
   color: var(--dim);
   font-size: 0.85em;
+  display: inline-block;
+  transition: transform var(--wt-dur-hover) ease;
+}
+.wt-panel-title[data-folded="true"] .wt-fold-mark {
+  transform: rotate(90deg);
+}
+.wt-fold-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--wt-dur-enter) var(--wt-ease-out);
+}
+.wt-fold-body.is-open {
+  grid-template-rows: 1fr;
+}
+.wt-fold-inner {
+  /* Must be a flex container: DiceBoard/CombatLog/ConfirmPanel's direct
+   * children rely on `flex: none` / `flex: 1 1 auto; min-height: 0` to
+   * shrink to available space and become the internal scroll region
+   * (e.g. .wt-dice-cols) — without `display: flex` here those properties
+   * are no-ops, so the tall child just renders at full content height and
+   * gets silently clipped by `overflow: hidden` below, with no scrollbar. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ---- column-slot classes -------------------------------------------------- */
@@ -754,6 +920,15 @@ button.wt-claim-dice {
   background: var(--edge2);
   display: flex;
   align-items: center;
+  transition: background var(--wt-dur-state) ease, filter var(--wt-dur-state) ease;
+}
+@keyframes wtSettle {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.wt-die.tumbling {
+  animation: wtSettle 0.6s ease-in-out 1;
 }
 /* Inner face inset 2px behind the value → the outer background reads as a rim. */
 .wt-die::before {
@@ -1174,12 +1349,9 @@ body:has(.wt) {
   overflow: visible;
   font-size: clamp(16px, 1.25vw, 18px);
   background-color: #0a0710; /* prototype's final void, deeper than --void */
-  /* `.wt`'s base background-position/size/repeat are 4 comma-separated
-   * values tuned for ITS 4 background-image layers (incl. the castle
-   * skyline this page doesn't use). Left unset here, those 4 values would
-   * cycle across our 2 hatch layers mismatched — e.g. they'd inherit the
-   * castle layer's `background-size: 100% 34vh` and `no-repeat`,
-   * collapsing the grid to a sliver instead of tiling the whole page.
+  /* `.wt`'s base background-position/size/repeat are comma-separated
+   * values tuned for ITS own background-image layers. Left unset here,
+   * those values would cycle across our 2 hatch layers mismatched.
    * Every background-* property must be re-declared together. The
    * vignette glow is NOT one of these layers — see .wt-altar-hero below. */
   background-image:
@@ -1839,6 +2011,18 @@ button.wt-altar-accordion-trigger {
     opacity: 1 !important;
     transform: none !important;
   }
+  .wt :where(button),
+  .wt-die, .wt-pill, .wt-frame, .wt-hpbar > div,
+  .wt-fold-body, .wt-window-fold, .wt-fold-mark {
+    transition-duration: 1ms !important;
+  }
+  .wt-log li, .wt-scene, .wt-window, .wt-ticker > span,
+  .wt-die.tumbling, .wt-gameboard > * {
+    animation: none !important;
+  }
+  .wt-sigil * {
+    animation: none !important;
+  }
 }
 
 @media (max-width: 980px) {
@@ -1876,6 +2060,21 @@ button.wt-altar-accordion-trigger {
  * + scrollable step body + Back/Next/Folio-n-of-7 footer. RitualMetal palette
  * + Cinzel Decorative (titles/numbers/buttons) + Crimson Text (body/inputs),
  * per SPEC.md §3/§4. Stays a centered floating modal (.wt-builder-overlay). */
+@keyframes wtLogIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.wt-log li {
+  animation: wtLogIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
+@keyframes wtWorkspaceIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.wt-gameboard > *,
+.wt-scene {
+  animation: wtWorkspaceIn var(--wt-dur-enter) var(--wt-ease-out) both;
+}
 @keyframes wtbPage {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: none; }
@@ -1897,10 +2096,10 @@ button.wt-altar-accordion-trigger {
   width: min(1080px, 100%);
   height: min(816px, calc(100vh - 32px));
   display: flex;
-  background: linear-gradient(170deg, #241a30, #1a1224 55%, #120c1a);
+  background: linear-gradient(170deg, #1e0f1c, #130a16 55%, #0a050e);
   color: #d9d0e6;
-  border: 1px solid #4f3a63;
-  box-shadow: 0 0 0 1px rgba(156, 52, 102, 0.2), 0 20px 60px rgba(0, 0, 0, 0.8);
+  border: 1px solid #93284a;
+  box-shadow: inset 0 0 32px rgba(94, 18, 36, 0.3), 0 0 28px rgba(147, 40, 74, 0.16), 0 20px 60px rgba(0, 0, 0, 0.8);
   clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 22px);
   font-family: 'Crimson Text', serif;
   overflow: hidden;
@@ -1915,8 +2114,8 @@ button.wt-altar-accordion-trigger {
 .wt-builder-toc {
   width: 230px;
   flex: none;
-  background: linear-gradient(180deg, #1c1526, #2a1f38);
-  border-right: 1px solid #4f3a63;
+  background: linear-gradient(180deg, #160c18, #1c1020);
+  border-right: 1px solid #93284a;
   padding: 22px 18px;
   display: flex;
   flex-direction: column;
@@ -1943,7 +2142,7 @@ button.wt-altar-accordion-trigger {
   text-align: left;
   color: #8a7aa0;
 }
-.wt-builder-tocitem.is-done { color: #e0729a; }
+.wt-builder-tocitem.is-done { color: #e0688f; }
 .wt-builder-tocitem.is-active { color: #ece4f5; font-weight: 700; }
 .wt-builder-tocmark { flex: none; width: 1.2em; }
 .wt-builder-toclabel { white-space: nowrap; }
@@ -1963,16 +2162,16 @@ button.wt-altar-accordion-trigger {
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
-  background: linear-gradient(90deg, #1c1526, #4f3a63);
+  background: linear-gradient(90deg, #160c18, #471327);
   color: #ece4f5;
-  border-bottom: 2px solid #9c3466;
+  border-bottom: 2px solid #93284a;
   flex: none;
 }
 .wt-builder-head b { font-family: 'Cinzel Decorative', serif; font-size: 1.1em; letter-spacing: 0.02em; }
 .wt-builder-head button {
   background: none;
-  border: 1px solid #6a4f80;
-  color: #e0729a;
+  border: 1px solid #5a2440;
+  color: #e0688f;
   width: 44px;
   height: 44px;
   min-height: 44px;
@@ -1997,8 +2196,8 @@ button.wt-altar-accordion-trigger {
 .wt-builder-body input[type="text"],
 .wt-builder-body input:not([type]) ,
 .wt-builder-body input[type="number"] {
-  background: #160f20;
-  border: 1px solid #4f3a63;
+  background: #120913;
+  border: 1px solid #93284a;
   color: #ece4f5;
   padding: 0.5em 0.6em;
   min-height: 44px;
@@ -2027,7 +2226,7 @@ button.wt-altar-accordion-trigger {
 /* fix-2: explicit `normal` so this longer computed tag ("→ 10（調整+0）")
  * keeps its own ability to wrap at a word/bracket boundary instead of
  * inheriting the bare ability-name's nowrap from the label above. */
-.wt-builder-final { color: #e0729a; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; white-space: normal; }
+.wt-builder-final { color: #e0688f; font-weight: 700; font-size: 0.9em; font-variant-numeric: tabular-nums; white-space: normal; }
 .wt-builder-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3em 0.8em; }
 .wt-builder-skills label { flex-direction: row; align-items: center; gap: 0.4em; font-size: 0.9em; font-style: normal; color: #d9d0e6; min-height: 44px; }
 .wt-builder-hint { margin: 0; font-size: 0.9em; color: #c2b6d9; font-style: normal; }
@@ -2038,7 +2237,7 @@ button.wt-altar-accordion-trigger {
   align-items: center;
   gap: 0.4em;
   background: rgba(236, 228, 245, 0.05);
-  border: 1px solid #4f3a63;
+  border: 1px solid #93284a;
   /* fix-4a: was a parallelogram (`polygon(7px 0, calc(100% - 7px) 0, 100%
    * 100%, 0 100%)`) — that shape is card-left-only; wizard chips are plain
    * rectangles. */
@@ -2053,7 +2252,7 @@ button.wt-altar-accordion-trigger {
 .wt-builder-chip button {
   background: none;
   border: none;
-  color: #e0729a;
+  color: #e0688f;
   cursor: pointer;
   padding: 0 0.3em;
   font-family: inherit;
@@ -2068,8 +2267,8 @@ button.wt-altar-accordion-trigger {
   justify-content: space-between;
   gap: 0.6em;
   padding: 14px 20px;
-  border-top: 2px solid #9c3466;
-  background: linear-gradient(90deg, #1c1526, #2a1f38);
+  border-top: 2px solid #93284a;
+  background: linear-gradient(90deg, #160c18, #1c1020);
   flex: none;
 }
 .wt-builder-foliocount {
@@ -2081,7 +2280,7 @@ button.wt-altar-accordion-trigger {
 }
 .wt-builder-foot button {
   background: transparent;
-  border: 1px solid #6a4f80;
+  border: 1px solid #5a2440;
   color: #ece4f5;
   padding: 0.7em 1.2em;
   min-height: 44px;
@@ -2093,8 +2292,8 @@ button.wt-altar-accordion-trigger {
 }
 .wt-builder-foot button[aria-label="builder next"],
 .wt-builder-foot button[aria-label="builder finish"] {
-  background: linear-gradient(160deg, #9c3466, #5c1a3a);
-  border: 1px solid #e0729a;
+  background: linear-gradient(160deg, #93284a, #5e1224);
+  border: 1px solid #e0688f;
   color: #f5e6ee;
   font-weight: 700;
 }

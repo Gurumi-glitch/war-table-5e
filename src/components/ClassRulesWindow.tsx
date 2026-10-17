@@ -64,6 +64,7 @@ export function ClassRulesWindow({
       closeLabel="close class rules"
       bodyClassName="ccw-body"
       bodyStyle={{ flex: "1 1 auto", minHeight: 0, maxHeight: "none" }}
+      animatedFold={false}
     >
       {rules.length === 0 ? (
         <p style={{ margin: 0, color: "#6b5636" }}>{t.card.noClassRules}</p>

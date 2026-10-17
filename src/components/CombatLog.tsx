@@ -47,38 +47,43 @@ export function CombatLog({ entries }: Props) {
     >
       <h2
         className="wt-panel-title wt-clickable"
+        data-folded={folded ? "true" : undefined}
         onClick={() => setFolded((f) => !f)}
         title={folded ? t.combat.unfold : t.combat.fold}
       >
         {t.board.logTitle}
-        <span className="wt-fold-mark">{folded ? "▸" : "▾"}</span>
+        <span className="wt-fold-mark">▸</span>
       </h2>
-      {folded ? null : entries.length === 0 ? (
-        <p style={{ padding: "0 0.7em", color: "var(--dim)", fontSize: "0.82em" }}>
-          {t.log.noConfirmations}
-        </p>
-      ) : (
-        <div className="wt-scroll">
-          <ul className="wt-log">
-            {entries.map((e) => (
-              <li key={e._id} data-testid="log entry">
-                <strong>{e.actingName}</strong>
-                {summaryOf(e, t) ? ` — ${summaryOf(e, t)}` : ""}
-                {e.effectText ? ` — ${e.effectText}` : ""}
-                {e.effects.length > 0 && (
-                  <em>
-                    {" "}
-                    ({e.effects
-                      .map((eff) => `${eff.name} ${eff.hpDelta >= 0 ? "+" : ""}${eff.hpDelta}`)
-                      .join(", ")})
-                  </em>
-                )}
-                {e.round > 0 && <span> · {t.log.round(e.round)}</span>}
-              </li>
-            ))}
-          </ul>
+      <div className={`wt-fold-body${folded ? "" : " is-open"}`}>
+        <div className="wt-fold-inner">
+          {entries.length === 0 ? (
+            <p style={{ padding: "0 0.7em", color: "var(--dim)", fontSize: "0.82em" }}>
+              {t.log.noConfirmations}
+            </p>
+          ) : (
+            <div className="wt-scroll">
+              <ul className="wt-log">
+                {entries.map((e) => (
+                  <li key={e._id} data-testid="log entry">
+                    <strong>{e.actingName}</strong>
+                    {summaryOf(e, t) ? ` — ${summaryOf(e, t)}` : ""}
+                    {e.effectText ? ` — ${e.effectText}` : ""}
+                    {e.effects.length > 0 && (
+                      <em>
+                        {" "}
+                        ({e.effects
+                          .map((eff) => `${eff.name} ${eff.hpDelta >= 0 ? "+" : ""}${eff.hpDelta}`)
+                          .join(", ")})
+                      </em>
+                    )}
+                    {e.round > 0 && <span> · {t.log.round(e.round)}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   );
 }

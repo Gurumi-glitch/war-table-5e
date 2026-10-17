@@ -467,22 +467,23 @@ test("enemy picker search filters options with the shared matcher", () => {
   cleanup();
 });
 
-test("棋子管理 panel folds/unfolds and drops its body when collapsed", () => {
+test("棋子管理 panel folds/unfolds and collapses its body", () => {
   renderBoard(); // one piece present → PieceManager renders
   const header = [...document.querySelectorAll("button.mb-panel-toggle")].find(
     (b) => b.textContent?.includes("棋子管理"),
   ) as HTMLButtonElement;
+  const panel = header.closest(".mb-panel") as HTMLElement;
+  const body = panel.querySelector(".mb-fold-body") as HTMLElement;
   expect(header.getAttribute("aria-expanded")).toBe("true");
+  expect(body.classList.contains("mb-fold-open")).toBe(true);
   expect(
     document.querySelector('input[aria-label="rename Test Piece"]'),
   ).not.toBeNull();
 
   fireEvent.click(header);
   expect(header.getAttribute("aria-expanded")).toBe("false");
-  // Collapsed body is unrendered — not merely hidden.
-  expect(
-    document.querySelector('input[aria-label="rename Test Piece"]'),
-  ).toBeNull();
+  // Body stays in the DOM but is collapsed to zero height so it can animate.
+  expect(body.classList.contains("mb-fold-open")).toBe(false);
 });
 
 test("zoom control clamps to 1.0–4.0 and resets to 100%", () => {

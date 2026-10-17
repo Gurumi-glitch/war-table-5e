@@ -27,6 +27,9 @@ const rulesKey = (id: string): RulesKey => `rules:${id}`;
 const enemyKey = (id: string): EnemyKey => `enemy:${id}`;
 const unkey = (key: string) => key.slice(key.indexOf(":") + 1);
 
+/* Same glyph ring as the home altar (Home.tsx RUNES). */
+const SIGIL_RUNES = ["✦", "❖", "✧", "♦", "✶", "✦", "❖", "✧", "♦", "✶", "✦", "❖"];
+
 /**
  * Persistent game workspace owner. It keeps the global header and floating
  * windows alive while only the War Table / Scene content below it switches.
@@ -103,6 +106,30 @@ export function GameShell(props: GameBoardProps) {
         className={`wt${desktop.force ? " wt-desktop" : ""}${isTablet ? " wt-tablet" : ""}`}
         style={desktop.zoom !== undefined ? { zoom: desktop.zoom } : undefined}
       >
+        {/* Backdrop: the home altar's magic circle, centered and scaled to
+         * fill the shell (replaces the old castle skyline). Purely decorative. */}
+        <div className="wt-sigil" aria-hidden="true">
+          <div className="wt-altar-circle">
+            <div className="wt-altar-ring-outer" />
+            <div className="wt-altar-ring-ticks" />
+            <div className="wt-altar-ring-sweep" />
+            <div className="wt-altar-ring-plain" />
+            <div className="wt-altar-ring-star">
+              <div className="wt-altar-star-a" />
+              <div className="wt-altar-star-b" />
+            </div>
+            <div className="wt-altar-ring-glow" />
+            <div className="wt-altar-ring-runes">
+              {SIGIL_RUNES.map((ch, i) => (
+                <span key={i} style={{ ["--a" as string]: `${i * 30}deg` }}>
+                  {ch}
+                </span>
+              ))}
+            </div>
+            <div className="wt-altar-ring-inner-dashed" />
+            <div className="wt-sigil-glyph">❖</div>
+          </div>
+        </div>
         <GlobalHeader
           activeWorkspace={activeWorkspace}
           canUseScene={!isTablet}

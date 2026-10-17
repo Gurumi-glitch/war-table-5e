@@ -741,6 +741,7 @@ export function CharacterCardWindow({
       foldLabel="fold card"
       closeLabel="close card"
       bodyClassName="ccw-body"
+      animatedFold={false}
     >
       {/* Twin-page book: left "bookplate" (identity, never changes with the
           tabs) — spine — right "flipping" page (ribbon tabs over 4 mounted

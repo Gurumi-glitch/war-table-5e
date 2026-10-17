@@ -14,6 +14,26 @@ if (!HTMLElement.prototype.hasPointerCapture) {
   HTMLElement.prototype.hasPointerCapture = () => false;
 }
 
+// jsdom has no matchMedia; motion code reads prefers-reduced-motion.
+if (typeof window.matchMedia === "undefined") {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+      onchange: null,
+    } as unknown as MediaQueryList);
+}
+
+// jsdom has no scrollIntoView; TurnRibbon scrolls the current turn pill.
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 // jsdom also has no PointerEvent constructor at all (jsdom/jsdom#2527), so
 // Testing Library's fireEvent.pointerDown/Move/Up/Cancel silently fall back
 // to a bare `Event` that drops clientX/clientY/pointerId. Polyfill it as a

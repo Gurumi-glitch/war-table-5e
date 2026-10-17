@@ -59,7 +59,11 @@ export function ShellWindow({
           ×
         </button>
       </div>
-      {!win.folded && <div className="wt-window-body">{children}</div>}
+      <div className={`wt-window-fold${win.folded ? "" : " is-open"}`}>
+        <div className="wt-window-fold-inner">
+          <div className="wt-window-body">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

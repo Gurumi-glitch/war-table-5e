@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { CombatantView } from "../../convex/games";
 import { ColorSwatch } from "./ColorSwatch";
 import { useT } from "../i18n";
@@ -18,6 +19,16 @@ type Props = {
  */
 export function TurnRibbon({ combatants, currentTurnId, round }: Props) {
   const t = useT();
+  const currentRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      inline: "nearest",
+      block: "nearest",
+    });
+  }, [currentTurnId]);
   return (
     <section aria-label="initiative order" className="wt-ribbon">
       <span className="wt-pill wt-round-pill" title={t.combat.roundTitle}>
@@ -31,6 +42,7 @@ export function TurnRibbon({ combatants, currentTurnId, round }: Props) {
         combatants.map((c) => (
           <span
             key={c._id}
+            ref={c._id === currentTurnId ? currentRef : undefined}
             className={`wt-pill wt-initiative-pill${c._id === currentTurnId ? " current" : ""}${c.alive ? "" : " down"}`}
             title={`${c.name} · ${t.combat.init} ${c.initiative}${c.alive ? "" : ` · ${t.combat.down}`}`}
           >

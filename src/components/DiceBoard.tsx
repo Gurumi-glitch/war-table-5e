@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { CombatantView, DiceView } from "../../convex/games";
 import { DICE_TYPES, type DieType } from "../../convex/diceHelpers";
 import { useT } from "../i18n";
+import { DieFace } from "./DieFace";
 
 type Props = {
   dice: DiceView[];
@@ -81,123 +82,119 @@ export function DiceBoard({
     >
       <h2
         className="wt-panel-title wt-clickable"
+        data-folded={folded ? "true" : undefined}
         onClick={() => setFolded((f) => !f)}
         title={folded ? t.combat.unfold : t.combat.fold}
       >
         {t.dice.title}
         {batchLocked && <small> {t.dice.lockedNote}</small>}
-        <span className="wt-fold-mark">{folded ? "▸" : "▾"}</span>
+        <span className="wt-fold-mark">▸</span>
       </h2>
-      {folded ? null : (
-        <>
-      <div className="wt-panel-body" style={{ flex: "none" }}>
-        <button
-          onClick={() => onBatchRoll()}
-          disabled={batchLocked}
-          title={batchLocked ? t.dice.lockedTitle : undefined}
-        >
-          {t.dice.batchRollAll}
-        </button>{" "}
-        <label>
-          {t.dice.claimingFor}{" "}
-          <select
-            value={effective ?? ""}
-            onChange={(e) => setActiveClaimer(e.target.value || null)}
-            aria-label="active claimer"
-          >
-            {combatants.length === 0 && <option value="">{t.dice.noCombatants}</option>}
-            {combatants.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <div className={`wt-fold-body${folded ? "" : " is-open"}`}>
+        <div className="wt-fold-inner">
+          <div className="wt-panel-body" style={{ flex: "none" }}>
+            <button
+              onClick={() => onBatchRoll()}
+              disabled={batchLocked}
+              title={batchLocked ? t.dice.lockedTitle : undefined}
+            >
+              {t.dice.batchRollAll}
+            </button>{" "}
+            <label>
+              {t.dice.claimingFor}{" "}
+              <select
+                value={effective ?? ""}
+                onChange={(e) => setActiveClaimer(e.target.value || null)}
+                aria-label="active claimer"
+              >
+                {combatants.length === 0 && <option value="">{t.dice.noCombatants}</option>}
+                {combatants.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-      {/* Seven vertical columns, one per die type — dice read top-to-bottom.
-       * Inside the War Table this is the panel's scroll region (both axes). */}
-      <div className="wt-dice-cols">
-        {DICE_TYPES.map((type) => {
-          const oftype = dice.filter((d) => d.type === type);
-          if (oftype.length === 0) return null;
-          return (
-            <div key={type} style={{ display: "flex", flexDirection: "column", minWidth: "7em" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3em" }}>
-                <strong>{type}</strong>
-                <button
-                  onClick={() => onBatchRoll([type])}
-                  disabled={batchLocked}
-                  title={batchLocked ? t.dice.lockedTitle : t.dice.rerollAllOf(type)}
-                  aria-label={`reroll all ${type}`}
-                >
-                  ⟲
-                </button>
-              </div>
-              {oftype.map((d) => {
-                const claimColor = d.claimedBy
-                  ? colorOf.get(d.claimedBy) ?? "#999"
-                  : undefined;
-                const claimedByName = d.claimedBy
-                  ? nameOf.get(d.claimedBy) ?? "removed combatant"
-                  : null;
-                // 1-based position within the type column, for unique labels.
-                const pos = d.order + 1;
-                const claimLabel = claimedByName
-                  ? `claim ${type} #${pos} — claimed by ${claimedByName}`
-                  : `claim ${type} #${pos}`;
-                return (
-                  <div
-                    key={d._id}
-                    data-testid={`die ${type}`}
-                    className={`wt-dierow${d.claimedBy ? " claimed" : ""}`}
-                    style={{ ["--dcolor" as string]: claimColor }}
-                  >
-                    {/* The die IS the value input — hex face, editable in place. */}
-                    <span className="wt-die" title={d.claimedBy ? t.dice.claimed : undefined}>
-                      <input
-                        type="number"
-                        value={d.value}
-                        onChange={(e) => {
-                          if (e.target.value === "") return;
-                          const n = Number(e.target.value);
-                          if (!Number.isNaN(n)) onSetValue(d._id, n);
-                        }}
-                        aria-label={`${type} #${pos} value`}
-                      />
-                    </span>
+          {/* Seven vertical columns, one per die type — dice read top-to-bottom.
+           * Inside the War Table this is the panel's scroll region (both axes). */}
+          <div className="wt-dice-cols">
+            {DICE_TYPES.map((type) => {
+              const oftype = dice.filter((d) => d.type === type);
+              if (oftype.length === 0) return null;
+              return (
+                <div key={type} style={{ display: "flex", flexDirection: "column", minWidth: "7em" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3em" }}>
+                    <strong>{type}</strong>
                     <button
-                      onClick={() => toggleClaim(d)}
-                      title={
-                        claimedByName
-                          ? t.dice.claimReleaseBy(claimedByName)
-                          : t.dice.claimReleaseTitle
-                      }
-                      aria-label={claimLabel}
-                      style={{
-                        color: claimColor ?? "var(--dim, #999)",
-                        fontWeight: "bold",
-                        cursor: effective ? "pointer" : "not-allowed",
-                      }}
-                    >
-                      {d.claimedBy ? "●" : "○"}
-                    </button>
-                    <button
-                      onClick={() => onReroll(d._id)}
-                      title={t.dice.reroll}
-                      aria-label={`reroll ${type} #${pos}`}
+                      onClick={() => onBatchRoll([type])}
+                      disabled={batchLocked}
+                      title={batchLocked ? t.dice.lockedTitle : t.dice.rerollAllOf(type)}
+                      aria-label={`reroll all ${type}`}
                     >
                       ⟲
                     </button>
                   </div>
-                );
-              })}
-            </div>
-          );
-        })}
+                  {oftype.map((d) => {
+                    const claimColor = d.claimedBy
+                      ? colorOf.get(d.claimedBy) ?? "#999"
+                      : undefined;
+                    const claimedByName = d.claimedBy
+                      ? nameOf.get(d.claimedBy) ?? "removed combatant"
+                      : null;
+                    // 1-based position within the type column, for unique labels.
+                    const pos = d.order + 1;
+                    const claimLabel = claimedByName
+                      ? `claim ${type} #${pos} — claimed by ${claimedByName}`
+                      : `claim ${type} #${pos}`;
+                    return (
+                      <div
+                        key={d._id}
+                        data-testid={`die ${type}`}
+                        className={`wt-dierow${d.claimedBy ? " claimed" : ""}`}
+                        style={{ ["--dcolor" as string]: claimColor }}
+                      >
+                        {/* The die IS the value input — hex face, editable in place. */}
+                        <DieFace
+                          value={d.value}
+                          type={type}
+                          onChange={(n) => onSetValue(d._id, n)}
+                          ariaLabel={`${type} #${pos} value`}
+                          title={d.claimedBy ? t.dice.claimed : undefined}
+                        />
+                        <button
+                          onClick={() => toggleClaim(d)}
+                          title={
+                            claimedByName
+                              ? t.dice.claimReleaseBy(claimedByName)
+                              : t.dice.claimReleaseTitle
+                          }
+                          aria-label={claimLabel}
+                          style={{
+                            color: claimColor ?? "var(--dim, #999)",
+                            fontWeight: "bold",
+                            cursor: effective ? "pointer" : "not-allowed",
+                          }}
+                        >
+                          {d.claimedBy ? "●" : "○"}
+                        </button>
+                        <button
+                          onClick={() => onReroll(d._id)}
+                          title={t.dice.reroll}
+                          aria-label={`reroll ${type} #${pos}`}
+                        >
+                          ⟲
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
-        </>
-      )}
     </section>
   );
 }

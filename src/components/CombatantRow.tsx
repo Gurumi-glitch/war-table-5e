@@ -196,7 +196,7 @@ export function CombatantRow({
           className="wt-hpbar"
           title={`HP ${c.hp}/${c.maxHp}${c.tempHp ? ` +${c.tempHp} ${t.combat.tempShort}` : ""}`}
         >
-          <div style={{ width: `${hpPct}%` }} />
+          <div style={{ transform: `scaleX(${hpPct / 100})` }} />
         </div>
       )}
       <div className="wt-frame-stats">
@@ -358,15 +358,12 @@ function EconomyFlags({
 }) {
   const t = useT();
   return (
-    <span title={t.combat.economyTitle}>
+    <span className="wt-econ" title={t.combat.economyTitle}>
       {ECONOMY_FLAGS.map(({ label, key }) => (
         <span
           key={label}
-          style={{
-            marginRight: "0.5em",
-            textDecoration: c[key] ? "line-through" : "none",
-            cursor: editable ? "pointer" : "default",
-          }}
+          className={`wt-econ-flag${c[key] ? " wt-econ-used" : ""}`}
+          style={{ cursor: editable ? "pointer" : "default" }}
           onClick={
             editable ? () => onPatch?.({ [key]: !c[key] }) : undefined
           }
